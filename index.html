@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Colony Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            touch-action: none;
+        }
+
+        /* Mobile-first responsive layout */
+        .mobile-ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        /* Collapsible resource panel */
+        #resource-panel {
+            position: fixed;
+            top: env(safe-area-inset-top, 10px);
+            left: 10px;
+            background: rgba(20, 20, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 16px;
+            color: white;
+            z-index: 1001;
+            pointer-events: auto;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+            min-width: 160px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        #resource-panel.collapsed {
+            transform: translateY(calc(-100% + 40px));
+        }
+
+        .resource-toggle {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 20px;
+            background: rgba(20, 20, 30, 0.95);
+            border-radius: 0 0 16px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            user-select: none;
+        }
+
+        .resource-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .resource-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        /* Floating Action Buttons */
+        .fab-container {
+            position: fixed;
+            bottom: env(safe-area-inset-bottom, 20px);
+            right: 20px;
+            z-index: 1001;
+            pointer-events: auto;
+        }
+
+        .fab {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            position: relative;
+            user-select: none;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        .fab.main-fab {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            transform: rotate(0deg);
+            transition: transform 0.3s ease;
+        }
+
+        .fab.main-fab.open {
+            transform: rotate(45deg);
+        }
+
+        .sub-fabs {
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .sub-fabs.open {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .sub-fab {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            font-size: 20px;
+            position: relative;
+        }
+
+        .sub-fab.house { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .sub-fab.farm { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .sub-fab.mine { background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); }
+        .sub-fab.worker { background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); }
+
+        /* Context menu */
+        .context-menu {
+            position: fixed;
+            background: rgba(20, 20, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 8px;
+            color: white;
+            z-index: 1002;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            transform: scale(0);
+            transition: transform 0.2s ease;
+            pointer-events: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .context-menu.show {
+            transform: scale(1);
+        }
+
+        .context-menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .context-menu-item:active {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .context-menu-item .icon {
+            width: 20px;
+            margin-right: 8px;
+        }
+
+        /* Zoom controls */
+        .zoom-controls {
+            position: fixed;
+            bottom: env(safe-area-inset-bottom, 20px);
+            left: 20px;
+            z-index: 1001;
+            pointer-events: auto;
+        }
+
+        .zoom-btn {
+            width: 48px;
+            height: 48px;
+            background: rgba(20, 20, 30, 0.9);
+            border: none;
+            border-radius: 24px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: block;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.9);
+            background: rgba(30, 30, 40, 0.9);
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1003;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            max-width: 200px;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* Cost indicator */
+        .cost-indicator {
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        /* Responsive design */
+        @media (max-width: 480px) {
+            #resource-panel {
+                left: 5px;
+                top: env(safe-area-inset-top, 5px);
+                min-width: 140px;
+                padding: 12px;
+            }
+
+            .fab {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+
+            .zoom-btn {
+                width: 42px;
+                height: 42px;
+                font-size: 18px;
+            }
+        }
+
+        @media (orientation: landscape) {
+            .fab-container {
+                right: 10px;
+                bottom: 10px;
+            }
+            
+            .zoom-controls {
+                left: 10px;
+                bottom: 10px;
+            }
+        }
+
+        /* Loading indicator */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            z-index: 2000;
+        }
+
+        /* Pulse animation for active elements */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+
+        /* Info panel */
+        #info-panel {
+            position: fixed;
+            bottom: 80px;
+            left: 20px;
+            right: 80px;
+            background: rgba(20,20,30,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 12px;
+            color: white;
+            font-size: 12px;
+            z-index: 1001;
+            transform: translateY(100px);
+            transition: transform 0.3s ease;
+            pointer-events: auto;
+        }
+
+        #info-panel.show {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile UI Container -->
+    <div class="mobile-ui">
+        <!-- Collapsible Resource Panel -->
+        <div id="resource-panel">
+            <div class="resource-item">
+                <div style="display: flex; align-items: center;">
+                    <div class="resource-icon" style="background: #4CAF50;">👥</div>
+                    Population
+                </div>
+                <span id="population">5</span>
+            </div>
+            <div class="resource-item">
+                <div style="display: flex; align-items: center;">
+                    <div class="resource-icon" style="background: #FF9800;">🌾</div>
+                    Food
+                </div>
+                <span id="food">50</span>
+            </div>
+            <div class="resource-item">
+                <div style="display: flex; align-items: center;">
+                    <div class="resource-icon" style="background: #8BC34A;">🪵</div>
+                    Wood
+                </div>
+                <span id="wood">30</span>
+            </div>
+            <div class="resource-item">
+                <div style="display: flex; align-items: center;">
+                    <div class="resource-icon" style="background: #607D8B;">🪨</div>
+                    Stone
+                </div>
+                <span id="stone">20</span>
+            </div>
+            <div class="resource-item">
+                <div style="display: flex; align-items: center;">
+                    <div class="resource-icon" style="background: #795548;">⚙️</div>
+                    Iron
+                </div>
+                <span id="iron">10</span>
+            </div>
+            <div class="resource-item">
+                <div style="display: flex; align-items: center;">
+                    <div class="resource-icon" style="background: #9C27B0;">🔧</div>
+                    Tools
+                </div>
+                <span id="tools">0</span>
+            </div>
+            <div class="resource-item">
+                <div style="display: flex; align-items: center;">
+                    <div class="resource-icon" style="background: #3F51B5;">📚</div>
+                    Knowledge
+                </div>
+                <span id="knowledge">0</span>
+            </div>
+            <div class="resource-item">
+                <div style="display: flex; align-items: center;">
+                    <div class="resource-icon" style="background: #E91E63;">❤️</div>
+                    Happiness
+                </div>
+                <span id="happiness">60</span>
+            </div>
+            <div class="resource-toggle" onclick="toggleResourcePanel()">⌄</div>
+        </div>
+
+        <!-- Floating Action Buttons -->
+        <div class="fab-container">
+            <div class="sub-fabs" id="sub-fabs">
+                <div class="fab sub-fab house" onclick="buildHouse()" data-tooltip="House (10 🪵)">
+                    🏠
+                    <div class="cost-indicator">10</div>
+                </div>
+                <div class="fab sub-fab farm" onclick="buildFarm()" data-tooltip="Farm (15 🪵, 5 🪨)">
+                    🌾
+                    <div class="cost-indicator">15+5</div>
+                </div>
+                <div class="fab sub-fab mine" onclick="buildMine()" data-tooltip="Mine (20 🪵, 10 🪨)">
+                    ⛏️
+                    <div class="cost-indicator">20+10</div>
+                </div>
+                <div class="fab sub-fab worker" onclick="spawnWorker()" data-tooltip="Worker (10 🌾)">
+                    👷
+                    <div class="cost-indicator">10</div>
+                </div>
+                <div class="fab sub-fab research" onclick="showResearchOptions()" data-tooltip="Research">
+                    🔬
+                </div>
+            </div>
+            <div class="fab main-fab" id="main-fab" onclick="toggleFabMenu()">+</div>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="zoom-controls">
+            <button class="zoom-btn" id="zoom-in" data-tooltip="Zoom In">+</button>
+            <button class="zoom-btn" id="zoom-out" data-tooltip="Zoom Out">−</button>
+        </div>
+
+        <!-- Context Menu -->
+        <div class="context-menu" id="context-menu">
+            <div class="context-menu-item" onclick="buildHouse()">
+                <span class="icon">🏠</span>
+                Build House
+            </div>
+            <div class="context-menu-item" onclick="buildFarm()">
+                <span class="icon">🌾</span>
+                Build Farm
+            </div>
+            <div class="context-menu-item" onclick="buildMine()">
+                <span class="icon">⛏️</span>
+                Build Mine
+            </div>
+            <div class="context-menu-item" onclick="spawnWorker()">
+                <span class="icon">👷</span>
+                Spawn Worker
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div id="info-panel"></div>
+
+        <!-- Tooltip -->
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Game state
+        const gameState = {
+            population: 5,
+            maxPopulation: 10,
+            food: 50,
+            wood: 30,
+            stone: 20,
+            iron: 10,
+            tools: 0,
+            knowledge: 0,
+            culture: 0,
+            happiness: 60,
+            buildings: [],
+            workers: [],
+            constructionQueue: [],
+            researched: [],
+            currentResearch: null,
+            researchProgress: 0,
+            time: 0,
+            selectedBuilding: null,
+            currentBuildingCategory: 'housing',
+            gameSpeed: 1,
+            paused: false,
+            buildingMaintenance: {},
+            buildingCondition: {}
+        };
+
+        // Mobile touch controls
+        let touchControls = {
+            isPinching: false,
+            lastPinchDistance: 0,
+            isDragging: false,
+            lastTouch: { x: 0, y: 0 },
+            zoomLevel: 1,
+            panX: 0,
+            panY: 0
+        };
+
+        // UI state
+        let uiState = {
+            fabMenuOpen: false,
+            resourcePanelCollapsed: false,
+            contextMenuOpen: false,
+            lastTap: 0
+        };
+
+        // Three.js setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x87CEEB);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(50, 50, 50);
+        scene.add(directionalLight);
+
+        // Ground
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
+        const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x4a5d3a });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        // Camera position
+        camera.position.set(20, 20, 20);
+        camera.lookAt(0, 0, 0);
+
+        // Building types
+        const buildingTypes = {
+            house: { color: 0x8B4513, size: [2, 3, 2], cost: { wood: 10 } },
+            farm: { color: 0x9ACD32, size: [4, 1, 4], cost: { wood: 15, stone: 5 } },
+            mine: { color: 0x696969, size: [3, 4, 3], cost: { wood: 20, stone: 10 } }
+        };
+
+        // Mobile UI Functions
+        function toggleResourcePanel() {
+            const panel = document.getElementById('resource-panel');
+            const toggle = document.querySelector('.resource-toggle');
+            
+            uiState.resourcePanelCollapsed = !uiState.resourcePanelCollapsed;
+            panel.classList.toggle('collapsed', uiState.resourcePanelCollapsed);
+            toggle.textContent = uiState.resourcePanelCollapsed ? '⌃' : '⌄';
+        }
+
+        function toggleFabMenu() {
+            const mainFab = document.getElementById('main-fab');
+            const subFabs = document.getElementById('sub-fabs');
+            
+            uiState.fabMenuOpen = !uiState.fabMenuOpen;
+            mainFab.classList.toggle('open', uiState.fabMenuOpen);
+            subFabs.classList.toggle('open', uiState.fabMenuOpen);
+            
+            // Close context menu if open
+            hideContextMenu();
+        }
+
+        function showContextMenu(x, y) {
+            const contextMenu = document.getElementById('context-menu');
+            contextMenu.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+            contextMenu.style.top = Math.min(y, window.innerHeight - 200) + 'px';
+            contextMenu.classList.add('show');
+            uiState.contextMenuOpen = true;
+        }
+
+        function hideContextMenu() {
+            const contextMenu = document.getElementById('context-menu');
+            contextMenu.classList.remove('show');
+            uiState.contextMenuOpen = false;
+        }
+
+        function showTooltip(element, text) {
+            const tooltip = document.getElementById('tooltip');
+            const rect = element.getBoundingClientRect();
+            
+            tooltip.textContent = text;
+            tooltip.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
+            tooltip.style.top = (rect.top - 40) + 'px';
+            tooltip.classList.add('show');
+            
+            setTimeout(() => {
+                tooltip.classList.remove('show');
+            }, 2000);
+        }
+
+        function showInfoPanel(text) {
+            const panel = document.getElementById('info-panel');
+            panel.innerHTML = text;
+            panel.classList.add('show');
+            
+            setTimeout(() => {
+                panel.classList.remove('show');
+            }, 3000);
+        }
+
+        // Touch event handlers
+        function handleTouchStart(e) {
+            e.preventDefault();
+            
+            if (e.touches.length === 2) {
+                // Pinch start
+                touchControls.isPinching = true;
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                touchControls.lastPinchDistance = Math.sqrt(
+                    Math.pow(touch2.clientX - touch1.clientX, 2) +
+                    Math.pow(touch2.clientY - touch1.clientY, 2)
+                );
+            } else if (e.touches.length === 1) {
+                // Single touch start
+                const touch = e.touches[0];
+                touchControls.lastTouch = { x: touch.clientX, y: touch.clientY };
+                touchControls.isDragging = false;
+            }
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            
+            if (e.touches.length === 2 && touchControls.isPinching) {
+                // Pinch zoom
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const distance = Math.sqrt(
+                    Math.pow(touch2.clientX - touch1.clientX, 2) +
+                    Math.pow(touch2.clientY - touch1.clientY, 2)
+                );
+                
+                const scale = distance / touchControls.lastPinchDistance;
+                touchControls.zoomLevel = Math.max(0.5, Math.min(3, touchControls.zoomLevel * scale));
+                
+                // Apply zoom to camera
+                const targetDistance = 40 / touchControls.zoomLevel;
+                camera.position.normalize().multiplyScalar(targetDistance);
+                
+                touchControls.lastPinchDistance = distance;
+            } else if (e.touches.length === 1 && !touchControls.isPinching) {
+                // Pan
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - touchControls.lastTouch.x;
+                const deltaY = touch.clientY - touchControls.lastTouch.y;
+                
+                if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                    touchControls.isDragging = true;
+                    
+                    // Pan camera
+                    const panSensitivity = 0.01;
+                    touchControls.panX -= deltaX * panSensitivity;
+                    touchControls.panY += deltaY * panSensitivity;
+                    
+                    camera.position.x = Math.sin(touchControls.panX) * 40;
+                    camera.position.z = Math.cos(touchControls.panX) * 40;
+                    camera.position.y = 20 + touchControls.panY * 10;
+                    camera.lookAt(0, 0, 0);
+                }
+                
+                touchControls.lastTouch = { x: touch.clientX, y: touch.clientY };
+            }
+        }
+
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            
+            if (e.touches.length < 2) {
+                touchControls.isPinching = false;
+            }
+            
+            if (e.touches.length === 0) {
+                // Check for tap
+                if (!touchControls.isDragging) {
+                    handleTap(e.changedTouches[0]);
+                }
+                touchControls.isDragging = false;
+            }
+        }
+
+        function handleTap(touch) {
+            const now = Date.now();
+            const timeSinceLastTap = now - uiState.lastTap;
+            
+            // Close any open menus first
+            if (uiState.fabMenuOpen) {
+                toggleFabMenu();
+                return;
+            }
+            
+            if (uiState.contextMenuOpen) {
+                hideContextMenu();
+                return;
+            }
+            
+            // Double tap detection
+            if (timeSinceLastTap < 300) {
+                // Double tap - show context menu
+                showContextMenu(touch.clientX, touch.clientY);
+            }
+            
+            uiState.lastTap = now;
+        }
+
+        // Zoom controls
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            touchControls.zoomLevel = Math.min(3, touchControls.zoomLevel * 1.2);
+            const targetDistance = 40 / touchControls.zoomLevel;
+            camera.position.normalize().multiplyScalar(targetDistance);
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            touchControls.zoomLevel = Math.max(0.5, touchControls.zoomLevel / 1.2);
+            const targetDistance = 40 / touchControls.zoomLevel;
+            camera.position.normalize().multiplyScalar(targetDistance);
+        });
+
+        // Add touch event listeners
+        renderer.domElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+        renderer.domElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+        renderer.domElement.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+        // Tooltip handling for FABs
+        document.querySelectorAll('[data-tooltip]').forEach(element => {
+            let tooltipTimeout;
+            
+            element.addEventListener('touchstart', (e) => {
+                tooltipTimeout = setTimeout(() => {
+                    showTooltip(element, element.dataset.tooltip);
+                }, 500);
+            });
+            
+            element.addEventListener('touchend', () => {
+                if (tooltipTimeout) {
+                    clearTimeout(tooltipTimeout);
+                }
+            });
+        });
+
+        // Create buildings with enhanced visual variety
+        function createBuilding(type, x, z) {
+            const buildingInfo = buildingTypes[type];
+            let geometry, material;
+            
+            // Create different geometries based on building type and tier
+            switch(buildingInfo.category) {
+                case 'housing':
+                    if (buildingInfo.tier === 1) {
+                        // Simple hut - pyramid roof
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    } else if (buildingInfo.tier === 2) {
+                        // House - add roof
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    } else {
+                        // Manor - larger with decorative elements
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    }
+                    break;
+                    
+                case 'production':
+                    if (type.includes('farm')) {
+                        // Flat farm buildings
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    } else if (type.includes('mine')) {
+                        // Taller mining structures
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    } else {
+                        // Standard production building
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    }
+                    break;
+                    
+                case 'infrastructure':
+                    if (type === 'road') {
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    } else {
+                        // Warehouse style buildings
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    }
+                    break;
+                    
+                case 'defense':
+                    if (type === 'watchtower') {
+                        geometry = new THREE.CylinderGeometry(1, 1.5, buildingInfo.size[1], 8);
+                    } else if (type === 'palisade') {
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    } else {
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    }
+                    break;
+                    
+                case 'culture':
+                    if (type === 'shrine') {
+                        geometry = new THREE.ConeGeometry(1, buildingInfo.size[1], 6);
+                    } else {
+                        geometry = new THREE.BoxGeometry(...buildingInfo.size);
+                    }
+                    break;
+                    
+                default:
+                    geometry = new THREE.BoxGeometry(...buildingInfo.size);
+            }
+            
+            // Enhanced materials with textures and variety
+            let baseColor = buildingInfo.color;
+            
+            // Add some color variation based on tier
+            if (buildingInfo.tier > 1) {
+                const hsl = {};
+                const color = new THREE.Color(baseColor);
+                color.getHSL(hsl);
+                hsl.l = Math.min(1, hsl.l + (buildingInfo.tier - 1) * 0.1);
+                color.setHSL(hsl.h, hsl.s, hsl.l);
+                baseColor = color.getHex();
+            }
+            
+            material = new THREE.MeshLambertMaterial({ 
+                color: baseColor,
+                transparent: type === 'road' ? true : false,
+                opacity: type === 'road' ? 0.7 : 1.0
+            });
+            
+            const building = new THREE.Mesh(geometry, material);
+            building.position.set(x, buildingInfo.size[1]/2, z);
+            
+            // Enhanced userData with new properties
+            building.userData = { 
+                type: type,
+                tier: buildingInfo.tier || 1,
+                category: buildingInfo.category,
+                productivity: 0,
+                efficiency: 1.0,
+                adjacencyBonus: 0,
+                condition: 100,
+                lastMaintenance: gameState.time
+            };
+            
+            // Add building to scene and game state
+            scene.add(building);
+            gameState.buildings.push(building);
+            
+            // Initialize condition tracking
+            gameState.buildingCondition[building.uuid] = 100;
+            
+            return building;
+        }
+
+        // Create workers (small moving cubes)
+        function createWorker() {
+            const geometry = new THREE.BoxGeometry(0.5, 1, 0.5);
+            const material = new THREE.MeshLambertMaterial({ color: 0xFF6B6B });
+            const worker = new THREE.Mesh(geometry, material);
+            worker.position.set(
+                (Math.random() - 0.5) * 20,
+                0.5,
+                (Math.random() - 0.5) * 20
+            );
+            worker.userData = {
+                target: null,
+                speed: 0.02,
+                task: 'idle',
+                taskTimer: 0
+            };
+            scene.add(worker);
+            gameState.workers.push(worker);
+            return worker;
+        }
+
+        // Initial setup
+        createBuilding('house', -5, -5);
+        createBuilding('farm', 5, -5);
+        createBuilding('mine', 0, 5);
+
+        // Create initial workers
+        for(let i = 0; i < gameState.population; i++) {
+            createWorker();
+        }
+
+        // Research System
+        function canResearch(tech) {
+            return !gameState.researched.includes(tech) && 
+                   gameState.currentResearch === null &&
+                   gameState.knowledge >= researchTech[tech].cost;
+        }
+
+        function startResearch(tech) {
+            if (canResearch(tech)) {
+                gameState.currentResearch = tech;
+                gameState.researchProgress = 0;
+                gameState.knowledge -= researchTech[tech].cost;
+                updateUI();
+                showInfoPanel(`Started researching ${tech.replace('_', ' ')}`);
+            }
+        }
+
+        function updateResearch() {
+            if (gameState.currentResearch) {
+                gameState.researchProgress += 0.1;
+                if (gameState.researchProgress >= 100) {
+                    gameState.researched.push(gameState.currentResearch);
+                    showInfoPanel(`Completed research: ${gameState.currentResearch.replace('_', ' ')}`);
+                    gameState.currentResearch = null;
+                    gameState.researchProgress = 0;
+                    updateUI();
+                }
+            }
+        }
+
+        // Construction Queue System
+        function addToConstructionQueue(buildingType, x, z) {
+            const buildingInfo = buildingTypes[buildingType];
+            
+            // Check prerequisites
+            if (buildingInfo.prerequisites && buildingInfo.prerequisites.length > 0) {
+                for (let prereq of buildingInfo.prerequisites) {
+                    if (!gameState.researched.includes(prereq)) {
+                        showInfoPanel(`Need to research ${prereq.replace('_', ' ')} first!`);
+                        return false;
+                    }
+                }
+            }
+
+            // Check population requirement for housing capacity
+            if (buildingInfo.populationCapacity && gameState.population >= gameState.maxPopulation) {
+                // Allow housing construction to expand population
+            }
+
+            // Check resource costs
+            for (let resource in buildingInfo.cost) {
+                if (gameState[resource] < buildingInfo.cost[resource]) {
+                    showInfoPanel(`Need ${buildingInfo.cost[resource]} ${resource}, have ${gameState[resource]}`);
+                    return false;
+                }
+            }
+
+            // Deduct resources
+            for (let resource in buildingInfo.cost) {
+                gameState[resource] -= buildingInfo.cost[resource];
+            }
+
+            // Add to construction queue
+            const constructionProject = {
+                id: Date.now(),
+                type: buildingType,
+                x: x,
+                z: z,
+                progress: 0,
+                timeRequired: buildingInfo.constructionTime || 60,
+                workersAssigned: 0,
+                workersRequired: buildingInfo.workersRequired || 1
+            };
+
+            gameState.constructionQueue.push(constructionProject);
+            updateUI();
+            showInfoPanel(`Started construction of ${buildingInfo.name}`);
+            return true;
+        }
+
+        function updateConstruction() {
+            gameState.constructionQueue.forEach((project, index) => {
+                // Assign workers automatically
+                const availableWorkers = Math.min(project.workersRequired, gameState.workers.length);
+                project.workersAssigned = availableWorkers;
+                
+                // Progress construction based on assigned workers
+                if (project.workersAssigned > 0) {
+                    const efficiency = project.workersAssigned / project.workersRequired;
+                    project.progress += efficiency * gameState.gameSpeed;
+                }
+
+                // Complete construction
+                if (project.progress >= project.timeRequired) {
+                    completeConstruction(project);
+                    gameState.constructionQueue.splice(index, 1);
+                }
+            });
+        }
+
+        function completeConstruction(project) {
+            const building = createBuilding(project.type, project.x, project.z);
+            const buildingInfo = buildingTypes[project.type];
+            
+            // Initialize building condition
+            gameState.buildingCondition[building.uuid] = 100;
+            gameState.buildingMaintenance[building.uuid] = 0;
+            
+            // Update population capacity
+            if (buildingInfo.populationCapacity) {
+                gameState.maxPopulation += buildingInfo.populationCapacity;
+            }
+
+            // Initialize adjacency bonuses
+            calculateAdjacencyBonuses();
+
+            showInfoPanel(`${buildingInfo.name} construction completed!`);
+            updateUI();
+        }
+
+        // Adjacency and Efficiency System
+        function calculateAdjacencyBonuses() {
+            gameState.buildings.forEach(building => {
+                building.userData.adjacencyBonus = 0;
+                const buildingInfo = buildingTypes[building.userData.type];
+                
+                if (buildingInfo.adjacencyBonus) {
+                    gameState.buildings.forEach(other => {
+                        if (other !== building) {
+                            const distance = building.position.distanceTo(other.position);
+                            if (distance <= 8) { // Within range for bonus
+                                const otherType = other.userData.type;
+                                for (let bonusType in buildingInfo.adjacencyBonus) {
+                                    if (bonusType === '*' || bonusType === otherType) {
+                                        const bonus = buildingInfo.adjacencyBonus[bonusType];
+                                        for (let effect in bonus) {
+                                            if (effect === 'production') {
+                                                building.userData.adjacencyBonus += bonus[effect];
+                                            } else if (effect === 'happiness') {
+                                                gameState.happiness += bonus[effect] * 0.1; // Small continuous bonus
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Maintenance and Repair System
+        function updateMaintenance() {
+            gameState.buildings.forEach(building => {
+                const buildingInfo = buildingTypes[building.userData.type];
+                
+                if (buildingInfo.maintenance) {
+                    // Gradually reduce building condition
+                    if (!gameState.buildingCondition[building.uuid]) {
+                        gameState.buildingCondition[building.uuid] = 100;
+                    }
+                    
+                    gameState.buildingCondition[building.uuid] -= 0.02;
+                    
+                    // Reduce efficiency based on condition
+                    const condition = gameState.buildingCondition[building.uuid];
+                    building.userData.efficiency = Math.max(0.3, condition / 100);
+                    
+                    // Change building color based on condition
+                    if (condition < 50) {
+                        building.material.color.setHex(0x8B4513); // Brown for poor condition
+                    } else if (condition < 75) {
+                        building.material.color.setHex(buildingInfo.color * 0.8); // Darker
+                    }
+                    
+                    // Attempt maintenance if resources available
+                    if (condition < 80) {
+                        let canMaintain = true;
+                        for (let resource in buildingInfo.maintenance) {
+                            if (gameState[resource] < buildingInfo.maintenance[resource]) {
+                                canMaintain = false;
+                                break;
+                            }
+                        }
+                        
+                        if (canMaintain && Math.random() < 0.01) { // 1% chance per frame
+                            for (let resource in buildingInfo.maintenance) {
+                                gameState[resource] -= buildingInfo.maintenance[resource];
+                            }
+                            gameState.buildingCondition[building.uuid] = Math.min(100, condition + 15);
+                            building.material.color.setHex(buildingInfo.color); // Restore color
+                        }
+                    }
+                }
+            });
+        }
+
+        // Building Upgrade System  
+        function canUpgradeBuilding(building) {
+            const buildingInfo = buildingTypes[building.userData.type];
+            return buildingInfo.upgradeTo && 
+                   buildingTypes[buildingInfo.upgradeTo] &&
+                   gameState.buildingCondition[building.uuid] > 70;
+        }
+
+        function upgradeBuilding(building) {
+            const currentInfo = buildingTypes[building.userData.type];
+            const upgradeInfo = buildingTypes[currentInfo.upgradeTo];
+            
+            if (!upgradeInfo) return false;
+            
+            // Check prerequisites
+            if (upgradeInfo.prerequisites) {
+                for (let prereq of upgradeInfo.prerequisites) {
+                    if (!gameState.researched.includes(prereq)) {
+                        showInfoPanel(`Need to research ${prereq.replace('_', ' ')} first!`);
+                        return false;
+                    }
+                }
+            }
+            
+            // Check upgrade costs (difference between buildings)
+            const upgradeCost = {};
+            for (let resource in upgradeInfo.cost) {
+                const currentCost = currentInfo.cost[resource] || 0;
+                upgradeCost[resource] = Math.max(0, upgradeInfo.cost[resource] - currentCost);
+            }
+            
+            // Check resources
+            for (let resource in upgradeCost) {
+                if (gameState[resource] < upgradeCost[resource]) {
+                    showInfoPanel(`Need ${upgradeCost[resource]} ${resource} for upgrade`);
+                    return false;
+                }
+            }
+            
+            // Deduct upgrade costs
+            for (let resource in upgradeCost) {
+                gameState[resource] -= upgradeCost[resource];
+            }
+            
+            // Upgrade the building
+            building.userData.type = currentInfo.upgradeTo;
+            building.material.color.setHex(upgradeInfo.color);
+            
+            // Update geometry if size changed
+            if (JSON.stringify(currentInfo.size) !== JSON.stringify(upgradeInfo.size)) {
+                const newGeometry = new THREE.BoxGeometry(...upgradeInfo.size);
+                building.geometry.dispose();
+                building.geometry = newGeometry;
+                building.position.y = upgradeInfo.size[1] / 2;
+            }
+            
+            // Update population capacity
+            if (upgradeInfo.populationCapacity && currentInfo.populationCapacity) {
+                gameState.maxPopulation += upgradeInfo.populationCapacity - currentInfo.populationCapacity;
+            }
+            
+            gameState.buildingCondition[building.uuid] = 100; // Refresh condition
+            showInfoPanel(`Upgraded to ${upgradeInfo.name}!`);
+            updateUI();
+            return true;
+        }
+
+        // UI Functions for New Building System
+        function showBuildingCategory(category) {
+            gameState.currentBuildingCategory = category;
+            
+            // Update tab appearance
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show buildings for this category
+            updateBuildingOptions();
+        }
+
+        function updateBuildingOptions() {
+            const container = document.getElementById('building-options');
+            container.innerHTML = '';
+            
+            Object.keys(buildingTypes).forEach(buildingKey => {
+                const building = buildingTypes[buildingKey];
+                if (building.category === gameState.currentBuildingCategory) {
+                    const button = document.createElement('button');
+                    button.className = 'building-btn';
+                    button.onclick = () => queueBuilding(buildingKey);
+                    
+                    // Check if building is available
+                    let available = true;
+                    let reason = '';
+                    
+                    // Check prerequisites
+                    if (building.prerequisites && building.prerequisites.length > 0) {
+                        for (let prereq of building.prerequisites) {
+                            if (!gameState.researched.includes(prereq)) {
+                                available = false;
+                                reason = `Requires ${prereq.replace('_', ' ')}`;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Check resources
+                    if (available) {
+                        for (let resource in building.cost) {
+                            if (gameState[resource] < building.cost[resource]) {
+                                available = false;
+                                reason = `Need ${building.cost[resource]} ${resource}`;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    button.disabled = !available;
+                    
+                    // Build button text
+                    let costText = Object.keys(building.cost).map(resource => 
+                        `${building.cost[resource]} ${resource}`
+                    ).join(', ');
+                    
+                    let timeText = building.constructionTime ? ` (${building.constructionTime}s)` : '';
+                    
+                    button.innerHTML = `
+                        <div style="font-weight: bold;">${building.name}</div>
+                        <div style="font-size: 10px;">${costText}${timeText}</div>
+                        ${!available ? `<div style="color: #ff6b6b; font-size: 9px;">${reason}</div>` : ''}
+                    `;
+                    
+                    container.appendChild(button);
+                }
+            });
+        }
+
+        function queueBuilding(buildingType) {
+            const x = (Math.random() - 0.5) * 40;
+            const z = (Math.random() - 0.5) * 40;
+            addToConstructionQueue(buildingType, x, z);
+            updateBuildingOptions(); // Refresh UI
+        }
+
+        // Research UI Functions
+        function showResearchOptions() {
+            const container = document.getElementById('research-options');
+            if (!container) {
+                // Create research panel if it doesn't exist
+                const researchPanel = document.createElement('div');
+                researchPanel.id = 'research-panel';
+                researchPanel.style.cssText = `
+                    position: fixed; top: 100px; right: 10px; 
+                    background: rgba(0,0,0,0.8); color: white; 
+                    padding: 15px; border-radius: 8px; max-width: 250px;
+                    display: none;
+                `;
+                researchPanel.innerHTML = `
+                    <h3>Research</h3>
+                    <div id="current-research"></div>
+                    <div id="research-options"></div>
+                    <button onclick="hideResearchPanel()">Close</button>
+                `;
+                document.body.appendChild(researchPanel);
+            }
+            
+            updateResearchUI();
+            document.getElementById('research-panel').style.display = 'block';
+        }
+
+        function updateResearchUI() {
+            const currentDiv = document.getElementById('current-research');
+            const optionsDiv = document.getElementById('research-options');
+            
+            if (gameState.currentResearch) {
+                currentDiv.innerHTML = `
+                    <div>Researching: ${gameState.currentResearch.replace('_', ' ')}</div>
+                    <div style="background: #333; height: 10px; border-radius: 5px; margin: 5px 0;">
+                        <div style="background: #4CAF50; height: 100%; width: ${gameState.researchProgress}%; border-radius: 5px;"></div>
+                    </div>
+                `;
+            } else {
+                currentDiv.innerHTML = '<div>No active research</div>';
+            }
+            
+            optionsDiv.innerHTML = '';
+            Object.keys(researchTech).forEach(tech => {
+                if (!gameState.researched.includes(tech) && gameState.currentResearch !== tech) {
+                    const button = document.createElement('button');
+                    button.disabled = gameState.knowledge < researchTech[tech].cost;
+                    button.onclick = () => startResearch(tech);
+                    button.innerHTML = `
+                        <div>${tech.replace('_', ' ')}</div>
+                        <div style="font-size: 10px;">${researchTech[tech].cost} knowledge</div>
+                        <div style="font-size: 9px;">${researchTech[tech].description}</div>
+                    `;
+                    optionsDiv.appendChild(button);
+                }
+            });
+        }
+
+        function hideResearchPanel() {
+            const panel = document.getElementById('research-panel');
+            if (panel) panel.style.display = 'none';
+        }
+
+        // Building functions (updated to use new system)
+        function buildHouse() {
+            queueBuilding('house');
+        }
+
+        function buildFarm() {
+            queueBuilding('farm');
+        }
+
+        function buildMine() {
+            queueBuilding('mine');
+        }
+
+        function spawnWorker() {
+            if (gameState.food >= 5 && gameState.workers.length < gameState.population) {
+                gameState.food -= 5;
+                createWorker();
+                updateUI();
+                showInfoPanel('Worker hired!');
+                
+                // Close menus
+                if (uiState.fabMenuOpen) toggleFabMenu();
+                hideContextMenu();
+            } else if (gameState.workers.length >= gameState.population) {
+                showInfoPanel('Need more housing for additional workers!');
+            } else {
+                showInfoPanel('Need 5 food to hire a worker!');
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            document.getElementById('population').textContent = gameState.population;
+            document.getElementById('food').textContent = Math.floor(gameState.food);
+            document.getElementById('wood').textContent = Math.floor(gameState.wood);
+            document.getElementById('stone').textContent = Math.floor(gameState.stone);
+            document.getElementById('iron').textContent = Math.floor(gameState.iron);
+            document.getElementById('tools').textContent = Math.floor(gameState.tools);
+            document.getElementById('knowledge').textContent = Math.floor(gameState.knowledge);
+            document.getElementById('happiness').textContent = Math.floor(gameState.happiness);
+            
+            // Update max population display (if element exists)
+            const maxPopElement = document.getElementById('max-population');
+            if (maxPopElement) {
+                maxPopElement.textContent = gameState.maxPopulation;
+            }
+            
+            // Update current research display
+            const researchDisplay = document.getElementById('current-research-display');
+            if (researchDisplay) {
+                if (gameState.currentResearch) {
+                    researchDisplay.innerHTML = `Researching: ${gameState.currentResearch.replace('_', ' ')}<br>
+                        <div style="background: #333; height: 4px; border-radius: 2px; margin: 2px 0;">
+                            <div style="background: #4CAF50; height: 100%; width: ${gameState.researchProgress}%; border-radius: 2px;"></div>
+                        </div>`;
+                } else {
+                    researchDisplay.innerHTML = '';
+                }
+            }
+            
+            // Update construction queue display
+            updateConstructionQueueUI();
+            
+            updateColonistList();
+        }
+        
+        function updateConstructionQueueUI() {
+            // Create construction queue panel if it doesn't exist
+            let queuePanel = document.getElementById('construction-queue');
+            if (!queuePanel && gameState.constructionQueue.length > 0) {
+                queuePanel = document.createElement('div');
+                queuePanel.id = 'construction-queue';
+                queuePanel.style.cssText = `
+                    position: fixed; bottom: 80px; left: 10px; 
+                    background: rgba(0,0,0,0.8); color: white; 
+                    padding: 10px; border-radius: 8px; max-width: 200px;
+                    max-height: 200px; overflow-y: auto;
+                `;
+                queuePanel.innerHTML = '<h4 style="margin: 0 0 5px 0;">Construction Queue</h4><div id="queue-items"></div>';
+                document.body.appendChild(queuePanel);
+            }
+            
+            if (queuePanel) {
+                const queueItems = document.getElementById('queue-items');
+                if (gameState.constructionQueue.length > 0) {
+                    queuePanel.style.display = 'block';
+                    queueItems.innerHTML = gameState.constructionQueue.map(project => {
+                        const buildingInfo = buildingTypes[project.type];
+                        const progress = Math.floor((project.progress / project.timeRequired) * 100);
+                        return `
+                            <div style="margin: 5px 0; font-size: 11px;">
+                                <div>${buildingInfo.name}</div>
+                                <div style="background: #333; height: 4px; border-radius: 2px;">
+                                    <div style="background: #4CAF50; height: 100%; width: ${progress}%; border-radius: 2px;"></div>
+                                </div>
+                                <div style="color: #aaa;">${project.workersAssigned}/${project.workersRequired} workers</div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    queuePanel.style.display = 'none';
+                }
+            }
+        }
+
+        // Colonist UI Functions
+        function updateColonistList() {
+            const summary = document.getElementById('colonist-summary');
+            if (!summary) return;
+            
+            summary.innerHTML = '';
+            
+            gameState.colonists.forEach(colonist => {
+                const item = document.createElement('div');
+                item.className = 'colonist-summary-item';
+                item.onclick = () => showColonistDetails(colonist);
+                
+                const urgentTask = getUrgentNeed(colonist);
+                const urgentColor = urgentTask ? 'color: #ff4444;' : '';
+                
+                item.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="${urgentColor}">${colonist.name} (${colonist.job})</span>
+                        <span style="font-size: 9px;">${colonist.currentTask}</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-top: 2px;">
+                        <div class="colonist-status-bar">
+                            <div class="colonist-status-fill status-health" 
+                                 style="width: ${colonist.needs.health}%"></div>
+                        </div>
+                        <div class="colonist-status-bar">
+                            <div class="colonist-status-fill status-hunger" 
+                                 style="width: ${colonist.needs.hunger}%"></div>
+                        </div>
+                        <div class="colonist-status-bar">
+                            <div class="colonist-status-fill status-rest" 
+                                 style="width: ${colonist.needs.rest}%"></div>
+                        </div>
+                        <div class="colonist-status-bar">
+                            <div class="colonist-status-fill status-happiness" 
+                                 style="width: ${colonist.needs.happiness}%"></div>
+                        </div>
+                    </div>
+                `;
+                
+                summary.appendChild(item);
+            });
+        }
+
+        function getUrgentNeed(colonist) {
+            if (colonist.needs.health < 30) return 'health';
+            if (colonist.needs.hunger < 20) return 'hunger';
+            if (colonist.needs.rest < 15) return 'rest';
+            return null;
+        }
+
+        function showColonistDetails(colonist) {
+            const panel = document.getElementById('colonist-info');
+            const details = document.getElementById('colonist-details');
+            
+            if (!panel || !details) return;
+            
+            gameState.selectedColonist = colonist;
+            
+            details.innerHTML = `
+                <h4>${colonist.name} (Age ${colonist.age})</h4>
+                <div style="margin-bottom: 10px;">
+                    <strong>Job:</strong> ${colonist.job} (Level ${colonist.level})
+                    <br><strong>Personality:</strong> ${colonist.personality}
+                    <br><strong>Traits:</strong> ${colonist.traits.join(', ')}
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <strong>Current Activity:</strong> ${colonist.currentTask}
+                    <br><strong>Experience:</strong> ${colonist.experience}/${colonist.level * 10}
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <div>Health: ${Math.floor(colonist.needs.health)}%</div>
+                    <div class="colonist-status-bar">
+                        <div class="colonist-status-fill status-health" 
+                             style="width: ${colonist.needs.health}%"></div>
+                    </div>
+                    
+                    <div>Hunger: ${Math.floor(colonist.needs.hunger)}%</div>
+                    <div class="colonist-status-bar">
+                        <div class="colonist-status-fill status-hunger" 
+                             style="width: ${colonist.needs.hunger}%"></div>
+                    </div>
+                    
+                    <div>Rest: ${Math.floor(colonist.needs.rest)}%</div>
+                    <div class="colonist-status-bar">
+                        <div class="colonist-status-fill status-rest" 
+                             style="width: ${colonist.needs.rest}%"></div>
+                    </div>
+                    
+                    <div>Happiness: ${Math.floor(colonist.needs.happiness)}%</div>
+                    <div class="colonist-status-bar">
+                        <div class="colonist-status-fill status-happiness" 
+                             style="width: ${colonist.needs.happiness}%"></div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <strong>Top Skills:</strong>
+                    <div style="font-size: 11px;">
+                        ${Object.entries(colonist.skills)
+                            .sort(([,a], [,b]) => b - a)
+                            .slice(0, 4)
+                            .map(([skill, value]) => `${skill}: ${Math.floor(value)}`)
+                            .join(', ')}
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <strong>Relationships:</strong>
+                    <div style="font-size: 11px; max-height: 60px; overflow-y: auto;">
+                        ${Array.from(colonist.relationships.entries())
+                            .map(([otherId, relationship]) => {
+                                const other = gameState.colonists.find(c => c.id === otherId);
+                                if (!other) return '';
+                                const status = relationship > 70 ? '💚' : relationship > 50 ? '💛' : relationship > 30 ? '🧡' : '❤️';
+                                return `${status} ${other.name}: ${Math.floor(relationship)}%`;
+                            })
+                            .filter(str => str)
+                            .join('<br>') || 'No significant relationships yet'}
+                    </div>
+                </div>
+            `;
+            
+            panel.style.display = 'block';
+        }
+
+        function closeColonistInfo() {
+            const panel = document.getElementById('colonist-info');
+            if (panel) {
+                panel.style.display = 'none';
+            }
+            gameState.selectedColonist = null;
+        }
+
+        // New Building Production System
+        function updateBuildingProduction() {
+            gameState.buildings.forEach(building => {
+                const buildingInfo = buildingTypes[building.userData.type];
+                
+                if (buildingInfo && buildingInfo.baseProduction && buildingInfo.produces) {
+                    let production = buildingInfo.baseProduction;
+                    
+                    // Apply efficiency modifier from building condition
+                    if (building.userData.efficiency) {
+                        production *= building.userData.efficiency;
+                    }
+                    
+                    // Apply adjacency bonuses
+                    if (building.userData.adjacencyBonus) {
+                        production += building.userData.adjacencyBonus;
+                    }
+                    
+                    // Add main resource production
+                    gameState[buildingInfo.produces] = Math.max(0, 
+                        (gameState[buildingInfo.produces] || 0) + production);
+                    
+                    // Add secondary production
+                    if (buildingInfo.secondaryProduction) {
+                        for (let resource in buildingInfo.secondaryProduction) {
+                            const amount = buildingInfo.secondaryProduction[resource];
+                            gameState[resource] = Math.max(0, 
+                                (gameState[resource] || 0) + amount * (building.userData.efficiency || 1));
+                        }
+                    }
+                    
+                    // Apply special building effects
+                    if (buildingInfo.happiness) {
+                        gameState.happiness = Math.min(100, gameState.happiness + buildingInfo.happiness * 0.01);
+                    }
+                    
+                    if (buildingInfo.culture) {
+                        gameState.culture = Math.max(0, (gameState.culture || 0) + buildingInfo.culture * 0.05);
+                    }
+                }
+            });
+        }
+
+        // Enhanced worker spawn with new resource requirements
+        function spawnWorker() {
+            if (gameState.food >= 10 && gameState.workers.length < gameState.maxPopulation) {
+                gameState.food -= 10;
+                createWorker();
+                updateUI();
+                showInfoPanel('New worker hired!');
+                
+                // Close menus
+                if (uiState.fabMenuOpen) toggleFabMenu();
+                hideContextMenu();
+            } else if (gameState.workers.length >= gameState.maxPopulation) {
+                showInfoPanel('Need more housing for additional workers!');
+            } else {
+                showInfoPanel('Need 10 food to hire a worker!');
+            }
+        }
+
+        // Initialize building UI on page load
+        function initializeBuildingUI() {
+            updateBuildingOptions();
+            updateUI();
+        }
+
+        // Game loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update workers
+            gameState.workers.forEach(worker => {
+                // Simple AI: workers move around randomly and collect resources
+                if (!worker.userData.target) {
+                    worker.userData.target = new THREE.Vector3(
+                        (Math.random() - 0.5) * 40,
+                        0.5,
+                        (Math.random() - 0.5) * 40
+                    );
+                }
+
+                // Move towards target
+                const direction = new THREE.Vector3()
+                    .subVectors(worker.userData.target, worker.position)
+                    .normalize()
+                    .multiplyScalar(worker.userData.speed);
+                
+                worker.position.add(direction);
+
+                // Check if reached target
+                if (worker.position.distanceTo(worker.userData.target) < 1) {
+                    worker.userData.target = null;
+                    worker.userData.taskTimer++;
+                    
+                    // Collect resources occasionally
+                    if (worker.userData.taskTimer > 100) {
+                        const rand = Math.random();
+                        if (rand < 0.3) gameState.food += 1;
+                        else if (rand < 0.6) gameState.wood += 1;
+                        else gameState.stone += 1;
+                        worker.userData.taskTimer = 0;
+                        updateUI();
+                    }
+                }
+            });
+
+            // Auto-produce resources from buildings with skill-based efficiency
+            if (Math.random() < 0.02) { // 2% chance per frame
+                gameState.buildings.forEach(building => {
+                    const buildingType = buildingTypes[building.userData.type];
+                    if (buildingType && buildingType.produces) {
+                        let baseAmount = 1;
+                        let skillModifier = 1.0;
+                        
+                        // Get skill modifier for production
+                        const skill = getSkillForBuilding(building.userData.type);
+                        if (skill && gameState.workers.skills[skill]) {
+                            skillModifier = gameState.workers.skills[skill];
+                        }
+                        
+                        // Calculate production based on building type
+                        switch (building.userData.type) {
+                            case 'farm':
+                                baseAmount = 2;
+                                break;
+                            case 'mine':
+                                baseAmount = 1;
+                                break;
+                            case 'ironmine':
+                                baseAmount = 1;
+                                break;
+                            case 'workshop':
+                                // Workshop produces tools automatically if materials available
+                                if (canCraftRecipe('tools')) {
+                                    craftRecipe('tools');
+                                }
+                                return;
+                            case 'school':
+                                baseAmount = 1;
+                                break;
+                            case 'clinic':
+                                // Clinic produces medicine if materials available
+                                if (canCraftRecipe('medicine')) {
+                                    craftRecipe('medicine');
+                                }
+                                return;
+                        }
+                        
+                        const finalAmount = Math.floor(baseAmount * skillModifier);
+                        addResource(buildingType.produces, finalAmount);
+                    }
+                });
+                updateUI();
+            }
+
+            // Update resource decay every 60 frames (roughly once per second)
+            if (gameState.time % 60 === 0) {
+                updateResourceDecay();
+                updateMarketPrices();
+                updateWorkerSkills();
+            }
+
+            // Update production queues
+            updateProduction();
+            
+            // Update logistics every 30 frames
+            if (gameState.time % 30 === 0) {
+                updateLogistics();
+            }
+
+            // Create random market trades occasionally
+            if (Math.random() < 0.001) { // 0.1% chance per frame
+                createRandomTrade();
+            }
+
+            // Update new building systems
+            if (!gameState.paused) {
+                updateConstruction();
+                updateResearch();
+                updateMaintenance();
+                
+                // Update adjacency bonuses every 5 seconds
+                if (gameState.time % 300 === 0) {
+                    calculateAdjacencyBonuses();
+                }
+                
+                // Update building production with new system
+                if (gameState.time % 60 === 0) {
+                    updateBuildingProduction();
+                }
+            }
+
+            gameState.time++;
+
+            renderer.render(scene, camera);
+        }
+
+        // Mouse interaction for colonist selection
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function onMouseClick(event) {
+            event.preventDefault();
+            
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Check for colonist clicks
+            const colonistMeshes = gameState.colonists.map(c => c.mesh);
+            const intersects = raycaster.intersectObjects(colonistMeshes);
+            
+            if (intersects.length > 0) {
+                const selectedMesh = intersects[0].object;
+                const colonist = selectedMesh.userData.colonist;
+                if (colonist) {
+                    showColonistDetails(colonist);
+                }
+            }
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Add mouse click listener
+        renderer.domElement.addEventListener('click', onMouseClick, false);
+
+        // Prevent context menu on long press
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Additional functions for advanced resource management
+        function trainWorker() {
+            if (removeResource('knowledge', 10)) {
+                // Improve a random skill
+                const skills = Object.keys(gameState.workers.skills);
+                const randomSkill = skills[Math.floor(Math.random() * skills.length)];
+                gameState.workers.skills[randomSkill] += 0.1;
+                updateUI();
+            }
+        }
+
+        // Create random trade offers
+        function createRandomTrade() {
+            const resources = Object.keys(gameState.resources);
+            const sellResource = resources[Math.floor(Math.random() * resources.length)];
+            const buyResource = resources[Math.floor(Math.random() * resources.length)];
+            
+            if (sellResource !== buyResource) {
+                const sellAmount = Math.floor(Math.random() * 20) + 5;
+                const sellPrice = gameState.market.prices[sellResource];
+                const buyPrice = gameState.market.prices[buyResource];
+                const buyAmount = Math.max(1, Math.floor((sellAmount * sellPrice) / buyPrice));
+                
+                createTradeOffer(sellResource, sellAmount, buyResource, buyAmount);
+            }
+        }
+
+        // Initialize some starting trades
+        function initializeTrades() {
+            createTradeOffer('food', 15, 'wood', 10);
+            createTradeOffer('stone', 8, 'iron', 3);
+            createTradeOffer('tools', 2, 'knowledge', 5);
+        }
+
+        // Pause/Resume functionality
+        function togglePause() {
+            gameState.paused = !gameState.paused;
+            const button = event.target;
+            if (button) {
+                button.textContent = gameState.paused ? 'Resume' : 'Pause';
+            }
+            showInfoPanel(gameState.paused ? 'Game Paused' : 'Game Resumed');
+        }
+
+        // Missing functions that were referenced
+        function showInfoPanel(message) {
+            // Create info panel if it doesn't exist
+            let infoPanel = document.getElementById('info-panel');
+            if (!infoPanel) {
+                infoPanel = document.createElement('div');
+                infoPanel.id = 'info-panel';
+                infoPanel.style.cssText = `
+                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.9); color: white; padding: 20px;
+                    border-radius: 8px; z-index: 2000; max-width: 300px; text-align: center;
+                    display: none;
+                `;
+                document.body.appendChild(infoPanel);
+            }
+            
+            infoPanel.textContent = message;
+            infoPanel.style.display = 'block';
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                infoPanel.style.display = 'none';
+            }, 3000);
+        }
+
+        // Initialize the game with starting trades and buildings
+        initializeTrades();
+        
+        // Initialize the building UI system  
+        setTimeout(() => {
+            initializeBuildingUI();
+        }, 100);
+
+        // Start game
+        animate();
+        updateUI();
+    </script>
+</body>
+</html>
