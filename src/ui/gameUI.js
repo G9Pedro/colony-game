@@ -1,4 +1,5 @@
 import { AnimationManager } from '../render/animations.js';
+import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
 
 function formatCost(cost) {
   return Object.entries(cost)
@@ -19,14 +20,6 @@ function formatRate(value) {
     return '±0/day';
   }
   return `${rounded > 0 ? '+' : ''}${rounded.toFixed(1)}/day`;
-}
-
-function formatResourceFlow(flow = {}) {
-  const entries = Object.entries(flow);
-  if (entries.length === 0) {
-    return '—';
-  }
-  return entries.map(([resource, value]) => `${value.toFixed(2)} ${resource}`).join(', ');
 }
 
 export class GameUI {
@@ -347,50 +340,28 @@ export class GameUI {
     }
 
     if (selection.type === 'building') {
-      const building = state.buildings.find((item) => item.id === selection.id);
-      const definition = building ? this.buildingDefinitions[building.type] : null;
-      this.el.infoPanelTitle.textContent = definition ? definition.name : 'Building';
-      if (!building || !definition) {
-        this.el.infoPanelBody.innerHTML = '<small>Building data unavailable.</small>';
+      const details = buildBuildingSelectionDetails(selection, state, this.buildingDefinitions);
+      this.el.infoPanelTitle.textContent = details.title;
+      if (details.message) {
+        this.el.infoPanelBody.innerHTML = `<small>${details.message}</small>`;
         return;
       }
-      const assignedColonists = state.colonists
-        .filter((colonist) => colonist.alive && colonist.assignedBuildingId === building.id)
-        .slice(0, 4)
-        .map((colonist) => colonist.name);
-      const workerSummary = assignedColonists.length > 0
-        ? assignedColonists.join(', ')
-        : 'No assigned colonists';
-      const inputFlow = formatResourceFlow(definition.inputPerWorker);
-      const outputFlow = formatResourceFlow(definition.outputPerWorker);
-
-      this.el.infoPanelBody.innerHTML = `
-        <div class="kv"><span>Type</span><strong>${definition.category}</strong></div>
-        <div class="kv"><span>Health</span><strong>${Math.floor(building.health)}</strong></div>
-        <div class="kv"><span>Workers</span><strong>${building.workersAssigned}</strong></div>
-        <div class="kv"><span>Operational</span><strong>${building.isOperational ? 'Yes' : 'No'}</strong></div>
-        <div class="kv"><span>Input/worker</span><strong>${inputFlow}</strong></div>
-        <div class="kv"><span>Output/worker</span><strong>${outputFlow}</strong></div>
-        <div class="kv"><span>Assigned</span><strong>${workerSummary}</strong></div>
-      `;
+      this.el.infoPanelBody.innerHTML = details.rows
+        .map((row) => `<div class="kv"><span>${row.label}</span><strong>${row.value}</strong></div>`)
+        .join('');
       return;
     }
 
     if (selection.type === 'colonist') {
-      const colonist = state.colonists.find((item) => item.id === selection.id);
-      this.el.infoPanelTitle.textContent = colonist?.name ?? 'Colonist';
-      if (!colonist) {
-        this.el.infoPanelBody.innerHTML = '<small>Colonist data unavailable.</small>';
+      const details = buildColonistSelectionDetails(selection, state);
+      this.el.infoPanelTitle.textContent = details.title;
+      if (details.message) {
+        this.el.infoPanelBody.innerHTML = `<small>${details.message}</small>`;
         return;
       }
-      this.el.infoPanelBody.innerHTML = `
-        <div class="kv"><span>Job</span><strong>${colonist.job}</strong></div>
-        <div class="kv"><span>Task</span><strong>${colonist.task}</strong></div>
-        <div class="kv"><span>Assigned Building</span><strong>${colonist.assignedBuildingId ?? 'None'}</strong></div>
-        <div class="kv"><span>Morale</span><strong>${Math.floor(colonist.needs.morale)}</strong></div>
-        <div class="kv"><span>Hunger</span><strong>${Math.floor(colonist.needs.hunger)}</strong></div>
-        <div class="kv"><span>Health</span><strong>${Math.floor(colonist.needs.health)}</strong></div>
-      `;
+      this.el.infoPanelBody.innerHTML = details.rows
+        .map((row) => `<div class="kv"><span>${row.label}</span><strong>${row.value}</strong></div>`)
+        .join('');
     }
   }
 }
