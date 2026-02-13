@@ -7,7 +7,6 @@ import {
   doReportArtifactStatusCountsMatch,
   getReportArtifactStatusCountsTotal,
   isValidReportArtifactStatusCounts,
-  hasUniqueReportArtifactResultPaths,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
 } from './reportArtifactValidationPayloadHelpers.js';
@@ -40,7 +39,6 @@ export function isValidReportArtifactsValidationPayload(payload) {
     return false;
   }
   const hasExactTargets = hasExactReportArtifactTargets(results);
-  const hasUniqueResultPaths = hasUniqueReportArtifactResultPaths(results);
   const hasSortedResultPaths = areReportArtifactResultsSortedByPath(results);
 
   const computedSummary = buildReportArtifactResultStatistics(results);
@@ -63,7 +61,6 @@ export function isValidReportArtifactsValidationPayload(payload) {
       computedSummary.statusTotal === payload.totalChecked &&
       statusCountsMatch &&
       hasExactTargets &&
-      hasUniqueResultPaths &&
       hasSortedResultPaths &&
       recommendedActionsMatch,
   );

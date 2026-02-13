@@ -13,6 +13,15 @@ import {
   validateReportPayloadByKind,
   withReportMeta,
 } from '../src/game/reportPayloadValidators.js';
+import {
+  buildReportArtifactResultStatistics,
+  buildRecommendedActionsFromResults,
+  REPORT_ARTIFACT_STATUSES,
+} from '../src/game/reportArtifactValidationPayloadHelpers.js';
+import {
+  getReportArtifactRegenerationCommand,
+  REPORT_ARTIFACT_TARGETS,
+} from '../src/game/reportArtifactsManifest.js';
 
 function buildValidBaselineSuggestionPayload(kind = REPORT_KINDS.baselineSuggestions) {
   const suggestedAggregateBounds = {
@@ -107,6 +116,37 @@ function buildValidScenarioTuningTrendPayload(
 
   return withReportMeta(kind, {
     ...basePayload,
+    ...overrides,
+  });
+}
+
+function buildReportArtifactValidationResults(overridesByPath = {}) {
+  return REPORT_ARTIFACT_TARGETS.map((target) => {
+    const overrides = overridesByPath[target.path] ?? {};
+    return {
+      path: target.path,
+      kind: target.kind,
+      status: REPORT_ARTIFACT_STATUSES.ok,
+      ok: true,
+      message: null,
+      recommendedCommand: null,
+      ...overrides,
+    };
+  }).sort((left, right) => left.path.localeCompare(right.path));
+}
+
+function buildValidReportArtifactsValidationPayload(overrides = {}) {
+  const results = overrides.results ?? buildReportArtifactValidationResults();
+  const summary = buildReportArtifactResultStatistics(results);
+  const recommendedActions =
+    overrides.recommendedActions ?? buildRecommendedActionsFromResults(results);
+  return withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
+    overallPassed: summary.overallPassed,
+    failureCount: summary.failureCount,
+    totalChecked: summary.totalChecked,
+    statusCounts: summary.statusCounts,
+    recommendedActions,
+    results,
     ...overrides,
   });
 }
@@ -952,227 +992,79 @@ test('isValidScenarioTuningTrendPayload rejects unsorted scenario rows', () => {
 });
 
 test('isValidReportArtifactsValidationPayload accepts validation summary payload', () => {
-  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: true,
-    failureCount: 0,
-    totalChecked: 5,
-    statusCounts: { ok: 5, error: 0, invalid: 0, 'invalid-json': 0 },
-    recommendedActions: [],
-    results: [
-      {
-        path: 'reports/baseline-suggestions.json',
-        kind: REPORT_KINDS.baselineSuggestions,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-      {
-        path: 'reports/scenario-tuning-baseline-suggestions.json',
-        kind: REPORT_KINDS.scenarioTuningBaselineSuggestions,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-      {
-        path: 'reports/scenario-tuning-dashboard.json',
-        kind: REPORT_KINDS.scenarioTuningDashboard,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-      {
-        path: 'reports/scenario-tuning-trend.json',
-        kind: REPORT_KINDS.scenarioTuningTrend,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-      {
-        path: 'reports/scenario-tuning-validation.json',
-        kind: REPORT_KINDS.scenarioTuningValidation,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-    ],
-  });
+  const payload = buildValidReportArtifactsValidationPayload();
   assert.equal(isValidReportArtifactsValidationPayload(payload), true);
 });
 
 test('isValidReportArtifactsValidationPayload rejects malformed action and status counts', () => {
-  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: false,
-    failureCount: 1,
-    totalChecked: 4,
+  const payload = buildValidReportArtifactsValidationPayload({
     statusCounts: { ok: '4', error: 0, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [{ command: 42, paths: [12] }],
-    results: [
-      {
-        path: 'reports/a.json',
-        kind: REPORT_KINDS.baselineSuggestions,
-        status: 'error',
-        ok: false,
-        message: 'failed',
-        recommendedCommand: 'npm run verify',
-      },
-    ],
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects inconsistent aggregate counters', () => {
-  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: true,
-    failureCount: 0,
+  const payload = buildValidReportArtifactsValidationPayload({
     totalChecked: 2,
     statusCounts: { ok: 1, error: 1, invalid: 0, 'invalid-json': 0 },
-    recommendedActions: [
-      { command: 'npm run simulate:report:tuning', paths: ['reports/scenario-tuning-dashboard.json'] },
-    ],
-    results: [
-      {
-        path: 'reports/baseline-suggestions.json',
-        kind: REPORT_KINDS.baselineSuggestions,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-      {
-        path: 'reports/scenario-tuning-dashboard.json',
-        kind: REPORT_KINDS.scenarioTuningDashboard,
-        status: 'error',
-        ok: false,
-        message: 'read failure',
-        recommendedCommand: 'npm run simulate:report:tuning',
-      },
-    ],
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects result status/ok semantic mismatch', () => {
-  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: true,
-    failureCount: 0,
-    totalChecked: 1,
-    statusCounts: { ok: 0, error: 1, invalid: 0, 'invalid-json': 0 },
-    recommendedActions: [],
-    results: [
-      {
-        path: 'reports/baseline-suggestions.json',
-        kind: REPORT_KINDS.baselineSuggestions,
-        status: 'error',
+  const payload = buildValidReportArtifactsValidationPayload({
+    results: buildReportArtifactValidationResults({
+      'reports/baseline-suggestions.json': {
+        status: REPORT_ARTIFACT_STATUSES.error,
         ok: true,
-        message: null,
-        recommendedCommand: null,
       },
-    ],
+    }),
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects recommended actions mismatched to failures', () => {
-  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: false,
-    failureCount: 1,
-    totalChecked: 1,
-    statusCounts: { ok: 0, error: 1, invalid: 0, 'invalid-json': 0 },
+  const failurePath = 'reports/scenario-tuning-dashboard.json';
+  const results = buildReportArtifactValidationResults({
+    [failurePath]: {
+      status: REPORT_ARTIFACT_STATUSES.error,
+      ok: false,
+      message: 'read failure',
+      recommendedCommand: getReportArtifactRegenerationCommand(failurePath),
+    },
+  });
+  const payload = buildValidReportArtifactsValidationPayload({
+    results,
     recommendedActions: [],
-    results: [
-      {
-        path: 'reports/scenario-tuning-dashboard.json',
-        kind: REPORT_KINDS.scenarioTuningDashboard,
-        status: 'error',
-        ok: false,
-        message: 'read failure',
-        recommendedCommand: 'npm run simulate:report:tuning',
-      },
-    ],
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects unknown result kinds', () => {
-  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: true,
-    failureCount: 0,
-    totalChecked: 1,
-    statusCounts: { ok: 1, error: 0, invalid: 0, 'invalid-json': 0 },
-    recommendedActions: [],
-    results: [
-      {
-        path: 'reports/baseline-suggestions.json',
-        kind: 'unknown-kind',
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-    ],
+  const payload = buildValidReportArtifactsValidationPayload({
+    results: buildReportArtifactValidationResults({
+      'reports/baseline-suggestions.json': { kind: 'unknown-kind' },
+    }),
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects duplicate result paths', () => {
-  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: true,
-    failureCount: 0,
-    totalChecked: 2,
-    statusCounts: { ok: 2, error: 0, invalid: 0, 'invalid-json': 0 },
-    recommendedActions: [],
-    results: [
-      {
+  const payload = buildValidReportArtifactsValidationPayload({
+    results: buildReportArtifactValidationResults({
+      'reports/scenario-tuning-dashboard.json': {
         path: 'reports/baseline-suggestions.json',
-        kind: REPORT_KINDS.baselineSuggestions,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
       },
-      {
-        path: 'reports/baseline-suggestions.json',
-        kind: REPORT_KINDS.baselineSuggestions,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-    ],
+    }),
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects unsorted result paths', () => {
-  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: true,
-    failureCount: 0,
-    totalChecked: 2,
-    statusCounts: { ok: 2, error: 0, invalid: 0, 'invalid-json': 0 },
-    recommendedActions: [],
-    results: [
-      {
-        path: 'reports/scenario-tuning-dashboard.json',
-        kind: REPORT_KINDS.scenarioTuningDashboard,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-      {
-        path: 'reports/baseline-suggestions.json',
-        kind: REPORT_KINDS.baselineSuggestions,
-        status: 'ok',
-        ok: true,
-        message: null,
-        recommendedCommand: null,
-      },
-    ],
+  const results = buildReportArtifactValidationResults();
+  const payload = buildValidReportArtifactsValidationPayload({
+    results: [...results].reverse(),
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
