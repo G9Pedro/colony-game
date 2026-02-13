@@ -6,8 +6,6 @@ import path from 'node:path';
 import {
   REPORT_DIAGNOSTIC_CODES,
 } from '../scripts/reportDiagnostics.js';
-import { buildDiagnosticsSmokeSummary } from '../scripts/reportDiagnosticsSmokeSummary.js';
-import { buildDiagnosticsSmokeMarkdown } from '../scripts/reportDiagnosticsSmokeMarkdown.js';
 import {
   assertOutputHasReadFailureDiagnosticContract,
   assertOutputDiagnosticsContract,
@@ -18,34 +16,26 @@ import {
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
 import {
   buildMissingArtifactPath,
-  createJsonArtifact,
   createTextArtifact,
   createUnreadableArtifactPath,
 } from './helpers/reportReadFailureFixtures.js';
+import {
+  createPassingSummary,
+  writeValidSmokeArtifacts,
+} from './helpers/validateReportDiagnosticsSmokeTestUtils.js';
 
 const RUN_ID = 'diagnostic-contract-fixture-run';
 
 test('diagnostics smoke validation script diagnostics follow contract fixture', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-'));
-  const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
-  const markdownOutputPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
   const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
 
   try {
-    const summary = buildDiagnosticsSmokeSummary({
-      runId: RUN_ID,
-      generatedAt: '2026-02-13T12:00:00.000Z',
-      scenarioResults: [],
-    });
-    await createJsonArtifact({
+    const { reportPath: outputPath, markdownPath: markdownOutputPath } = await writeValidSmokeArtifacts({
       rootDirectory: tempDirectory,
-      relativePath: 'report-diagnostics-smoke.json',
-      payload: summary,
-    });
-    await createTextArtifact({
-      rootDirectory: tempDirectory,
-      relativePath: 'report-diagnostics-smoke.md',
-      contents: buildDiagnosticsSmokeMarkdown(summary),
+      summary: createPassingSummary({
+        runId: RUN_ID,
+      }),
     });
 
     const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
@@ -145,20 +135,16 @@ test('diagnostics smoke validation emits read-error diagnostic for unreadable su
 
 test('diagnostics smoke validation emits artifact-missing diagnostic for absent markdown', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-missing-markdown-'));
-  const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
   const markdownOutputPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.md');
   const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
 
   try {
-    const summary = buildDiagnosticsSmokeSummary({
-      runId: RUN_ID,
-      generatedAt: '2026-02-13T12:00:00.000Z',
-      scenarioResults: [],
-    });
-    await createJsonArtifact({
+    const { reportPath: outputPath } = await writeValidSmokeArtifacts({
       rootDirectory: tempDirectory,
-      relativePath: 'report-diagnostics-smoke.json',
-      payload: summary,
+      summary: createPassingSummary({
+        runId: RUN_ID,
+      }),
+      markdownFilename: 'unused-report-diagnostics-smoke.md',
     });
 
     await assertNodeDiagnosticsScriptRejects({
@@ -192,20 +178,17 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
 
 test('diagnostics smoke validation emits invalid-payload diagnostic for invalid markdown', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-invalid-markdown-'));
-  const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
-  const markdownOutputPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
   const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
 
   try {
-    const summary = buildDiagnosticsSmokeSummary({
-      runId: RUN_ID,
-      generatedAt: '2026-02-13T12:00:00.000Z',
-      scenarioResults: [],
-    });
-    await createJsonArtifact({
+    const {
+      reportPath: outputPath,
+      markdownPath: markdownOutputPath,
+    } = await writeValidSmokeArtifacts({
       rootDirectory: tempDirectory,
-      relativePath: 'report-diagnostics-smoke.json',
-      payload: summary,
+      summary: createPassingSummary({
+        runId: RUN_ID,
+      }),
     });
     await createTextArtifact({
       rootDirectory: tempDirectory,

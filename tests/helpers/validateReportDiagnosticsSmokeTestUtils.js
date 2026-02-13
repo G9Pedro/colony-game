@@ -1,17 +1,23 @@
 import path from 'node:path';
-import { writeFile } from 'node:fs/promises';
 import { buildDiagnosticsSmokeSummary } from '../../scripts/reportDiagnosticsSmokeSummary.js';
 import { buildDiagnosticsSmokeMarkdown } from '../../scripts/reportDiagnosticsSmokeMarkdown.js';
 import { buildReportDiagnostic } from '../../scripts/reportDiagnostics.js';
+import {
+  createJsonArtifact,
+  createTextArtifact,
+} from './reportReadFailureFixtures.js';
 
 export const VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH = path.resolve(
   'scripts/validate-report-diagnostics-smoke.js',
 );
 
-export function createPassingSummary() {
+export function createPassingSummary({
+  runId = 'validate-smoke-script-run',
+  generatedAt = '2026-02-13T12:00:00.000Z',
+} = {}) {
   return buildDiagnosticsSmokeSummary({
-    runId: 'validate-smoke-script-run',
-    generatedAt: '2026-02-13T12:00:00.000Z',
+    runId,
+    generatedAt,
     scenarioResults: [],
   });
 }
@@ -47,9 +53,21 @@ export function createFailingSummary() {
   });
 }
 
-export async function writeValidSmokeArtifacts({ reportPath, markdownPath }) {
-  const summary = createPassingSummary();
-  await writeFile(reportPath, JSON.stringify(summary, null, 2), 'utf-8');
-  await writeFile(markdownPath, buildDiagnosticsSmokeMarkdown(summary), 'utf-8');
-  return summary;
+export async function writeValidSmokeArtifacts({
+  rootDirectory,
+  summary = createPassingSummary(),
+  reportFilename = 'report-diagnostics-smoke.json',
+  markdownFilename = 'report-diagnostics-smoke.md',
+}) {
+  const reportPath = await createJsonArtifact({
+    rootDirectory,
+    relativePath: reportFilename,
+    payload: summary,
+  });
+  const markdownPath = await createTextArtifact({
+    rootDirectory,
+    relativePath: markdownFilename,
+    contents: buildDiagnosticsSmokeMarkdown(summary),
+  });
+  return { summary, reportPath, markdownPath };
 }
