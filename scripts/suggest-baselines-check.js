@@ -2,10 +2,10 @@ import { getBaselineChangeSummary } from '../src/game/baselineSuggestion.js';
 import {
   isValidBaselineSuggestionPayload,
   REPORT_KINDS,
-  withReportMeta,
 } from '../src/game/reportPayloadValidators.js';
 import { buildBaselineSuggestionPayloadFromSimulations } from './baselineSuggestionRuntime.js';
 import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
+import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 
 const inputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-suggestions.json';
 const driftRuns = Number(process.env.SIM_BASELINE_SUGGEST_RUNS ?? 8);
@@ -17,12 +17,13 @@ const { source, payload } = await loadJsonPayloadOrCompute({
   validatePayload: isValidBaselineSuggestionPayload,
   recoverOnInvalidPayload: true,
   computePayload: () =>
-    withReportMeta(
+    buildValidatedReportPayload(
       REPORT_KINDS.baselineSuggestions,
       buildBaselineSuggestionPayloadFromSimulations({
         driftRuns,
         strategyProfileId,
       }),
+      'baseline suggestion',
     ),
 });
 const summary = getBaselineChangeSummary(payload);

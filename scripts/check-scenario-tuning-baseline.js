@@ -10,9 +10,9 @@ import { SCENARIO_DEFINITIONS } from '../src/content/scenarios.js';
 import {
   isValidScenarioTuningSuggestionPayload,
   REPORT_KINDS,
-  withReportMeta,
 } from '../src/game/reportPayloadValidators.js';
 import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
+import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 
 const inputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
@@ -25,13 +25,14 @@ const { source, payload } = await loadJsonPayloadOrCompute({
   validatePayload: isValidScenarioTuningSuggestionPayload,
   recoverOnInvalidPayload: true,
   computePayload: () =>
-    withReportMeta(
+    buildValidatedReportPayload(
       REPORT_KINDS.scenarioTuningBaselineSuggestions,
       buildScenarioTuningBaselineSuggestionPayload({
         scenarios: SCENARIO_DEFINITIONS,
         expectedSignatures: EXPECTED_SCENARIO_TUNING_SIGNATURES,
         expectedTotalAbsDelta: EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA,
       }),
+      'scenario tuning baseline suggestion',
     ),
 });
 const summary = getScenarioTuningBaselineChangeSummary(payload);

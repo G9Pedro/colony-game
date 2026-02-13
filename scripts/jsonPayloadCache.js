@@ -6,6 +6,16 @@ async function persistPayload(path, payload) {
   await writeFile(path, JSON.stringify(payload, null, 2), 'utf-8');
 }
 
+function assertPayloadShape({ path, payload, validatePayload, sourceLabel }) {
+  if (typeof validatePayload !== 'function') {
+    return;
+  }
+  if (validatePayload(payload)) {
+    return;
+  }
+  throw new Error(`${sourceLabel} payload at "${path}" failed validation.`);
+}
+
 export async function loadJsonPayloadOrCompute({
   path,
   computePayload,
@@ -29,6 +39,12 @@ export async function loadJsonPayloadOrCompute({
     }
 
     const repairedPayload = await computePayload();
+    assertPayloadShape({
+      path,
+      payload: repairedPayload,
+      validatePayload,
+      sourceLabel: 'Recomputed',
+    });
     await persistPayload(path, repairedPayload);
     return {
       source: 'recovered-from-invalid-payload',
@@ -43,6 +59,12 @@ export async function loadJsonPayloadOrCompute({
     }
 
     const payload = await computePayload();
+    assertPayloadShape({
+      path,
+      payload,
+      validatePayload,
+      sourceLabel: 'Computed',
+    });
     await persistPayload(path, payload);
     return {
       source: isMissingFile ? 'computed' : 'recovered-from-invalid-json',

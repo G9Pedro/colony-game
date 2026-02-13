@@ -104,3 +104,35 @@ test('loadJsonPayloadOrCompute throws on invalid payload shape by default', asyn
     /failed validation/i,
   );
 });
+
+test('loadJsonPayloadOrCompute throws when computed payload fails validation', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'payload-cache-test-'));
+  const path = join(dir, 'payload.json');
+
+  await assert.rejects(
+    () =>
+      loadJsonPayloadOrCompute({
+        path,
+        validatePayload: (payload) => Array.isArray(payload.items),
+        computePayload: () => ({ malformed: true }),
+      }),
+    /computed payload .* failed validation/i,
+  );
+});
+
+test('loadJsonPayloadOrCompute throws when recomputed payload still fails validation', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'payload-cache-test-'));
+  const path = join(dir, 'payload.json');
+  await writeFile(path, JSON.stringify({ malformed: true }), 'utf-8');
+
+  await assert.rejects(
+    () =>
+      loadJsonPayloadOrCompute({
+        path,
+        validatePayload: (payload) => Array.isArray(payload.items),
+        recoverOnInvalidPayload: true,
+        computePayload: () => ({ malformedAgain: true }),
+      }),
+    /recomputed payload .* failed validation/i,
+  );
+});
