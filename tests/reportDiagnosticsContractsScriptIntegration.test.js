@@ -183,12 +183,20 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
           },
         }),
       (error) => {
+        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
         assertReportDiagnosticsContract({
-          diagnostics: collectReportDiagnostics(error.stdout, error.stderr),
+          diagnostics,
           expectedScript: 'simulate:baseline:check',
           expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
         });
+        const readErrorDiagnostic = diagnostics.find(
+          (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.artifactReadError,
+        );
+        assert.ok(readErrorDiagnostic);
+        assert.equal(readErrorDiagnostic.context?.status, 'error');
+        assert.equal(readErrorDiagnostic.context?.path, tempDirectory);
+        assert.equal(readErrorDiagnostic.context?.errorCode, 'EISDIR');
         return true;
       },
     );
@@ -240,12 +248,20 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
           },
         }),
       (error) => {
+        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
         assertReportDiagnosticsContract({
-          diagnostics: collectReportDiagnostics(error.stdout, error.stderr),
+          diagnostics,
           expectedScript: 'simulate:check:tuning-baseline',
           expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
         });
+        const readErrorDiagnostic = diagnostics.find(
+          (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.artifactReadError,
+        );
+        assert.ok(readErrorDiagnostic);
+        assert.equal(readErrorDiagnostic.context?.status, 'error');
+        assert.equal(readErrorDiagnostic.context?.path, tempDirectory);
+        assert.equal(readErrorDiagnostic.context?.errorCode, 'EISDIR');
         return true;
       },
     );
