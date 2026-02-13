@@ -6,6 +6,9 @@ import { tmpdir } from 'node:os';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import {
   buildReadArtifactFailureLabel,
+  buildReadArtifactDiagnostic,
+  getReadArtifactDiagnosticCode,
+  READ_ARTIFACT_DIAGNOSTIC_CODES,
   readJsonArtifact,
   readValidatedReportArtifact,
   toArtifactValidationEntry,
@@ -149,4 +152,40 @@ test('buildReadArtifactFailureLabel returns stable labels by status', () => {
     'EISDIR',
   );
   assert.equal(buildReadArtifactFailureLabel({ ok: true, payload: {} }), null);
+});
+
+test('getReadArtifactDiagnosticCode maps statuses to stable codes', () => {
+  assert.equal(
+    getReadArtifactDiagnosticCode({ ok: false, status: 'missing' }),
+    READ_ARTIFACT_DIAGNOSTIC_CODES.missing,
+  );
+  assert.equal(
+    getReadArtifactDiagnosticCode({ ok: false, status: 'invalid-json' }),
+    READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
+  );
+  assert.equal(
+    getReadArtifactDiagnosticCode({ ok: false, status: 'invalid' }),
+    READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
+  );
+  assert.equal(
+    getReadArtifactDiagnosticCode({ ok: false, status: 'error' }),
+    READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
+  );
+  assert.equal(getReadArtifactDiagnosticCode({ ok: true, payload: {} }), null);
+});
+
+test('buildReadArtifactDiagnostic returns structured read failure details', () => {
+  assert.deepEqual(
+    buildReadArtifactDiagnostic({
+      ok: false,
+      status: 'invalid-json',
+      message: 'Unexpected token',
+    }),
+    {
+      code: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
+      label: 'invalid JSON',
+      message: 'Unexpected token',
+    },
+  );
+  assert.equal(buildReadArtifactDiagnostic({ ok: true, payload: {} }), null);
 });

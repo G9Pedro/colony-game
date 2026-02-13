@@ -12,6 +12,7 @@ import {
   REPORT_KINDS,
 } from '../src/game/reportPayloadValidators.js';
 import {
+  buildReadArtifactDiagnostic,
   buildReadArtifactFailureLabel,
   readValidatedReportArtifact,
 } from './reportPayloadInput.js';
@@ -44,17 +45,20 @@ try {
     baselineReference = baselineDashboardPath;
     baselineDashboard = baselineDashboardResult.payload;
   } else if (baselineDashboardResult.status === 'invalid') {
+    const diagnostic = buildReadArtifactDiagnostic(baselineDashboardResult);
     console.warn(
-      `Baseline dashboard payload at ${baselineDashboardPath} is invalid (${baselineDashboardResult.message}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
+      `Baseline dashboard payload at ${baselineDashboardPath} is invalid (${baselineDashboardResult.message}; code=${diagnostic?.code ?? 'unknown'}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
   } else if (baselineDashboardResult.status === 'missing') {
+    const diagnostic = buildReadArtifactDiagnostic(baselineDashboardResult);
     console.log(
-      `Baseline dashboard not found at ${baselineDashboardPath}; using signature baseline comparison. To create one, run "${BASELINE_CAPTURE_COMMAND}".`,
+      `Baseline dashboard not found at ${baselineDashboardPath} (code=${diagnostic?.code ?? 'unknown'}); using signature baseline comparison. To create one, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
   } else {
+    const diagnostic = buildReadArtifactDiagnostic(baselineDashboardResult);
     const label = buildReadArtifactFailureLabel(baselineDashboardResult);
     console.warn(
-      `Unable to read baseline dashboard from ${baselineDashboardPath} (${label}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
+      `Unable to read baseline dashboard from ${baselineDashboardPath} (${label}; code=${diagnostic?.code ?? 'unknown'}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
   }
 } catch (error) {

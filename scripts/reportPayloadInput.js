@@ -1,6 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { validateReportPayloadByKind } from '../src/game/reportPayloadValidators.js';
 
+export const READ_ARTIFACT_DIAGNOSTIC_CODES = Object.freeze({
+  missing: 'artifact-missing',
+  invalidJson: 'artifact-invalid-json',
+  invalidPayload: 'artifact-invalid-payload',
+  readError: 'artifact-read-error',
+});
+
 export async function readJsonArtifact(path) {
   try {
     const payloadText = await readFile(path, 'utf-8');
@@ -60,6 +67,26 @@ export async function readValidatedReportArtifact({ path, kind }) {
   return readResult;
 }
 
+export function getReadArtifactDiagnosticCode(readResult) {
+  if (!readResult || readResult.ok) {
+    return null;
+  }
+
+  if (readResult.status === 'missing') {
+    return READ_ARTIFACT_DIAGNOSTIC_CODES.missing;
+  }
+
+  if (readResult.status === 'invalid-json') {
+    return READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson;
+  }
+
+  if (readResult.status === 'invalid') {
+    return READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload;
+  }
+
+  return READ_ARTIFACT_DIAGNOSTIC_CODES.readError;
+}
+
 export function buildReadArtifactFailureLabel(readResult) {
   if (!readResult || readResult.ok) {
     return null;
@@ -78,6 +105,18 @@ export function buildReadArtifactFailureLabel(readResult) {
   }
 
   return readResult.errorCode ?? readResult.message ?? 'read error';
+}
+
+export function buildReadArtifactDiagnostic(readResult) {
+  if (!readResult || readResult.ok) {
+    return null;
+  }
+
+  return {
+    code: getReadArtifactDiagnosticCode(readResult),
+    label: buildReadArtifactFailureLabel(readResult),
+    message: readResult.message ?? null,
+  };
 }
 
 export function toArtifactValidationEntry({ path, kind, readResult }) {

@@ -53,6 +53,7 @@ test('trend script falls back to signature baseline when dashboard baseline is m
       payload.scenarioCount,
     );
     assert.match(stdout, /statuses=added:\d+,changed:\d+,removed:\d+,unchanged:\d+/);
+    assert.match(stdout, /code=artifact-missing/);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -202,6 +203,7 @@ test('trend script suggests baseline capture command when baseline payload is in
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
+    assert.match(stderr, /code=artifact-invalid-payload/);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -222,6 +224,7 @@ test('trend script warns and falls back when baseline payload is invalid JSON', 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /invalid JSON/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
+    assert.match(stderr, /code=artifact-invalid-json/);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -239,6 +242,7 @@ test('trend script warns and falls back when baseline path is unreadable as file
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /falling back to signature baseline/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
+    assert.match(stderr, /code=artifact-read-error/);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
