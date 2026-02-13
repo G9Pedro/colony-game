@@ -206,3 +206,40 @@ test('trend script suggests baseline capture command when baseline payload is in
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test('trend script warns and falls back when baseline payload is invalid JSON', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-trend-script-'));
+  const baselinePath = path.join(tempDirectory, 'scenario-tuning-dashboard.baseline.json');
+
+  try {
+    await writeFile(baselinePath, '{"broken": ', 'utf-8');
+
+    const { payload, stderr } = await runTrendScript({
+      tempDirectory,
+      baselinePath,
+    });
+
+    assert.equal(payload.comparisonSource, 'signature-baseline');
+    assert.match(stderr, /invalid JSON/i);
+    assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('trend script warns and falls back when baseline path is unreadable as file', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-trend-script-'));
+
+  try {
+    const { payload, stderr } = await runTrendScript({
+      tempDirectory,
+      baselinePath: tempDirectory,
+    });
+
+    assert.equal(payload.comparisonSource, 'signature-baseline');
+    assert.match(stderr, /falling back to signature baseline/i);
+    assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});

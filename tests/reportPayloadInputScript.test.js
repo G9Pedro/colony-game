@@ -45,6 +45,20 @@ test('readJsonArtifact classifies missing and invalid-json outcomes', async () =
   }
 });
 
+test('readJsonArtifact classifies non-file read failures as error', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'report-input-helper-'));
+
+  try {
+    const result = await readJsonArtifact(directory);
+    assert.equal(result.ok, false);
+    assert.equal(result.status, 'error');
+    assert.equal(typeof result.message, 'string');
+    assert.equal(result.errorCode, 'EISDIR');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('readValidatedReportArtifact rejects schema-invalid payloads', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'report-input-helper-'));
   const artifactPath = join(directory, 'artifact.json');
