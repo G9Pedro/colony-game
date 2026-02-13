@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { handleJsonCacheLoadFailure } from '../scripts/reportCacheDiagnostics.js';
+import {
+  assertReadFailureDiagnosticContext,
+} from './helpers/reportDiagnosticsTestUtils.js';
 
 test('handleJsonCacheLoadFailure maps classified read failures to canonical diagnostics', () => {
   const emitted = [];
@@ -32,8 +35,12 @@ test('handleJsonCacheLoadFailure maps classified read failures to canonical diag
     assert.equal(handled, true);
     assert.equal(emitted.length, 1);
     assert.equal(emitted[0].code, REPORT_DIAGNOSTIC_CODES.artifactMissing);
-    assert.equal(emitted[0].context.path, 'reports/baseline-suggestions.json');
-    assert.equal(emitted[0].context.status, 'missing');
+    assertReadFailureDiagnosticContext({
+      diagnostic: emitted[0],
+      expectedPath: 'reports/baseline-suggestions.json',
+      expectedStatus: 'missing',
+      expectedErrorCode: 'ENOENT',
+    });
     assert.match(errorLines.join('\n'), /Missing baseline suggestion cache payload at/);
   } finally {
     console.error = originalConsoleError;
@@ -69,8 +76,12 @@ test('handleJsonCacheLoadFailure maps invalid-json cache failures to invalid-jso
     assert.equal(handled, true);
     assert.equal(emitted.length, 1);
     assert.equal(emitted[0].code, REPORT_DIAGNOSTIC_CODES.artifactInvalidJson);
-    assert.equal(emitted[0].context.status, 'invalid-json');
-    assert.equal(emitted[0].context.errorCode, null);
+    assertReadFailureDiagnosticContext({
+      diagnostic: emitted[0],
+      expectedPath: 'reports/scenario-tuning-baseline-suggestions.json',
+      expectedStatus: 'invalid-json',
+      expectedErrorCode: null,
+    });
     assert.equal(emitted[0].context.reason, 'Unexpected token');
     assert.match(
       errorLines.join('\n'),

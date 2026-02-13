@@ -37,3 +37,22 @@ export function assertReportDiagnosticsContract({
     assert.equal(observedCodes.has(expectedCode), true);
   });
 }
+
+export function findDiagnosticByCode(diagnostics, code) {
+  const diagnostic = (diagnostics ?? []).find((entry) => entry.code === code) ?? null;
+  assert.ok(diagnostic);
+  return diagnostic;
+}
+
+export function assertReadFailureDiagnosticContext({
+  diagnostic,
+  expectedPath,
+  expectedStatus = 'error',
+  expectedErrorCode = undefined,
+}) {
+  assert.equal(diagnostic.context?.path, expectedPath);
+  assert.equal(diagnostic.context?.status, expectedStatus);
+  if (expectedErrorCode !== undefined) {
+    assert.equal(diagnostic.context?.errorCode, expectedErrorCode);
+  }
+}

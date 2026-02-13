@@ -15,8 +15,10 @@ import {
 import { buildDiagnosticsSmokeSummary } from '../scripts/reportDiagnosticsSmokeSummary.js';
 import { buildDiagnosticsSmokeMarkdown } from '../scripts/reportDiagnosticsSmokeMarkdown.js';
 import {
+  assertReadFailureDiagnosticContext,
   assertReportDiagnosticsContract,
   collectReportDiagnostics,
+  findDiagnosticByCode,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
@@ -190,13 +192,16 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
           expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
         });
-        const readErrorDiagnostic = diagnostics.find(
-          (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.artifactReadError,
+        const readErrorDiagnostic = findDiagnosticByCode(
+          diagnostics,
+          REPORT_DIAGNOSTIC_CODES.artifactReadError,
         );
-        assert.ok(readErrorDiagnostic);
-        assert.equal(readErrorDiagnostic.context?.status, 'error');
-        assert.equal(readErrorDiagnostic.context?.path, tempDirectory);
-        assert.equal(readErrorDiagnostic.context?.errorCode, 'EISDIR');
+        assertReadFailureDiagnosticContext({
+          diagnostic: readErrorDiagnostic,
+          expectedPath: tempDirectory,
+          expectedStatus: 'error',
+          expectedErrorCode: 'EISDIR',
+        });
         return true;
       },
     );
@@ -255,13 +260,16 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
           expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
         });
-        const readErrorDiagnostic = diagnostics.find(
-          (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.artifactReadError,
+        const readErrorDiagnostic = findDiagnosticByCode(
+          diagnostics,
+          REPORT_DIAGNOSTIC_CODES.artifactReadError,
         );
-        assert.ok(readErrorDiagnostic);
-        assert.equal(readErrorDiagnostic.context?.status, 'error');
-        assert.equal(readErrorDiagnostic.context?.path, tempDirectory);
-        assert.equal(readErrorDiagnostic.context?.errorCode, 'EISDIR');
+        assertReadFailureDiagnosticContext({
+          diagnostic: readErrorDiagnostic,
+          expectedPath: tempDirectory,
+          expectedStatus: 'error',
+          expectedErrorCode: 'EISDIR',
+        });
         return true;
       },
     );
