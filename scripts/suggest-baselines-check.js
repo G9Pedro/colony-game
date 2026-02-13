@@ -6,9 +6,24 @@ const inputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-sug
 const driftRuns = Number(process.env.SIM_BASELINE_SUGGEST_RUNS ?? 8);
 const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 
+function isValidBaselineSuggestionPayload(payload) {
+  return Boolean(
+    payload &&
+      typeof payload === 'object' &&
+      payload.aggregateDelta &&
+      typeof payload.aggregateDelta === 'object' &&
+      Array.isArray(payload.snapshotDelta) &&
+      payload.snippets &&
+      typeof payload.snippets.regressionBaseline === 'string' &&
+      typeof payload.snippets.regressionSnapshots === 'string',
+  );
+}
+
 const { source, payload } = await loadJsonPayloadOrCompute({
   path: inputPath,
   recoverOnParseError: true,
+  validatePayload: isValidBaselineSuggestionPayload,
+  recoverOnInvalidPayload: true,
   computePayload: () =>
     buildBaselineSuggestionPayloadFromSimulations({
       driftRuns,

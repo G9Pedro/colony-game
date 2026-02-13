@@ -10,9 +10,21 @@ const inputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
   'reports/scenario-tuning-baseline-suggestions.json';
 
+function isValidScenarioTuningSuggestionPayload(payload) {
+  return Boolean(
+    payload &&
+      typeof payload === 'object' &&
+      Array.isArray(payload.results) &&
+      payload.snippets &&
+      typeof payload.snippets.scenarioTuningBaseline === 'string',
+  );
+}
+
 const { source, payload } = await loadJsonPayloadOrCompute({
   path: inputPath,
   recoverOnParseError: true,
+  validatePayload: isValidScenarioTuningSuggestionPayload,
+  recoverOnInvalidPayload: true,
   computePayload: () => ({
     generatedAt: new Date().toISOString(),
     ...buildScenarioTuningBaselineSuggestionPayload({

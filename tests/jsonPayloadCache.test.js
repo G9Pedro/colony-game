@@ -70,3 +70,37 @@ test('loadJsonPayloadOrCompute throws on invalid JSON by default', async () => {
     SyntaxError,
   );
 });
+
+test('loadJsonPayloadOrCompute recovers invalid payload shape when enabled', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'payload-cache-test-'));
+  const path = join(dir, 'payload.json');
+  await writeFile(path, JSON.stringify({ malformed: true }), 'utf-8');
+
+  const result = await loadJsonPayloadOrCompute({
+    path,
+    validatePayload: (payload) => Array.isArray(payload.items),
+    recoverOnInvalidPayload: true,
+    computePayload: () => ({ items: [1, 2, 3] }),
+  });
+
+  assert.equal(result.source, 'recovered-from-invalid-payload');
+  assert.deepEqual(result.payload, { items: [1, 2, 3] });
+  const persisted = JSON.parse(await readFile(path, 'utf-8'));
+  assert.deepEqual(persisted, { items: [1, 2, 3] });
+});
+
+test('loadJsonPayloadOrCompute throws on invalid payload shape by default', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'payload-cache-test-'));
+  const path = join(dir, 'payload.json');
+  await writeFile(path, JSON.stringify({ malformed: true }), 'utf-8');
+
+  await assert.rejects(
+    () =>
+      loadJsonPayloadOrCompute({
+        path,
+        validatePayload: (payload) => Array.isArray(payload.items),
+        computePayload: () => ({ items: [] }),
+      }),
+    /failed validation/i,
+  );
+});
