@@ -528,11 +528,66 @@ export class IsometricRenderer {
   }
 
   buildTerrainSignature(state) {
-    const sample = state.buildings
-      .slice(0, 8)
-      .map((building) => `${Math.round(building.x)}:${Math.round(building.z)}:${building.type}`)
-      .join('|');
-    return `${state.buildings.length}:${sample}`;
+    let hash = 0;
+    const structureCount = state.buildings.length + state.constructionQueue.length;
+    const structures = [
+      ...state.buildings.map((building) => ({ x: building.x, z: building.z, type: building.type })),
+      ...state.constructionQueue.map((item) => ({ x: item.x, z: item.z, type: item.type })),
+    ];
+    for (const structure of structures) {
+      const x = Math.round(structure.x) & 0xffff;
+      const z = Math.round(structure.z) & 0xffff;
+      hash = ((hash * 33) ^ x) >>> 0;
+      hash = ((hash * 33) ^ z) >>> 0;
+      for (let idx = 0; idx < structure.type.length; idx += 1) {
+        hash = ((hash * 33) ^ structure.type.charCodeAt(idx)) >>> 0;
+      }
+    }
+    return `${structureCount}:${hash}`;
+  }
+
+  buildPathTileSet(state) {
+    const structures = [
+      ...state.buildings.map((building) => ({ x: Math.round(building.x), z: Math.round(building.z) })),
+      ...state.constructionQueue.map((item) => ({ x: Math.round(item.x), z: Math.round(item.z) })),
+    ];
+    const pathTiles = new Set();
+    if (structures.length < 2) {
+      return pathTiles;
+    }
+
+    for (let index = 0; index < structures.length; index += 1) {
+      const source = structures[index];
+      let nearest = null;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      for (let otherIndex = 0; otherIndex < structures.length; otherIndex += 1) {
+        if (index === otherIndex) {
+          continue;
+        }
+        const target = structures[otherIndex];
+        const distance = Math.abs(target.x - source.x) + Math.abs(target.z - source.z);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearest = target;
+        }
+      }
+      if (!nearest) {
+        continue;
+      }
+
+      let x = source.x;
+      let z = source.z;
+      pathTiles.add(`${x}:${z}`);
+      while (x !== nearest.x) {
+        x += x < nearest.x ? 1 : -1;
+        pathTiles.add(`${x}:${z}`);
+      }
+      while (z !== nearest.z) {
+        z += z < nearest.z ? 1 : -1;
+        pathTiles.add(`${x}:${z}`);
+      }
+    }
+    return pathTiles;
   }
 
   shouldRefreshTerrainLayer(state, bounds) {
@@ -570,6 +625,10 @@ export class IsometricRenderer {
     state.buildings.forEach((building) => {
       buildingTileSet.add(`${Math.round(building.x)}:${Math.round(building.z)}`);
     });
+    state.constructionQueue.forEach((item) => {
+      buildingTileSet.add(`${Math.round(item.x)}:${Math.round(item.z)}`);
+    });
+    const pathTileSet = this.buildPathTileSet(state);
 
     for (let z = minZ; z <= maxZ; z += 1) {
       for (let x = minX; x <= maxX; x += 1) {
@@ -578,9 +637,10 @@ export class IsometricRenderer {
         }
 
         const key = `${x}:${z}`;
+        const onPath = pathTileSet.has(key);
         const nearBuilding = buildingTileSet.has(key);
         const variant = Math.floor(hash2d(x, z) * 4);
-        const kind = nearBuilding ? 'dirt' : variant === 0 ? 'path' : 'grass';
+        const kind = onPath ? 'path' : nearBuilding ? 'dirt' : 'grass';
         const tile = this.spriteFactory.getTerrainTile(kind, variant);
         const screen = this.camera.worldToScreen(x, z);
         this.terrainLayerCtx.drawImage(tile, screen.x - tile.width * 0.5, screen.y - tile.height * 0.5);
