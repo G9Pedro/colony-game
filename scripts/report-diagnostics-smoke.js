@@ -1,22 +1,21 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import {
   isValidReportDiagnosticPayload,
   parseReportDiagnosticsFromText,
-  REPORT_DIAGNOSTIC_CODES,
 } from './reportDiagnostics.js';
-import {
-  buildBaselineSuggestionPayload,
-  buildScenarioTuningIntensityOnlyDriftPayload,
-} from './reportDiagnosticsFixtures.js';
 import { writeJsonArtifact } from './reportPayloadOutput.js';
 import {
   buildDiagnosticsSmokeSummary,
   isValidDiagnosticsSmokeSummaryPayload,
 } from './reportDiagnosticsSmokeSummary.js';
+import {
+  buildDiagnosticsSmokeScenarios,
+  setupDiagnosticsSmokeFixtureWorkspace,
+} from './reportDiagnosticsSmokeScenarios.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -107,116 +106,12 @@ function evaluateScenarioDiagnostics({
 async function main() {
   const baseDirectory = await mkdtemp(path.join(tmpdir(), 'report-diagnostics-smoke-'));
   try {
-    const trendDir = path.join(baseDirectory, 'trend');
-    const artifactsDir = path.join(baseDirectory, 'artifacts');
-    const baselineChecksDir = path.join(baseDirectory, 'baseline-checks');
-    await mkdir(trendDir, { recursive: true });
-    await mkdir(path.join(artifactsDir, 'reports'), { recursive: true });
-    await mkdir(baselineChecksDir, { recursive: true });
-
-    const trendScriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
-    const validateArtifactsScriptPath = path.resolve('scripts/validate-report-artifacts.js');
-    const checkTuningBaselineScriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
-    const checkBaselineScriptPath = path.resolve('scripts/suggest-baselines-check.js');
-
-    const tuningBaselinePath = path.join(
-      baselineChecksDir,
-      'scenario-tuning-baseline-suggestions.json',
-    );
-    await writeFile(
-      tuningBaselinePath,
-      JSON.stringify(buildScenarioTuningIntensityOnlyDriftPayload(), null, 2),
-      'utf-8',
-    );
-
-    const baselineSuggestionPath = path.join(baselineChecksDir, 'baseline-suggestions.json');
-    await writeFile(
-      baselineSuggestionPath,
-      JSON.stringify(buildBaselineSuggestionPayload({ changed: true }), null, 2),
-      'utf-8',
-    );
-
-    await writeFile(
-      path.join(artifactsDir, 'reports', 'scenario-tuning-dashboard.json'),
-      '{"broken": ',
-      'utf-8',
-    );
-
-    const commonEnv = {
-      REPORT_DIAGNOSTICS_JSON: '1',
-      REPORT_DIAGNOSTICS_RUN_ID: runId,
-    };
-
-    const scenarios = [
-      {
-        name: 'trend-missing-baseline',
-        expectedScript: 'simulate:report:tuning:trend',
-        expectedExitCode: 0,
-        expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactMissing],
-        run: () =>
-          runNodeScript(trendScriptPath, {
-            cwd: trendDir,
-            env: {
-              ...commonEnv,
-              SIM_SCENARIO_TUNING_TREND_PATH: path.join(trendDir, 'scenario-tuning-trend.json'),
-              SIM_SCENARIO_TUNING_TREND_MD_PATH: path.join(trendDir, 'scenario-tuning-trend.md'),
-              SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: path.join(
-                trendDir,
-                'missing-baseline.json',
-              ),
-            },
-          }),
-      },
-      {
-        name: 'validate-report-artifacts-failure',
-        expectedScript: 'reports:validate',
-        expectedExitCode: 1,
-        expectedCodes: [
-          REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
-          REPORT_DIAGNOSTIC_CODES.artifactReadError,
-        ],
-        run: () =>
-          runNodeScript(validateArtifactsScriptPath, {
-            cwd: artifactsDir,
-            env: commonEnv,
-          }),
-      },
-      {
-        name: 'scenario-tuning-baseline-check-intensity-warning',
-        expectedScript: 'simulate:check:tuning-baseline',
-        expectedExitCode: 0,
-        expectedCodes: [
-          REPORT_DIAGNOSTIC_CODES.scenarioTuningBaselineSummary,
-          REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDrift,
-          REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityEnforcementTip,
-        ],
-        run: () =>
-          runNodeScript(checkTuningBaselineScriptPath, {
-            cwd: baselineChecksDir,
-            env: {
-              ...commonEnv,
-              SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: tuningBaselinePath,
-            },
-          }),
-      },
-      {
-        name: 'baseline-check-drift-failure',
-        expectedScript: 'simulate:baseline:check',
-        expectedExitCode: 1,
-        expectedCodes: [
-          REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary,
-          REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
-        ],
-        run: () =>
-          runNodeScript(checkBaselineScriptPath, {
-            cwd: baselineChecksDir,
-            env: {
-              ...commonEnv,
-              SIM_BASELINE_SUGGEST_PATH: baselineSuggestionPath,
-            },
-          }),
-      },
-    ];
+    const fixtureWorkspace = await setupDiagnosticsSmokeFixtureWorkspace(baseDirectory);
+    const scenarios = buildDiagnosticsSmokeScenarios({
+      runId,
+      fixtureWorkspace,
+      runNodeScript,
+    });
 
     const scenarioResults = [];
     for (const scenario of scenarios) {
