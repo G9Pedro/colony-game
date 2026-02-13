@@ -176,7 +176,10 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
     },
   });
   assert.equal(invalidJsonEntry.errorType, 'invalid-json');
-  assert.equal(invalidJsonEntry.message, 'Invalid JSON payload.');
+  assert.equal(
+    invalidJsonEntry.message,
+    'report artifact at "reports/example.json" is not valid JSON.',
+  );
 
   const missingEntry = toArtifactValidationEntry({
     path: 'reports/example.json',
@@ -189,6 +192,21 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
   });
   assert.equal(missingEntry.errorType, 'error');
   assert.equal(missingEntry.message, 'Missing report artifact at "reports/example.json".');
+
+  const errorEntry = toArtifactValidationEntry({
+    path: 'reports/example.json',
+    kind: REPORT_KINDS.scenarioTuningDashboard,
+    readResult: {
+      ok: false,
+      status: 'error',
+      message: 'EISDIR',
+    },
+  });
+  assert.equal(errorEntry.errorType, 'error');
+  assert.equal(
+    errorEntry.message,
+    'Unable to read report artifact at "reports/example.json": EISDIR',
+  );
 });
 
 test('buildReadArtifactFailureLabel returns stable labels by status', () => {

@@ -71,7 +71,10 @@ test('validate-report-artifacts script emits validation report for invalid/missi
       (row) => row.path === 'reports/scenario-tuning-dashboard.json',
     );
     assert.equal(dashboardRow.status, 'invalid-json');
-    assert.equal(dashboardRow.message, 'Invalid JSON payload.');
+    assert.equal(
+      dashboardRow.message,
+      'report artifact at "reports/scenario-tuning-dashboard.json" is not valid JSON.',
+    );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

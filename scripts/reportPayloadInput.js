@@ -222,12 +222,11 @@ export function toArtifactValidationEntry({ path, kind, readResult }) {
     };
   }
 
-  const message =
-    readResult.status === 'missing'
-      ? `Missing report artifact at "${path}".`
-      : readResult.status === 'invalid-json'
-        ? 'Invalid JSON payload.'
-        : readResult.message;
+  const message = formatReadArtifactFailureMessage({
+    readResult: { ...readResult, path },
+    artifactLabel: 'report artifact',
+    invalidMessage: readResult.message,
+  });
 
   return {
     path,
