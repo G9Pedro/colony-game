@@ -960,7 +960,7 @@ test('isValidReportArtifactsValidationPayload accepts validation summary payload
     recommendedActions: [],
     results: [
       {
-        path: 'reports/a.json',
+        path: 'reports/baseline-suggestions.json',
         kind: REPORT_KINDS.baselineSuggestions,
         status: 'ok',
         ok: true,
@@ -968,7 +968,7 @@ test('isValidReportArtifactsValidationPayload accepts validation summary payload
         recommendedCommand: null,
       },
       {
-        path: 'reports/b.json',
+        path: 'reports/scenario-tuning-dashboard.json',
         kind: REPORT_KINDS.scenarioTuningDashboard,
         status: 'ok',
         ok: true,
@@ -1007,10 +1007,12 @@ test('isValidReportArtifactsValidationPayload rejects inconsistent aggregate cou
     failureCount: 0,
     totalChecked: 2,
     statusCounts: { ok: 1, error: 1, invalid: 0, 'invalid-json': 0 },
-    recommendedActions: [{ command: 'npm run verify', paths: ['reports/broken.json'] }],
+    recommendedActions: [
+      { command: 'npm run simulate:report:tuning', paths: ['reports/scenario-tuning-dashboard.json'] },
+    ],
     results: [
       {
-        path: 'reports/a.json',
+        path: 'reports/baseline-suggestions.json',
         kind: REPORT_KINDS.baselineSuggestions,
         status: 'ok',
         ok: true,
@@ -1018,12 +1020,12 @@ test('isValidReportArtifactsValidationPayload rejects inconsistent aggregate cou
         recommendedCommand: null,
       },
       {
-        path: 'reports/broken.json',
+        path: 'reports/scenario-tuning-dashboard.json',
         kind: REPORT_KINDS.scenarioTuningDashboard,
         status: 'error',
         ok: false,
         message: 'read failure',
-        recommendedCommand: 'npm run verify',
+        recommendedCommand: 'npm run simulate:report:tuning',
       },
     ],
   });
@@ -1039,7 +1041,7 @@ test('isValidReportArtifactsValidationPayload rejects result status/ok semantic 
     recommendedActions: [],
     results: [
       {
-        path: 'reports/a.json',
+        path: 'reports/baseline-suggestions.json',
         kind: REPORT_KINDS.baselineSuggestions,
         status: 'error',
         ok: true,
@@ -1060,12 +1062,12 @@ test('isValidReportArtifactsValidationPayload rejects recommended actions mismat
     recommendedActions: [],
     results: [
       {
-        path: 'reports/broken.json',
+        path: 'reports/scenario-tuning-dashboard.json',
         kind: REPORT_KINDS.scenarioTuningDashboard,
         status: 'error',
         ok: false,
         message: 'read failure',
-        recommendedCommand: 'npm run verify',
+        recommendedCommand: 'npm run simulate:report:tuning',
       },
     ],
   });
@@ -1081,7 +1083,7 @@ test('isValidReportArtifactsValidationPayload rejects unknown result kinds', () 
     recommendedActions: [],
     results: [
       {
-        path: 'reports/unknown.json',
+        path: 'reports/baseline-suggestions.json',
         kind: 'unknown-kind',
         status: 'ok',
         ok: true,
@@ -1102,7 +1104,7 @@ test('isValidReportArtifactsValidationPayload rejects duplicate result paths', (
     recommendedActions: [],
     results: [
       {
-        path: 'reports/a.json',
+        path: 'reports/baseline-suggestions.json',
         kind: REPORT_KINDS.baselineSuggestions,
         status: 'ok',
         ok: true,
@@ -1110,8 +1112,8 @@ test('isValidReportArtifactsValidationPayload rejects duplicate result paths', (
         recommendedCommand: null,
       },
       {
-        path: 'reports/a.json',
-        kind: REPORT_KINDS.scenarioTuningDashboard,
+        path: 'reports/baseline-suggestions.json',
+        kind: REPORT_KINDS.baselineSuggestions,
         status: 'ok',
         ok: true,
         message: null,
@@ -1131,16 +1133,16 @@ test('isValidReportArtifactsValidationPayload rejects unsorted result paths', ()
     recommendedActions: [],
     results: [
       {
-        path: 'reports/z.json',
-        kind: REPORT_KINDS.baselineSuggestions,
+        path: 'reports/scenario-tuning-dashboard.json',
+        kind: REPORT_KINDS.scenarioTuningDashboard,
         status: 'ok',
         ok: true,
         message: null,
         recommendedCommand: null,
       },
       {
-        path: 'reports/a.json',
-        kind: REPORT_KINDS.scenarioTuningDashboard,
+        path: 'reports/baseline-suggestions.json',
+        kind: REPORT_KINDS.baselineSuggestions,
         status: 'ok',
         ok: true,
         message: null,

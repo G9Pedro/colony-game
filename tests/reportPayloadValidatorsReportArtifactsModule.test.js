@@ -64,6 +64,18 @@ test('report artifacts module validator rejects known non-target report kind row
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
+test('report artifacts module validator rejects known path with mismatched known kind', () => {
+  const payload = buildReportArtifactsPayload();
+  payload.results[1].kind = REPORT_KINDS.scenarioTuningDashboard;
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
+});
+
+test('report artifacts module validator rejects unknown path with known target kind', () => {
+  const payload = buildReportArtifactsPayload();
+  payload.results[1].path = 'reports/non-target.json';
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
+});
+
 test('report artifacts module validator rejects unsorted result rows', () => {
   const payload = buildReportArtifactsPayload();
   payload.results = [...payload.results].reverse();

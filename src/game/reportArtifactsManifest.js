@@ -12,6 +12,9 @@ export const REPORT_ARTIFACT_TARGETS = Object.freeze([
 ]);
 
 const REPORT_ARTIFACT_TARGET_KIND_SET = new Set(REPORT_ARTIFACT_TARGETS.map((target) => target.kind));
+const REPORT_ARTIFACT_TARGET_KIND_BY_PATH = new Map(
+  REPORT_ARTIFACT_TARGETS.map((target) => [target.path, target.kind]),
+);
 
 const REPORT_ARTIFACT_REGEN_COMMANDS = Object.freeze({
   'reports/scenario-tuning-validation.json': 'npm run simulate:validate:tuning',
@@ -23,6 +26,10 @@ const REPORT_ARTIFACT_REGEN_COMMANDS = Object.freeze({
 
 export function isKnownReportArtifactTargetKind(kind) {
   return REPORT_ARTIFACT_TARGET_KIND_SET.has(kind);
+}
+
+export function isValidReportArtifactTarget(path, kind) {
+  return REPORT_ARTIFACT_TARGET_KIND_BY_PATH.get(path) === kind;
 }
 
 export function getReportArtifactRegenerationCommand(path) {

@@ -11,7 +11,7 @@ import {
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
 } from './reportArtifactValidationPayloadHelpers.js';
-import { isKnownReportArtifactTargetKind } from './reportArtifactsManifest.js';
+import { isValidReportArtifactTarget } from './reportArtifactsManifest.js';
 
 export function isValidReportArtifactsValidationPayload(payload) {
   const results = Array.isArray(payload?.results) ? payload.results : [];
@@ -37,7 +37,9 @@ export function isValidReportArtifactsValidationPayload(payload) {
   if (!validResults) {
     return false;
   }
-  const hasKnownResultKinds = results.every((result) => isKnownReportArtifactTargetKind(result.kind));
+  const hasValidResultTargets = results.every((result) =>
+    isValidReportArtifactTarget(result.path, result.kind),
+  );
   const hasUniqueResultPaths = hasUniqueReportArtifactResultPaths(results);
   const hasSortedResultPaths = areReportArtifactResultsSortedByPath(results);
 
@@ -60,7 +62,7 @@ export function isValidReportArtifactsValidationPayload(payload) {
       reportedStatusTotal === payload.totalChecked &&
       computedSummary.statusTotal === payload.totalChecked &&
       statusCountsMatch &&
-      hasKnownResultKinds &&
+      hasValidResultTargets &&
       hasUniqueResultPaths &&
       hasSortedResultPaths &&
       recommendedActionsMatch,
