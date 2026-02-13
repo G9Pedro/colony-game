@@ -59,3 +59,23 @@ test('current objective list shrinks as objectives complete', () => {
   assert.ok(!after.includes('research-masonry'));
   assert.ok(after.length < before.length);
 });
+
+test('objective completion grants configured rewards', () => {
+  const state = createInitialState({ seed: 'objective-seed' });
+  state.research.completed.push('masonry');
+  state.resources.wood = 0;
+  state.resources.stone = 0;
+  state.colonists.forEach((colonist) => {
+    colonist.needs.morale = 50;
+  });
+
+  runObjectiveSystem({
+    state,
+    emit: () => {},
+  });
+
+  assert.ok(state.objectives.completed.includes('research-masonry'));
+  assert.ok(state.resources.wood >= 25);
+  assert.ok(state.resources.stone >= 15);
+  assert.ok(state.colonists.every((colonist) => colonist.needs.morale >= 51));
+});
