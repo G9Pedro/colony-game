@@ -1,11 +1,11 @@
 import {
   assertOutputHasDiagnostic,
-  assertOutputHasReadFailureDiagnosticContract,
 } from './reportDiagnosticsTestUtils.js';
 import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './reportDiagnosticsScriptTestUtils.js';
+import { assertNodeDiagnosticsScriptReadFailureScenario } from './reportReadFailureMatrixTestUtils.js';
 import { VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH } from './validateReportDiagnosticsSmokeTestUtils.js';
 
 export function runValidateReportDiagnosticsSmoke(envOverrides = {}) {
@@ -23,25 +23,33 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
   expectedStatus = 'error',
   expectedErrorCode = undefined,
 }) {
+  if (expectedPath !== undefined) {
+    const readFailureScenarioByDiagnosticCode = {
+      'artifact-missing': 'missing',
+      'artifact-invalid-json': 'invalidJson',
+      'artifact-invalid-payload': 'invalidPayload',
+      'artifact-read-error': 'unreadable',
+    };
+    const readFailureScenario = readFailureScenarioByDiagnosticCode[diagnosticCode] ?? 'unreadable';
+    await assertNodeDiagnosticsScriptReadFailureScenario({
+      scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
+      env: envOverrides,
+      scenario: readFailureScenario,
+      expectedScript: 'diagnostics:smoke:validate',
+      expectedRunId,
+      expectedLevel,
+      expectedPath,
+      expectedStatus,
+      expectedErrorCode,
+      expectedCodes: [diagnosticCode],
+    });
+    return;
+  }
+
   await assertNodeDiagnosticsScriptRejects({
     scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
     env: envOverrides,
     assertion: (error) => {
-      if (expectedPath !== undefined) {
-        assertOutputHasReadFailureDiagnosticContract({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          expectedCodes: [diagnosticCode],
-          diagnosticCode,
-          expectedScript: 'diagnostics:smoke:validate',
-          expectedRunId,
-          expectedLevel,
-          expectedPath,
-          expectedStatus,
-          expectedErrorCode,
-        });
-        return true;
-      }
       assertOutputHasDiagnostic({
         stdout: error.stdout,
         stderr: error.stderr,

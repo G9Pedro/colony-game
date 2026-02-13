@@ -7,13 +7,12 @@ import {
   REPORT_DIAGNOSTIC_CODES,
 } from '../scripts/reportDiagnostics.js';
 import {
-  assertOutputHasReadFailureDiagnosticContract,
   assertOutputDiagnosticsContract,
 } from './helpers/reportDiagnosticsTestUtils.js';
 import {
-  assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
+import { assertNodeDiagnosticsScriptReadFailureScenario } from './helpers/reportReadFailureMatrixTestUtils.js';
 import {
   buildMissingArtifactPath,
   createTextArtifact,
@@ -68,27 +67,17 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
   const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
 
   try {
-    await assertNodeDiagnosticsScriptRejects({
+    await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
+      scenario: 'missing',
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: missingOutputPath,
       },
-      assertion: (error) => {
-        assertOutputHasReadFailureDiagnosticContract({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactMissing],
-          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
-          expectedScript: 'diagnostics:smoke:validate',
-          expectedRunId: RUN_ID,
-          expectedPath: missingOutputPath,
-          expectedStatus: 'missing',
-          expectedErrorCode: 'ENOENT',
-        });
-        return true;
-      },
+      expectedScript: 'diagnostics:smoke:validate',
+      expectedRunId: RUN_ID,
+      expectedPath: missingOutputPath,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -106,27 +95,17 @@ test('diagnostics smoke validation emits read-error diagnostic for unreadable su
       relativePath: 'report-diagnostics-smoke.unreadable.json',
     });
 
-    await assertNodeDiagnosticsScriptRejects({
+    await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
+      scenario: 'unreadable',
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: unreadableSummaryPath,
       },
-      assertion: (error) => {
-        assertOutputHasReadFailureDiagnosticContract({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-          expectedScript: 'diagnostics:smoke:validate',
-          expectedRunId: RUN_ID,
-          expectedPath: unreadableSummaryPath,
-          expectedStatus: 'error',
-          expectedErrorCode: 'EISDIR',
-        });
-        return true;
-      },
+      expectedScript: 'diagnostics:smoke:validate',
+      expectedRunId: RUN_ID,
+      expectedPath: unreadableSummaryPath,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -147,28 +126,20 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
       markdownFilename: 'unused-report-diagnostics-smoke.md',
     });
 
-    await assertNodeDiagnosticsScriptRejects({
+    await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
+      scenario: 'missing',
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
         REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
       },
-      assertion: (error) => {
-        const markdownDiagnostic = assertOutputHasReadFailureDiagnosticContract({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactMissing],
-          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
-          expectedScript: 'diagnostics:smoke:validate',
-          expectedRunId: RUN_ID,
-          expectedPath: markdownOutputPath,
-          expectedStatus: 'missing',
-          expectedErrorCode: 'ENOENT',
-        });
+      expectedScript: 'diagnostics:smoke:validate',
+      expectedRunId: RUN_ID,
+      expectedPath: markdownOutputPath,
+      assertDiagnostic: ({ diagnostic: markdownDiagnostic }) => {
         assert.equal(markdownDiagnostic.context?.expectedSummaryPath, outputPath);
-        return true;
       },
     });
   } finally {
@@ -196,28 +167,20 @@ test('diagnostics smoke validation emits invalid-payload diagnostic for invalid 
       contents: '# invalid markdown payload',
     });
 
-    await assertNodeDiagnosticsScriptRejects({
+    await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
+      scenario: 'invalidPayload',
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
         REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
       },
-      assertion: (error) => {
-        const markdownDiagnostic = assertOutputHasReadFailureDiagnosticContract({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload],
-          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
-          expectedScript: 'diagnostics:smoke:validate',
-          expectedRunId: RUN_ID,
-          expectedPath: markdownOutputPath,
-          expectedStatus: 'invalid',
-          expectedErrorCode: null,
-        });
+      expectedScript: 'diagnostics:smoke:validate',
+      expectedRunId: RUN_ID,
+      expectedPath: markdownOutputPath,
+      assertDiagnostic: ({ diagnostic: markdownDiagnostic }) => {
         assert.equal(markdownDiagnostic.context?.expectedSummaryPath, outputPath);
-        return true;
       },
     });
   } finally {

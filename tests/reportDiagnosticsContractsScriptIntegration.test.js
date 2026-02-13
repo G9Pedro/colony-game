@@ -18,6 +18,7 @@ import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
+import { assertNodeDiagnosticsScriptReadFailureScenario } from './helpers/reportReadFailureMatrixTestUtils.js';
 import {
   createJsonArtifact,
   createInvalidJsonArtifact,
@@ -177,27 +178,17 @@ test('validate-report-artifacts emits read-error diagnostics for unreadable repo
       relativePath: 'reports/scenario-tuning-dashboard.json',
     });
 
-    await assertNodeDiagnosticsScriptRejects({
+    await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
+      scenario: 'unreadable',
       cwd: tempDirectory,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
-      assertion: (error) => {
-        assertOutputHasReadFailureDiagnosticContract({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-          expectedScript: 'reports:validate',
-          expectedRunId: RUN_ID,
-          expectedPath: 'reports/scenario-tuning-dashboard.json',
-          expectedStatus: 'error',
-          expectedErrorCode: 'EISDIR',
-        });
-        return true;
-      },
+      expectedScript: 'reports:validate',
+      expectedRunId: RUN_ID,
+      expectedPath: 'reports/scenario-tuning-dashboard.json',
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -288,27 +279,17 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
       relativePath: 'baseline-suggestions.unreadable.json',
     });
 
-    await assertNodeDiagnosticsScriptRejects({
+    await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
+      scenario: 'unreadable',
       env: {
         SIM_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
-      assertion: (error) => {
-        assertOutputHasReadFailureDiagnosticContract({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-          expectedScript: 'simulate:baseline:check',
-          expectedRunId: RUN_ID,
-          expectedPath: unreadableCachePath,
-          expectedStatus: 'error',
-          expectedErrorCode: 'EISDIR',
-        });
-        return true;
-      },
+      expectedScript: 'simulate:baseline:check',
+      expectedRunId: RUN_ID,
+      expectedPath: unreadableCachePath,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -356,27 +337,17 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
       relativePath: 'scenario-tuning-baseline-suggestions.unreadable.json',
     });
 
-    await assertNodeDiagnosticsScriptRejects({
+    await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
+      scenario: 'unreadable',
       env: {
         SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
-      assertion: (error) => {
-        assertOutputHasReadFailureDiagnosticContract({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-          expectedScript: 'simulate:check:tuning-baseline',
-          expectedRunId: RUN_ID,
-          expectedPath: unreadableCachePath,
-          expectedStatus: 'error',
-          expectedErrorCode: 'EISDIR',
-        });
-        return true;
-      },
+      expectedScript: 'simulate:check:tuning-baseline',
+      expectedRunId: RUN_ID,
+      expectedPath: unreadableCachePath,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
