@@ -28,6 +28,20 @@ You build structures, manage colonists and resources, research technologies, and
 - **3D rendering with Three.js**, plus an automatic 2D fallback when WebGL is unavailable.
 - **Responsive UI** that supports both desktop and touch interactions.
 
+## Recent Pipeline Improvements
+
+- Added scenario tuning trend reporting with dual comparison sources:
+  - baseline dashboard artifact (when present),
+  - committed baseline signatures/intensity maps (fallback).
+- Added a baseline capture command for dashboard-to-dashboard trend workflows:
+  - `npm run simulate:capture:tuning-dashboard-baseline`
+- Expanded scenario tuning baseline suggestions to include:
+  - signature drift snippets,
+  - total tuning intensity drift snippets.
+- Added optional strict intensity enforcement:
+  - local: `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline`
+  - CI opt-in via repository variable: `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1`
+
 ## Tech Stack
 
 - Vanilla HTML/CSS/JavaScript (ES modules)
