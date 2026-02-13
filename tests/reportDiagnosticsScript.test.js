@@ -185,6 +185,17 @@ test('isValidReportDiagnosticPayload validates parsed payload shape', () => {
 });
 
 test('parseReportDiagnosticsFromText extracts and validates diagnostic lines', () => {
+  const reorderedDiagnosticLine = JSON.stringify({
+    level: 'warn',
+    code: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
+    message: 'drift',
+    context: { changed: 3 },
+    type: REPORT_DIAGNOSTIC_TYPE,
+    schemaVersion: REPORT_DIAGNOSTICS_SCHEMA_VERSION,
+    generatedAt: '2026-02-13T00:00:00.000Z',
+    script: null,
+    runId: null,
+  });
   const text = [
     'normal log line',
     JSON.stringify(buildReportDiagnostic({
@@ -193,13 +204,16 @@ test('parseReportDiagnosticsFromText extracts and validates diagnostic lines', (
       message: 'drift',
       context: { changed: 2 },
     })),
+    reorderedDiagnosticLine,
     '{"type":"report-diagnostic","level":"info","code":"unknown","message":"bad","context":{}}',
     '{"type":"report-diagnostic","level":"warn","code":"artifact-read-error","message":"ok","context":[]}',
+    '{"level":"info","code":"artifact-read-error","message":"not diagnostic type","context":null}',
   ].join('\n');
 
   const diagnostics = parseReportDiagnosticsFromText(text);
-  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics.length, 2);
   assert.equal(diagnostics[0].code, REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift);
+  assert.equal(diagnostics[1].code, REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift);
 });
 
 test('createScriptDiagnosticEmitter enforces script and injects it in diagnostics', () => {

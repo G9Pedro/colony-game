@@ -204,10 +204,13 @@ export function parseReportDiagnosticsFromText(text) {
   return text
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line.startsWith('{"type":"report-diagnostic"'))
+    .filter((line) => line.startsWith('{'))
     .map((line) => {
       try {
         const payload = JSON.parse(line);
+        if (payload?.type !== REPORT_DIAGNOSTIC_TYPE) {
+          return null;
+        }
         return isValidReportDiagnosticPayload(payload) ? payload : null;
       } catch {
         return null;
