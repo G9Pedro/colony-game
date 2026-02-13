@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createInitialState } from '../src/game/state.js';
-import { deserializeState, isLikelyValidState, serializeState } from '../src/persistence/saveLoad.js';
+import { deserializeState, isLikelyValidState, serializeState, validateSaveState } from '../src/persistence/saveLoad.js';
 import { SAVE_SCHEMA_VERSION } from '../src/persistence/migrations.js';
 
 test('state can be serialized and deserialized', () => {
@@ -21,6 +21,13 @@ test('state can be serialized and deserialized', () => {
 test('isLikelyValidState rejects malformed payload', () => {
   assert.equal(isLikelyValidState(null), false);
   assert.equal(isLikelyValidState({}), false);
+});
+
+test('validateSaveState returns actionable validation errors', () => {
+  const validation = validateSaveState({ tick: 2 });
+  assert.equal(validation.ok, false);
+  assert.ok(validation.errors.includes('Missing or invalid timeSeconds.'));
+  assert.ok(validation.errors.includes('Missing resources map.'));
 });
 
 test('deserializeState migrates legacy save payload fields', () => {

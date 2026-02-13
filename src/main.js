@@ -4,7 +4,7 @@ import { RESOURCE_DEFINITIONS } from './content/resources.js';
 import { RESEARCH_DEFINITIONS } from './content/research.js';
 import { GameEngine } from './game/gameEngine.js';
 import { isBuildingUnlocked } from './game/selectors.js';
-import { loadGameState, saveGameState, isLikelyValidState, clearSavedGame } from './persistence/saveLoad.js';
+import { loadGameState, saveGameState, validateSaveState, clearSavedGame } from './persistence/saveLoad.js';
 import { downloadStateSnapshot, readStateFromFile } from './persistence/fileTransfer.js';
 import { FallbackRenderer } from './render/fallbackRenderer.js';
 import { SceneRenderer } from './render/sceneRenderer.js';
@@ -67,8 +67,13 @@ ui.setPersistenceCallbacks({
   },
   onLoad: () => {
     const loaded = loadGameState();
-    if (!loaded || !isLikelyValidState(loaded)) {
-      notify({ kind: 'error', message: 'No valid save found.' });
+    if (!loaded) {
+      notify({ kind: 'error', message: 'No save found.' });
+      return;
+    }
+    const validation = validateSaveState(loaded);
+    if (!validation.ok) {
+      notify({ kind: 'error', message: `Save invalid: ${validation.errors[0]}` });
       return;
     }
     engine.loadState(loaded);
@@ -81,8 +86,9 @@ ui.setPersistenceCallbacks({
   onImport: async (file) => {
     try {
       const loaded = await readStateFromFile(file);
-      if (!isLikelyValidState(loaded)) {
-        notify({ kind: 'error', message: 'Imported file is invalid.' });
+      const validation = validateSaveState(loaded);
+      if (!validation.ok) {
+        notify({ kind: 'error', message: `Imported save invalid: ${validation.errors[0]}` });
         return;
       }
       engine.loadState(loaded);

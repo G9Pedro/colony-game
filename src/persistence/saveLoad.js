@@ -34,14 +34,42 @@ export function clearSavedGame() {
 }
 
 export function isLikelyValidState(value) {
-  return Boolean(
-    value &&
-      typeof value === 'object' &&
-      typeof value.tick === 'number' &&
-      typeof value.timeSeconds === 'number' &&
-      value.resources &&
-      value.colonists &&
-      value.buildings &&
-      value.research,
-  );
+  return validateSaveState(value).ok;
+}
+
+export function validateSaveState(value) {
+  const errors = [];
+  if (!value || typeof value !== 'object') {
+    return { ok: false, errors: ['Save payload must be an object.'] };
+  }
+
+  if (typeof value.tick !== 'number') {
+    errors.push('Missing or invalid tick.');
+  }
+  if (typeof value.timeSeconds !== 'number') {
+    errors.push('Missing or invalid timeSeconds.');
+  }
+  if (!value.resources || typeof value.resources !== 'object') {
+    errors.push('Missing resources map.');
+  }
+  if (!Array.isArray(value.colonists)) {
+    errors.push('Missing colonists array.');
+  }
+  if (!Array.isArray(value.buildings)) {
+    errors.push('Missing buildings array.');
+  }
+  if (!value.research || typeof value.research !== 'object') {
+    errors.push('Missing research state.');
+  }
+  if (value.research && !Array.isArray(value.research.completed)) {
+    errors.push('Research completed list is invalid.');
+  }
+  if (value.rules && typeof value.rules !== 'object') {
+    errors.push('Rules payload must be an object.');
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+  };
 }
