@@ -5,7 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "test": "node --test",
-    "start": "python3 -m http.server 8000",
+    "start": "python -m http.server 8000",
     "simulate": "node scripts/simulate.js",
     "simulate:assert": "node scripts/simulate-assert.js",
     "simulate:report": "node scripts/simulate-report.js",

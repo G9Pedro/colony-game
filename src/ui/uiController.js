@@ -1,6 +1,14 @@
 import { BUILDING_CATEGORIES } from '../content/buildings.js';
 import { getAvailableResearch, getAverageMorale, getPopulationCapacity, getStorageCapacity, getUsedStorage, isBuildingUnlocked } from '../game/selectors.js';
 import { formatObjectiveReward, getCurrentObjectiveIds, getObjectiveDefinitions, getObjectiveRewardMultiplier } from '../systems/objectiveSystem.js';
+import {
+  BUILDING_ICON_ASSETS,
+  CATEGORY_ICON_ASSETS,
+  COLONIST_PORTRAITS,
+  RESOURCE_ICON_ASSETS,
+  RESEARCH_ICON_ASSETS,
+  UI_ASSETS,
+} from '../assets/manifest.js';
 
 function formatCost(cost) {
   return Object.entries(cost)
@@ -13,6 +21,19 @@ function percent(part, whole) {
     return 0;
   }
   return Math.max(0, Math.min(100, (part / whole) * 100));
+}
+
+function titleCase(value) {
+  return value.replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function createImageElement(src, alt, className = 'asset-icon') {
+  const image = document.createElement('img');
+  image.src = src;
+  image.alt = alt;
+  image.className = className;
+  image.loading = 'lazy';
+  return image;
 }
 
 export class UIController {
@@ -45,6 +66,7 @@ export class UIController {
       resetBtn: document.getElementById('reset-btn'),
       hireBtn: document.getElementById('hire-btn'),
       statusLabel: document.getElementById('status-label'),
+      logoImage: document.getElementById('logo-image'),
       dayLabel: document.getElementById('day-label'),
       populationLabel: document.getElementById('population-label'),
       moraleLabel: document.getElementById('morale-label'),
@@ -74,6 +96,7 @@ export class UIController {
       onBalanceProfileChange: () => {},
     };
     this.bindGlobalActions();
+    this.applyBrandingAssets();
   }
 
   bindGlobalActions() {
@@ -120,6 +143,19 @@ export class UIController {
     this.selectedBuildType = buildingType;
   }
 
+  applyBrandingAssets() {
+    if (this.el.logoImage) {
+      this.el.logoImage.src = UI_ASSETS.logo;
+    }
+
+    const faviconLink = document.querySelector('link[rel="icon"]');
+    if (faviconLink) {
+      faviconLink.href = UI_ASSETS.favicon;
+    }
+
+    document.documentElement.style.setProperty('--panel-texture-url', `url("${UI_ASSETS.panelTexture}")`);
+  }
+
   setScenarioOptions(scenarios, currentScenarioId) {
     this.el.scenarioSelect.innerHTML = '';
     scenarios.forEach((scenario) => {
@@ -146,8 +182,14 @@ export class UIController {
     this.el.buildCategories.innerHTML = '';
     for (const category of BUILDING_CATEGORIES) {
       const button = document.createElement('button');
-      button.textContent = category;
-      button.className = category === state.selectedCategory ? 'active' : '';
+      button.className = category === state.selectedCategory ? 'button-with-icon active' : 'button-with-icon';
+      const iconPath = CATEGORY_ICON_ASSETS[category];
+      if (iconPath) {
+        button.appendChild(createImageElement(iconPath, `${category} icon`, 'button-icon'));
+      }
+      const label = document.createElement('span');
+      label.textContent = titleCase(category);
+      button.appendChild(label);
       button.addEventListener('click', () => this.engine.setSelectedCategory(category));
       this.el.buildCategories.appendChild(button);
     }
@@ -169,9 +211,17 @@ export class UIController {
       card.className = 'card';
 
       const button = document.createElement('button');
-      button.textContent = `${definition.name} (${definition.buildTime}s)`;
+      button.className = this.selectedBuildType === definition.id
+        ? 'button-with-icon build-button active'
+        : 'button-with-icon build-button';
+      const iconPath = BUILDING_ICON_ASSETS[definition.id];
+      if (iconPath) {
+        button.appendChild(createImageElement(iconPath, `${definition.name} icon`, 'button-icon'));
+      }
+      const label = document.createElement('span');
+      label.textContent = `${definition.name} (${definition.buildTime}s)`;
+      button.appendChild(label);
       button.disabled = !unlocked;
-      button.className = this.selectedBuildType === definition.id ? 'active' : '';
       button.addEventListener('click', () => {
         this.selectedBuildType = this.selectedBuildType === definition.id ? null : definition.id;
         this.engine.setSelectedBuildingType(this.selectedBuildType);
@@ -196,23 +246,58 @@ export class UIController {
     for (const [resource, definition] of Object.entries(this.resourceDefinitions)) {
       const amount = state.resources[resource] ?? 0;
       const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `<div class="kv"><span>${definition.label}</span><strong>${Math.floor(amount)}</strong></div>`;
+      card.className = 'card resource-card';
+      const row = document.createElement('div');
+      row.className = 'kv';
+
+      const labelGroup = document.createElement('div');
+      labelGroup.className = 'label-with-icon';
+      const iconPath = RESOURCE_ICON_ASSETS[resource];
+      if (iconPath) {
+        labelGroup.appendChild(createImageElement(iconPath, `${definition.label} resource`, 'asset-icon'));
+      }
+      const label = document.createElement('span');
+      label.textContent = definition.label;
+      labelGroup.appendChild(label);
+
+      const value = document.createElement('strong');
+      value.textContent = Math.floor(amount).toString();
+
+      row.append(labelGroup, value);
+      card.appendChild(row);
       this.el.resourceList.appendChild(card);
     }
   }
 
   renderResearch(state) {
+    this.el.researchCurrent.innerHTML = '';
     if (state.research.current) {
       const tech = this.researchDefinitions[state.research.current];
       const progress = percent(state.research.progress, tech.time);
-      this.el.researchCurrent.innerHTML = `
-        <div class="card">
-          <strong>${tech.name}</strong>
-          <div class="progress"><span style="width: ${progress}%"></span></div>
-          <small>${Math.floor(progress)}% complete</small>
-        </div>
-      `;
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const heading = document.createElement('div');
+      heading.className = 'label-with-icon';
+      const iconPath = RESEARCH_ICON_ASSETS[tech.id];
+      if (iconPath) {
+        heading.appendChild(createImageElement(iconPath, `${tech.name} research`, 'asset-icon'));
+      }
+      const title = document.createElement('strong');
+      title.textContent = tech.name;
+      heading.appendChild(title);
+
+      const progressBar = document.createElement('div');
+      progressBar.className = 'progress';
+      const bar = document.createElement('span');
+      bar.style.width = `${progress}%`;
+      progressBar.appendChild(bar);
+
+      const meta = document.createElement('small');
+      meta.textContent = `${Math.floor(progress)}% complete`;
+
+      card.append(heading, progressBar, meta);
+      this.el.researchCurrent.appendChild(card);
     } else {
       this.el.researchCurrent.innerHTML = '<div class="card"><small>No active research</small></div>';
     }
@@ -226,7 +311,14 @@ export class UIController {
       const card = document.createElement('div');
       card.className = 'card';
       const button = document.createElement('button');
-      button.textContent = `Research ${item.name}`;
+      button.classList.add('button-with-icon');
+      const iconPath = RESEARCH_ICON_ASSETS[item.id];
+      if (iconPath) {
+        button.appendChild(createImageElement(iconPath, `${item.name} research`, 'button-icon'));
+      }
+      const label = document.createElement('span');
+      label.textContent = `Research ${item.name}`;
+      button.appendChild(label);
       button.disabled = state.resources.knowledge < item.cost || !!state.research.current;
       button.addEventListener('click', () => {
         const result = this.engine.beginResearch(item.id);
@@ -281,11 +373,26 @@ export class UIController {
       const progress = percent(item.progress, item.buildTime);
       const card = document.createElement('div');
       card.className = 'card';
-      card.innerHTML = `
-        <strong>${building.name}</strong>
-        <div class="progress"><span style="width: ${progress}%"></span></div>
-        <small>${Math.floor(progress)}% complete</small>
-      `;
+      const heading = document.createElement('div');
+      heading.className = 'label-with-icon';
+      const iconPath = BUILDING_ICON_ASSETS[item.type];
+      if (iconPath) {
+        heading.appendChild(createImageElement(iconPath, `${building.name} construction`, 'asset-icon'));
+      }
+      const title = document.createElement('strong');
+      title.textContent = building.name;
+      heading.appendChild(title);
+
+      const progressBar = document.createElement('div');
+      progressBar.className = 'progress';
+      const bar = document.createElement('span');
+      bar.style.width = `${progress}%`;
+      progressBar.appendChild(bar);
+
+      const meta = document.createElement('small');
+      meta.textContent = `${Math.floor(progress)}% complete`;
+
+      card.append(heading, progressBar, meta);
       this.el.constructionList.appendChild(card);
     }
   }
@@ -295,12 +402,24 @@ export class UIController {
     const aliveColonists = state.colonists.filter((colonist) => colonist.alive);
     for (const colonist of aliveColonists.slice(0, 14)) {
       const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <strong>${colonist.name}</strong>
-        <div class="kv"><span>${colonist.job}</span><small>${colonist.task}</small></div>
-        <small>H ${Math.floor(colonist.needs.health)} · F ${Math.floor(colonist.needs.hunger)} · R ${Math.floor(colonist.needs.rest)} · M ${Math.floor(colonist.needs.morale)}</small>
-      `;
+      card.className = 'card colonist-card';
+
+      const profileRow = document.createElement('div');
+      profileRow.className = 'profile-row';
+      const portraitPath = colonist.job === 'builder' ? COLONIST_PORTRAITS.builder : COLONIST_PORTRAITS.laborer;
+      profileRow.appendChild(createImageElement(portraitPath, `${colonist.name} portrait`, 'colonist-avatar'));
+      const nameWrap = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = colonist.name;
+      const task = document.createElement('small');
+      task.textContent = `${titleCase(colonist.job)} · ${colonist.task}`;
+      nameWrap.append(name, task);
+      profileRow.appendChild(nameWrap);
+
+      const needs = document.createElement('small');
+      needs.textContent = `H ${Math.floor(colonist.needs.health)} · F ${Math.floor(colonist.needs.hunger)} · R ${Math.floor(colonist.needs.rest)} · M ${Math.floor(colonist.needs.morale)}`;
+
+      card.append(profileRow, needs);
       this.el.colonistList.appendChild(card);
     }
   }
