@@ -5,6 +5,7 @@ import {
   getReportArtifactRegenerationCommand,
   hasExactReportArtifactTargets,
   isKnownReportArtifactTargetKind,
+  isKnownReportArtifactTargetPath,
   isValidReportArtifactTarget,
   REPORT_ARTIFACT_TARGETS,
   REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH,
@@ -30,6 +31,11 @@ test('report artifact manifest exposes expected target rows', () => {
 test('isKnownReportArtifactTargetKind allows only target kinds', () => {
   assert.equal(isKnownReportArtifactTargetKind(REPORT_KINDS.scenarioTuningTrend), true);
   assert.equal(isKnownReportArtifactTargetKind(REPORT_KINDS.reportArtifactsValidation), false);
+});
+
+test('isKnownReportArtifactTargetPath allows only target paths', () => {
+  assert.equal(isKnownReportArtifactTargetPath('reports/scenario-tuning-trend.json'), true);
+  assert.equal(isKnownReportArtifactTargetPath('reports/unknown.json'), false);
 });
 
 test('isValidReportArtifactTarget validates path-kind pairs', () => {

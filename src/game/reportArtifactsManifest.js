@@ -33,6 +33,7 @@ export const REPORT_ARTIFACT_TARGETS = Object.freeze(
 );
 
 const REPORT_ARTIFACT_TARGET_KIND_SET = new Set(REPORT_ARTIFACT_TARGETS.map((target) => target.kind));
+const REPORT_ARTIFACT_TARGET_PATH_SET = new Set(REPORT_ARTIFACT_TARGETS.map((target) => target.path));
 const REPORT_ARTIFACT_TARGET_DEFINITION_BY_PATH = new Map(
   REPORT_ARTIFACT_TARGET_DEFINITIONS.map((target) => [target.path, Object.freeze({ ...target })]),
 );
@@ -42,6 +43,10 @@ export const REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH = Object.freeze(
 
 export function isKnownReportArtifactTargetKind(kind) {
   return REPORT_ARTIFACT_TARGET_KIND_SET.has(kind);
+}
+
+export function isKnownReportArtifactTargetPath(path) {
+  return REPORT_ARTIFACT_TARGET_PATH_SET.has(path);
 }
 
 export function isValidReportArtifactTarget(path, kind) {

@@ -6,16 +6,13 @@ import {
 } from '../../src/game/reportArtifactValidationPayloadHelpers.js';
 import {
   getReportArtifactRegenerationCommand,
+  isKnownReportArtifactTargetPath,
   REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH,
 } from '../../src/game/reportArtifactsManifest.js';
 
-const REPORT_ARTIFACT_TARGET_PATHS = new Set(
-  REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.map((target) => target.path),
-);
-
 function assertKnownReportArtifactOverridePaths(overridesByPath) {
   for (const overridePath of Object.keys(overridesByPath ?? {})) {
-    if (!REPORT_ARTIFACT_TARGET_PATHS.has(overridePath)) {
+    if (!isKnownReportArtifactTargetPath(overridePath)) {
       throw new Error(`Unknown report artifact override path "${overridePath}".`);
     }
   }
