@@ -4,6 +4,7 @@ import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
+import { buildPathTileSet, buildStructureTileSet, buildTerrainSignature, getTerrainBoundsFromCorners } from './terrainUtils.js';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -519,75 +520,7 @@ export class IsometricRenderer {
       this.camera.screenToWorld(0, this.camera.viewportHeight),
       this.camera.screenToWorld(this.camera.viewportWidth, this.camera.viewportHeight),
     ];
-    return {
-      minX: Math.floor(Math.min(...corners.map((point) => point.x))) - 3,
-      maxX: Math.ceil(Math.max(...corners.map((point) => point.x))) + 3,
-      minZ: Math.floor(Math.min(...corners.map((point) => point.z))) - 3,
-      maxZ: Math.ceil(Math.max(...corners.map((point) => point.z))) + 3,
-    };
-  }
-
-  buildTerrainSignature(state) {
-    let hash = 0;
-    const structureCount = state.buildings.length + state.constructionQueue.length;
-    const structures = [
-      ...state.buildings.map((building) => ({ x: building.x, z: building.z, type: building.type })),
-      ...state.constructionQueue.map((item) => ({ x: item.x, z: item.z, type: item.type })),
-    ];
-    for (const structure of structures) {
-      const x = Math.round(structure.x) & 0xffff;
-      const z = Math.round(structure.z) & 0xffff;
-      hash = ((hash * 33) ^ x) >>> 0;
-      hash = ((hash * 33) ^ z) >>> 0;
-      for (let idx = 0; idx < structure.type.length; idx += 1) {
-        hash = ((hash * 33) ^ structure.type.charCodeAt(idx)) >>> 0;
-      }
-    }
-    return `${structureCount}:${hash}`;
-  }
-
-  buildPathTileSet(state) {
-    const structures = [
-      ...state.buildings.map((building) => ({ x: Math.round(building.x), z: Math.round(building.z) })),
-      ...state.constructionQueue.map((item) => ({ x: Math.round(item.x), z: Math.round(item.z) })),
-    ];
-    const pathTiles = new Set();
-    if (structures.length < 2) {
-      return pathTiles;
-    }
-
-    for (let index = 0; index < structures.length; index += 1) {
-      const source = structures[index];
-      let nearest = null;
-      let nearestDistance = Number.POSITIVE_INFINITY;
-      for (let otherIndex = 0; otherIndex < structures.length; otherIndex += 1) {
-        if (index === otherIndex) {
-          continue;
-        }
-        const target = structures[otherIndex];
-        const distance = Math.abs(target.x - source.x) + Math.abs(target.z - source.z);
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          nearest = target;
-        }
-      }
-      if (!nearest) {
-        continue;
-      }
-
-      let x = source.x;
-      let z = source.z;
-      pathTiles.add(`${x}:${z}`);
-      while (x !== nearest.x) {
-        x += x < nearest.x ? 1 : -1;
-        pathTiles.add(`${x}:${z}`);
-      }
-      while (z !== nearest.z) {
-        z += z < nearest.z ? 1 : -1;
-        pathTiles.add(`${x}:${z}`);
-      }
-    }
-    return pathTiles;
+    return getTerrainBoundsFromCorners(corners, 3);
   }
 
   shouldRefreshTerrainLayer(state, bounds) {
@@ -613,7 +546,7 @@ export class IsometricRenderer {
     if (centerDelta > 0.45 || zoomDelta > 0.04 || boundsChanged) {
       return true;
     }
-    const buildingSignature = this.buildTerrainSignature(state);
+    const buildingSignature = buildTerrainSignature(state);
     return buildingSignature !== this.terrainLayerCache.buildingSignature;
   }
 
@@ -621,14 +554,8 @@ export class IsometricRenderer {
     const { minX, maxX, minZ, maxZ } = bounds;
     this.terrainLayerCtx.clearRect(0, 0, this.camera.viewportWidth, this.camera.viewportHeight);
 
-    const buildingTileSet = new Set();
-    state.buildings.forEach((building) => {
-      buildingTileSet.add(`${Math.round(building.x)}:${Math.round(building.z)}`);
-    });
-    state.constructionQueue.forEach((item) => {
-      buildingTileSet.add(`${Math.round(item.x)}:${Math.round(item.z)}`);
-    });
-    const pathTileSet = this.buildPathTileSet(state);
+    const buildingTileSet = buildStructureTileSet(state);
+    const pathTileSet = buildPathTileSet(state);
 
     for (let z = minZ; z <= maxZ; z += 1) {
       for (let x = minX; x <= maxX; x += 1) {
@@ -656,7 +583,7 @@ export class IsometricRenderer {
       maxX,
       minZ,
       maxZ,
-      buildingSignature: this.buildTerrainSignature(state),
+      buildingSignature: buildTerrainSignature(state),
       width: this.camera.viewportWidth,
       height: this.camera.viewportHeight,
       dpr: this.devicePixelRatio,
