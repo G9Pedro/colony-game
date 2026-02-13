@@ -38,6 +38,7 @@ test('deserializeState migrates legacy save payload fields', () => {
     colonists: [],
     buildings: [],
     research: { completed: [], current: null, progress: 0 },
+    runSummaryHistory: [{ outcome: 'lost', scenarioId: 'frontier' }],
     rules: { basePopulationCap: 6, baseStorageCapacity: 320 },
   };
 
@@ -47,6 +48,7 @@ test('deserializeState migrates legacy save payload fields', () => {
   assert.equal(typeof migrated.rngState, 'number');
   assert.equal(typeof migrated.metrics.peakPopulation, 'number');
   assert.equal(Array.isArray(migrated.runSummaryHistory), true);
+  assert.equal(migrated.runSummaryHistory[0].balanceProfileId, 'standard');
   assert.equal(Array.isArray(migrated.debug.invariantViolations), true);
   assert.equal(migrated.saveMeta.schemaVersion, SAVE_SCHEMA_VERSION);
 });

@@ -13,7 +13,7 @@ You build structures, manage colonists and resources, research technologies, and
 - **Objective tracker** with milestone rewards and progression guidance.
 - Objective cards show explicit reward details before completion.
 - Objective rewards automatically scale with scenario difficulty.
-- **Run analytics**: track peak population, completions, deaths, and run outcomes.
+- **Run analytics**: track peak population, completions, deaths, run outcomes, and balance profile context.
 - **Runtime state invariants** to detect and pause on simulation corruption.
 - Invariant violations are logged in run stats for debugging and postmortems.
 - **Scenario presets**: Frontier, Prosperous, and Harsh start conditions.

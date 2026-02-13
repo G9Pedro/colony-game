@@ -4,6 +4,7 @@ function finalizeRunSummary(state, outcome) {
   const summary = {
     outcome,
     scenarioId: state.scenarioId,
+    balanceProfileId: state.balanceProfileId ?? 'standard',
     seed: state.rngSeed,
     day: state.day,
     alivePopulation: state.colonists.filter((colonist) => colonist.alive).length,

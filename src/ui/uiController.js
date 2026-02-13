@@ -338,7 +338,7 @@ export class UIController {
       card.className = 'card';
       card.innerHTML = `
         <div class="kv"><strong>${run.outcome === 'won' ? 'Victory' : 'Defeat'}</strong><small>Day ${run.day}</small></div>
-        <small>${run.scenarioId} · peak ${run.peakPopulation} pop · ${run.buildingsConstructed} builds</small>
+        <small>${run.scenarioId}/${run.balanceProfileId ?? 'standard'} · peak ${run.peakPopulation} pop · ${run.buildingsConstructed} builds</small>
       `;
       this.el.runHistory.appendChild(card);
     });

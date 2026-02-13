@@ -61,8 +61,21 @@ export function migrateSaveState(inputState) {
   if (!Array.isArray(state.runSummaryHistory)) {
     state.runSummaryHistory = [];
   }
+  state.runSummaryHistory = state.runSummaryHistory.map((summary) => {
+    if (!summary || typeof summary !== 'object') {
+      return summary;
+    }
+    return {
+      balanceProfileId: state.balanceProfileId ?? 'standard',
+      ...summary,
+      balanceProfileId: summary.balanceProfileId ?? state.balanceProfileId ?? 'standard',
+    };
+  });
   if (state.lastRunSummary && typeof state.lastRunSummary !== 'object') {
     state.lastRunSummary = null;
+  }
+  if (state.lastRunSummary && !state.lastRunSummary.balanceProfileId) {
+    state.lastRunSummary.balanceProfileId = state.balanceProfileId ?? 'standard';
   }
   if (!state.debug || typeof state.debug !== 'object') {
     state.debug = {};

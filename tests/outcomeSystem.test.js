@@ -21,6 +21,7 @@ test('outcome system records run summary on total colony loss', () => {
   assert.equal(state.status, 'lost');
   assert.equal(state.runSummaryHistory.length, 1);
   assert.equal(state.runSummaryHistory[0].outcome, 'lost');
+  assert.equal(state.runSummaryHistory[0].balanceProfileId, 'standard');
   assert.ok(gameOverMessage.includes('colony has fallen'));
 });
 
