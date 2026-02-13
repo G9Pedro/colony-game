@@ -65,3 +65,12 @@ jobs:
         with:
           name: simulation-balance-report
           path: reports/simulation-balance.json
+
+      - name: Generate baseline suggestion report
+        run: npm run simulate:baseline:suggest
+
+      - name: Upload baseline suggestion artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-suggestion-report
+          path: reports/baseline-suggestions.json

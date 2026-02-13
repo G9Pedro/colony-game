@@ -130,6 +130,7 @@ CI now runs:
 - `npm run simulate:drift` (uploaded as artifact)
 - `npm run simulate:snapshot` (uploaded as artifact, enforced)
 - `npm run simulate:balance` (uploaded as artifact)
+- `npm run simulate:baseline:suggest` (uploaded as artifact)
 
 One-command local verification:
 
