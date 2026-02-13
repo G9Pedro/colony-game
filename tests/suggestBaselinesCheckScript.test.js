@@ -8,9 +8,7 @@ import { promisify } from 'node:util';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { buildBaselineSuggestionPayload } from '../scripts/reportDiagnosticsFixtures.js';
 import {
-  assertReadFailureDiagnosticContext,
-  collectReportDiagnostics,
-  findDiagnosticByCode,
+  assertOutputHasReadFailureDiagnostic,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
@@ -92,14 +90,11 @@ test('suggest-baselines-check emits read-error diagnostic for unreadable cache p
       (error) => {
         assert.equal(error.code, 1);
         assert.ok(error.stderr.includes('Unable to read baseline suggestion cache payload'));
-        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
-        const readErrorDiagnostic = findDiagnosticByCode(
-          diagnostics,
-          REPORT_DIAGNOSTIC_CODES.artifactReadError,
-        );
-        assert.equal(readErrorDiagnostic.script, 'simulate:baseline:check');
-        assertReadFailureDiagnosticContext({
-          diagnostic: readErrorDiagnostic,
+        assertOutputHasReadFailureDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+          expectedScript: 'simulate:baseline:check',
           expectedPath: tempDirectory,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',

@@ -8,9 +8,7 @@ import { promisify } from 'node:util';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { buildScenarioTuningIntensityOnlyDriftPayload } from '../scripts/reportDiagnosticsFixtures.js';
 import {
-  assertReadFailureDiagnosticContext,
-  collectReportDiagnostics,
-  findDiagnosticByCode,
+  assertOutputHasReadFailureDiagnostic,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
@@ -92,14 +90,11 @@ test('check-scenario-tuning-baseline emits read-error diagnostic for unreadable 
       (error) => {
         assert.equal(error.code, 1);
         assert.ok(error.stderr.includes('Unable to read scenario tuning baseline cache payload'));
-        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
-        const readErrorDiagnostic = findDiagnosticByCode(
-          diagnostics,
-          REPORT_DIAGNOSTIC_CODES.artifactReadError,
-        );
-        assert.equal(readErrorDiagnostic.script, 'simulate:check:tuning-baseline');
-        assertReadFailureDiagnosticContext({
-          diagnostic: readErrorDiagnostic,
+        assertOutputHasReadFailureDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+          expectedScript: 'simulate:check:tuning-baseline',
           expectedPath: tempDirectory,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',

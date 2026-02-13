@@ -15,10 +15,9 @@ import {
 import { buildDiagnosticsSmokeSummary } from '../scripts/reportDiagnosticsSmokeSummary.js';
 import { buildDiagnosticsSmokeMarkdown } from '../scripts/reportDiagnosticsSmokeMarkdown.js';
 import {
-  assertReadFailureDiagnosticContext,
+  assertOutputHasReadFailureDiagnostic,
   assertReportDiagnosticsContract,
   collectReportDiagnostics,
-  findDiagnosticByCode,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
@@ -192,12 +191,11 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
           expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
         });
-        const readErrorDiagnostic = findDiagnosticByCode(
-          diagnostics,
-          REPORT_DIAGNOSTIC_CODES.artifactReadError,
-        );
-        assertReadFailureDiagnosticContext({
-          diagnostic: readErrorDiagnostic,
+        assertOutputHasReadFailureDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+          expectedScript: 'simulate:baseline:check',
           expectedPath: tempDirectory,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
@@ -260,12 +258,11 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
           expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
         });
-        const readErrorDiagnostic = findDiagnosticByCode(
-          diagnostics,
-          REPORT_DIAGNOSTIC_CODES.artifactReadError,
-        );
-        assertReadFailureDiagnosticContext({
-          diagnostic: readErrorDiagnostic,
+        assertOutputHasReadFailureDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+          expectedScript: 'simulate:check:tuning-baseline',
           expectedPath: tempDirectory,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',

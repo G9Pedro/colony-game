@@ -64,3 +64,26 @@ export function assertReadFailureDiagnosticContext({
     assert.equal(diagnostic.context?.errorCode, expectedErrorCode);
   }
 }
+
+export function assertOutputHasReadFailureDiagnostic({
+  stdout = '',
+  stderr = '',
+  diagnosticCode,
+  expectedScript = undefined,
+  expectedPath,
+  expectedStatus = 'error',
+  expectedErrorCode = undefined,
+}) {
+  const diagnostics = collectReportDiagnostics(stdout, stderr);
+  const diagnostic = findDiagnosticByCode(diagnostics, diagnosticCode);
+  if (expectedScript !== undefined) {
+    assert.equal(diagnostic.script, expectedScript);
+  }
+  assertReadFailureDiagnosticContext({
+    diagnostic,
+    expectedPath,
+    expectedStatus,
+    expectedErrorCode,
+  });
+  return diagnostic;
+}
