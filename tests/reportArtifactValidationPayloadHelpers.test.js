@@ -225,6 +225,35 @@ test('buildRecommendedActionsFromResults groups by command and sorts paths', () 
   ]);
 });
 
+test('buildRecommendedActionsFromResults supports fallback command resolver', () => {
+  const actions = buildRecommendedActionsFromResults(
+    [
+      { ok: false, path: 'reports/a.json', recommendedCommand: null },
+      { ok: false, path: 'reports/b.json', recommendedCommand: '' },
+      { ok: false, path: 'reports/c.json', recommendedCommand: 'npm run explicit' },
+    ],
+    {
+      resolveCommand: (result) =>
+        result.recommendedCommand || `npm run regenerate -- ${result.path}`,
+    },
+  );
+
+  assert.deepEqual(actions, [
+    {
+      command: 'npm run explicit',
+      paths: ['reports/c.json'],
+    },
+    {
+      command: 'npm run regenerate -- reports/a.json',
+      paths: ['reports/a.json'],
+    },
+    {
+      command: 'npm run regenerate -- reports/b.json',
+      paths: ['reports/b.json'],
+    },
+  ]);
+});
+
 test('normalize/compare recommended actions are order-insensitive', () => {
   const left = [
     { command: 'npm run verify', paths: ['reports/b.json', 'reports/a.json'] },

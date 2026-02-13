@@ -129,13 +129,20 @@ export function isValidReportArtifactResultEntry(result) {
   );
 }
 
-export function buildRecommendedActionsFromResults(results) {
+export function buildRecommendedActionsFromResults(results, options = {}) {
+  const resolveCommand =
+    typeof options.resolveCommand === 'function'
+      ? options.resolveCommand
+      : (result) => result.recommendedCommand;
   const byCommand = new Map();
   for (const result of results ?? []) {
     if (result.ok) {
       continue;
     }
-    const command = result.recommendedCommand;
+    const command = resolveCommand(result);
+    if (typeof command !== 'string' || command.length === 0) {
+      continue;
+    }
     if (!byCommand.has(command)) {
       byCommand.set(command, new Set());
     }

@@ -1,5 +1,6 @@
 import { REPORT_KINDS, validateReportPayloadByKind } from './reportPayloadValidators.js';
 import {
+  buildRecommendedActionsFromResults,
   computeReportArtifactStatusCounts,
   formatReportArtifactStatusCounts,
   REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
@@ -37,24 +38,10 @@ export function getReportArtifactRegenerationCommand(path) {
 }
 
 function buildRecommendedActions(results) {
-  const actionMap = new Map();
-  for (const result of results) {
-    if (result.ok) {
-      continue;
-    }
-    const command = result.recommendedCommand ?? getReportArtifactRegenerationCommand(result.path);
-    if (!actionMap.has(command)) {
-      actionMap.set(command, new Set());
-    }
-    actionMap.get(command).add(result.path);
-  }
-
-  return Array.from(actionMap.entries())
-    .map(([command, paths]) => ({
-      command,
-      paths: Array.from(paths).sort((a, b) => a.localeCompare(b)),
-    }))
-    .sort((a, b) => a.command.localeCompare(b.command));
+  return buildRecommendedActionsFromResults(results, {
+    resolveCommand: (result) =>
+      result.recommendedCommand ?? getReportArtifactRegenerationCommand(result.path),
+  });
 }
 
 export function evaluateReportArtifactEntries(entries) {
