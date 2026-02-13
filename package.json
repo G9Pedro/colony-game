@@ -24,6 +24,7 @@
     "reports:validate": "node scripts/validate-report-artifacts.js",
     "simulate:baseline:suggest": "node scripts/suggest-baselines.js",
     "simulate:baseline:check": "node scripts/suggest-baselines-check.js",
+    "diagnostics:smoke": "node scripts/report-diagnostics-smoke.js",
     "verify": "npm test && npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:report:tuning:trend && npm run simulate:suggest:tuning-baseline && npm run simulate:check:tuning-baseline && npm run simulate:assert && npm run simulate:drift && SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot && npm run simulate:balance && npm run simulate:baseline:suggest && npm run reports:validate && npm run simulate:baseline:check"
   },
   "keywords": [],
