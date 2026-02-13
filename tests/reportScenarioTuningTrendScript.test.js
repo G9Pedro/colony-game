@@ -14,7 +14,7 @@ async function runTrendScript({ tempDirectory, baselinePath }) {
   const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
   const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
-  const { stdout } = await execFileAsync(process.execPath, [scriptPath], {
+  const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
     env: {
       ...process.env,
       SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
@@ -26,6 +26,7 @@ async function runTrendScript({ tempDirectory, baselinePath }) {
   return {
     payload: JSON.parse(await readFile(outputPath, 'utf-8')),
     stdout,
+    stderr,
   };
 }
 
@@ -116,6 +117,91 @@ test('trend script uses dashboard comparison when baseline dashboard payload exi
       payload.scenarioCount,
     );
     assert.match(stdout, /statuses=added:\d+,changed:\d+,removed:\d+,unchanged:\d+/);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('trend script suggests baseline capture command when baseline payload is invalid', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-trend-script-'));
+  const baselinePath = path.join(tempDirectory, 'scenario-tuning-dashboard.baseline.json');
+
+  try {
+    await writeFile(
+      baselinePath,
+      JSON.stringify(withReportMeta(REPORT_KINDS.scenarioTuningDashboard, {
+        scenarioCount: 1,
+        activeScenarioCount: 0,
+        scenarios: [
+          {
+            id: 'zeta',
+            name: 'Zeta',
+            description: 'Out-of-order baseline row.',
+            signature: 'bbbb2222',
+            resourceOutputDeltas: [],
+            jobOutputDeltas: [],
+            jobPriorityDeltas: [],
+            resourceOutputSummary: {
+              count: 0,
+              meanAbsDeltaPercent: 0,
+              maxAbsDeltaPercent: 0,
+            },
+            jobOutputSummary: {
+              count: 0,
+              meanAbsDeltaPercent: 0,
+              maxAbsDeltaPercent: 0,
+            },
+            jobPrioritySummary: {
+              count: 0,
+              meanAbsDeltaPercent: 0,
+              maxAbsDeltaPercent: 0,
+            },
+            totalAbsDeltaPercent: 0,
+            isNeutral: true,
+          },
+          {
+            id: 'alpha',
+            name: 'Alpha',
+            description: 'Out-of-order baseline row.',
+            signature: 'aaaa1111',
+            resourceOutputDeltas: [],
+            jobOutputDeltas: [],
+            jobPriorityDeltas: [],
+            resourceOutputSummary: {
+              count: 0,
+              meanAbsDeltaPercent: 0,
+              maxAbsDeltaPercent: 0,
+            },
+            jobOutputSummary: {
+              count: 0,
+              meanAbsDeltaPercent: 0,
+              maxAbsDeltaPercent: 0,
+            },
+            jobPrioritySummary: {
+              count: 0,
+              meanAbsDeltaPercent: 0,
+              maxAbsDeltaPercent: 0,
+            },
+            totalAbsDeltaPercent: 0,
+            isNeutral: true,
+          },
+        ],
+        ranking: [
+          { rank: 1, scenarioId: 'alpha', totalAbsDeltaPercent: 0 },
+          { rank: 2, scenarioId: 'zeta', totalAbsDeltaPercent: 0 },
+        ],
+        signatureMap: { alpha: 'aaaa1111', zeta: 'bbbb2222' },
+      }), null, 2),
+      'utf-8',
+    );
+
+    const { payload, stderr } = await runTrendScript({
+      tempDirectory,
+      baselinePath,
+    });
+
+    assert.equal(payload.comparisonSource, 'signature-baseline');
+    assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

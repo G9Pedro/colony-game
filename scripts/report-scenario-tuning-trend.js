@@ -21,6 +21,7 @@ const markdownOutputPath =
   process.env.SIM_SCENARIO_TUNING_TREND_MD_PATH ?? 'reports/scenario-tuning-trend.md';
 const baselineDashboardPath =
   process.env.SIM_SCENARIO_TUNING_TREND_BASELINE_PATH ?? 'reports/scenario-tuning-dashboard.baseline.json';
+const BASELINE_CAPTURE_COMMAND = 'npm run simulate:capture:tuning-dashboard-baseline';
 
 const currentDashboard = buildScenarioTuningDashboard(SCENARIO_DEFINITIONS);
 
@@ -41,18 +42,18 @@ try {
     baselineDashboard = parsedPayload;
   } else {
     console.warn(
-      `Baseline dashboard payload at ${baselineDashboardPath} is invalid (${baselineValidation.reason}); falling back to signature baseline.`,
+      `Baseline dashboard payload at ${baselineDashboardPath} is invalid (${baselineValidation.reason}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
   }
 } catch (error) {
   if (error?.code === 'ENOENT') {
     console.log(
-      `Baseline dashboard not found at ${baselineDashboardPath}; using signature baseline comparison.`,
+      `Baseline dashboard not found at ${baselineDashboardPath}; using signature baseline comparison. To create one, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
   } else {
     const label = error instanceof SyntaxError ? 'invalid JSON' : error.code ?? error.message;
     console.warn(
-      `Unable to read baseline dashboard from ${baselineDashboardPath} (${label}); falling back to signature baseline.`,
+      `Unable to read baseline dashboard from ${baselineDashboardPath} (${label}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
   }
 }
