@@ -167,6 +167,11 @@ npm run simulate:check:tuning-baseline
 Optional strict mode:
 - set `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1` to fail when total tuning intensity baselines drift (not just signature baselines).
 
+Enable strict mode in CI:
+1. Open repository **Settings → Secrets and variables → Actions → Variables**.
+2. Add variable `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY` with value `1`.
+3. Re-run CI to activate the optional strict intensity enforcement step.
+
 Generate scenario tuning baseline suggestions (JSON + Markdown):
 
 ```bash
