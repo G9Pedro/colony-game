@@ -7,7 +7,10 @@ import {
   getReportArtifactRegenerationCommand,
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
-import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
+import {
+  REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
+  REPORT_ARTIFACT_STATUSES,
+} from '../src/game/reportArtifactValidationPayloadHelpers.js';
 
 test('REPORT_ARTIFACT_TARGETS includes expected report kinds', () => {
   const kinds = new Set(REPORT_ARTIFACT_TARGETS.map((target) => target.kind));
@@ -71,13 +74,13 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
     {
       path: 'reports/missing.json',
       kind: REPORT_KINDS.scenarioTuningDashboard,
-      errorType: 'error',
+      errorType: REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError,
       message: 'ENOENT: missing file',
     },
     {
       path: 'reports/broken.json',
       kind: REPORT_KINDS.scenarioTuningDashboard,
-      errorType: 'invalid-json',
+      errorType: REPORT_ARTIFACT_ENTRY_ERROR_TYPES.invalidJson,
       message: 'Unexpected token',
     },
   ]);
@@ -121,7 +124,7 @@ test('evaluateReportArtifactEntries reports canonical zeroed status keys', () =>
     {
       path: 'reports/scenario-tuning-dashboard.json',
       kind: REPORT_KINDS.scenarioTuningDashboard,
-      errorType: 'error',
+      errorType: REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError,
     },
   ]);
 
@@ -153,12 +156,12 @@ test('evaluateReportArtifactEntries groups recommended actions by command', () =
     {
       path: 'reports/scenario-tuning-dashboard.json',
       kind: REPORT_KINDS.scenarioTuningDashboard,
-      errorType: 'error',
+      errorType: REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError,
     },
     {
       path: 'reports/scenario-tuning-validation.json',
       kind: REPORT_KINDS.scenarioTuningValidation,
-      errorType: 'error',
+      errorType: REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError,
     },
   ]);
 

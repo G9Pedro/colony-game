@@ -6,6 +6,7 @@ import {
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
+  REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
   REPORT_ARTIFACT_STATUSES,
   normalizeRecommendedActions,
 } from '../src/game/reportArtifactValidationPayloadHelpers.js';
@@ -15,6 +16,13 @@ test('KNOWN_REPORT_ARTIFACT_STATUSES contains expected statuses', () => {
     Array.from(KNOWN_REPORT_ARTIFACT_STATUSES).sort((a, b) => a.localeCompare(b)),
     Object.values(REPORT_ARTIFACT_STATUSES).sort((a, b) => a.localeCompare(b)),
   );
+});
+
+test('REPORT_ARTIFACT_ENTRY_ERROR_TYPES exposes stable values', () => {
+  assert.deepEqual(REPORT_ARTIFACT_ENTRY_ERROR_TYPES, {
+    invalidJson: 'invalid-json',
+    readError: 'error',
+  });
 });
 
 test('isValidRecommendedActions validates command/path entries', () => {

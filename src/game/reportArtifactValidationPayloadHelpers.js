@@ -7,6 +7,11 @@ export const REPORT_ARTIFACT_STATUSES = Object.freeze({
   invalidJson: 'invalid-json',
 });
 
+export const REPORT_ARTIFACT_ENTRY_ERROR_TYPES = Object.freeze({
+  invalidJson: 'invalid-json',
+  readError: 'error',
+});
+
 export const REPORT_ARTIFACT_STATUS_ORDER = [
   REPORT_ARTIFACT_STATUSES.ok,
   REPORT_ARTIFACT_STATUSES.error,

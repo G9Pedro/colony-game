@@ -4,6 +4,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
+import { REPORT_ARTIFACT_ENTRY_ERROR_TYPES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
 import {
   buildReadArtifactFailureContext,
   buildReadArtifactFailureLabel,
@@ -176,7 +177,7 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
       message: 'Unexpected token',
     },
   });
-  assert.equal(invalidJsonEntry.errorType, 'invalid-json');
+  assert.equal(invalidJsonEntry.errorType, REPORT_ARTIFACT_ENTRY_ERROR_TYPES.invalidJson);
   assert.equal(
     invalidJsonEntry.message,
     'report artifact at "reports/example.json" is not valid JSON.',
@@ -191,7 +192,7 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
       message: 'ENOENT',
     },
   });
-  assert.equal(missingEntry.errorType, 'error');
+  assert.equal(missingEntry.errorType, REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError);
   assert.equal(missingEntry.message, 'Missing report artifact at "reports/example.json".');
 
   const errorEntry = toArtifactValidationEntry({
@@ -203,7 +204,7 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
       message: 'EISDIR',
     },
   });
-  assert.equal(errorEntry.errorType, 'error');
+  assert.equal(errorEntry.errorType, REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError);
   assert.equal(
     errorEntry.message,
     'Unable to read report artifact at "reports/example.json": EISDIR',

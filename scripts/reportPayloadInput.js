@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { validateReportPayloadByKind } from '../src/game/reportPayloadValidators.js';
+import { REPORT_ARTIFACT_ENTRY_ERROR_TYPES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
 import { REPORT_DIAGNOSTIC_CODES } from './reportDiagnostics.js';
 
 export const READ_ARTIFACT_DIAGNOSTIC_CODES = Object.freeze({
@@ -236,7 +237,10 @@ export function toArtifactValidationEntry({ path, kind, readResult }) {
   return {
     path,
     kind,
-    errorType: readResult.status === READ_ARTIFACT_FAILURE_STATUSES.invalidJson ? 'invalid-json' : 'error',
+    errorType:
+      readResult.status === READ_ARTIFACT_FAILURE_STATUSES.invalidJson
+        ? REPORT_ARTIFACT_ENTRY_ERROR_TYPES.invalidJson
+        : REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError,
     message,
   };
 }

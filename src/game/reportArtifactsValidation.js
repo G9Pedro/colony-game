@@ -1,5 +1,6 @@
 import { REPORT_KINDS, validateReportPayloadByKind } from './reportPayloadValidators.js';
 import {
+  REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
   REPORT_ARTIFACT_STATUSES,
   REPORT_ARTIFACT_STATUS_ORDER,
 } from './reportArtifactValidationPayloadHelpers.js';
@@ -59,7 +60,7 @@ export function evaluateReportArtifactEntries(entries) {
   const results = entries
     .map((entry) => {
       const recommendedCommand = getReportArtifactRegenerationCommand(entry.path);
-      if (entry.errorType === 'invalid-json') {
+      if (entry.errorType === REPORT_ARTIFACT_ENTRY_ERROR_TYPES.invalidJson) {
         return {
           path: entry.path,
           kind: entry.kind,
