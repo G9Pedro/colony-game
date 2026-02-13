@@ -57,7 +57,7 @@ export function doReportArtifactStatusCountsMatch(left, right) {
   return REPORT_ARTIFACT_STATUS_ORDER.every((status) => left?.[status] === right?.[status]);
 }
 
-export function formatReportArtifactStatusCounts(statusCounts = undefined) {
+export function normalizeReportArtifactStatusCounts(statusCounts = undefined) {
   const normalizedCounts = buildReportArtifactStatusCounts();
   for (const status of REPORT_ARTIFACT_STATUS_ORDER) {
     const value = statusCounts?.[status];
@@ -65,6 +65,16 @@ export function formatReportArtifactStatusCounts(statusCounts = undefined) {
       normalizedCounts[status] = value;
     }
   }
+  return normalizedCounts;
+}
+
+export function getReportArtifactStatusCountsTotal(statusCounts = undefined) {
+  const normalizedCounts = normalizeReportArtifactStatusCounts(statusCounts);
+  return REPORT_ARTIFACT_STATUS_ORDER.reduce((sum, status) => sum + normalizedCounts[status], 0);
+}
+
+export function formatReportArtifactStatusCounts(statusCounts = undefined) {
+  const normalizedCounts = normalizeReportArtifactStatusCounts(statusCounts);
   return REPORT_ARTIFACT_STATUS_ORDER.map((status) => `${status}=${normalizedCounts[status]}`).join(', ');
 }
 

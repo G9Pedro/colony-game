@@ -5,10 +5,10 @@ import {
   buildRecommendedActionsFromResults,
   computeReportArtifactStatusCounts,
   doReportArtifactStatusCountsMatch,
+  getReportArtifactStatusCountsTotal,
   hasExpectedReportArtifactStatusKeys,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
-  KNOWN_REPORT_ARTIFACT_STATUSES,
 } from './reportArtifactValidationPayloadHelpers.js';
 
 export function isValidReportArtifactsValidationPayload(payload) {
@@ -45,13 +45,10 @@ export function isValidReportArtifactsValidationPayload(payload) {
 
   const failureCount = results.filter((result) => !result.ok).length;
   const computedStatusCounts = computeReportArtifactStatusCounts(results);
-  const computedStatusTotal = Object.values(computedStatusCounts).reduce((sum, value) => sum + value, 0);
-  const reportedStatusTotal = Object.values(payload.statusCounts).reduce((sum, value) => sum + value, 0);
+  const computedStatusTotal = getReportArtifactStatusCountsTotal(computedStatusCounts);
+  const reportedStatusTotal = getReportArtifactStatusCountsTotal(payload.statusCounts);
   const hasExpectedStatusKeys = hasExpectedReportArtifactStatusKeys(payload.statusCounts);
   const statusCountsMatch = doReportArtifactStatusCountsMatch(payload.statusCounts, computedStatusCounts);
-  const knownStatusKeysOnly = Object.keys(payload.statusCounts).every((status) =>
-    KNOWN_REPORT_ARTIFACT_STATUSES.has(status),
-  );
   const expectedRecommendedActions = buildRecommendedActionsFromResults(results);
   const recommendedActionsMatch = areRecommendedActionsEqual(
     payload.recommendedActions,
@@ -65,7 +62,6 @@ export function isValidReportArtifactsValidationPayload(payload) {
       reportedStatusTotal === payload.totalChecked &&
       computedStatusTotal === payload.totalChecked &&
       hasExpectedStatusKeys &&
-      knownStatusKeysOnly &&
       statusCountsMatch &&
       hasKnownResultKinds &&
       hasUniqueResultPaths &&

@@ -7,10 +7,12 @@ import {
   computeReportArtifactStatusCounts,
   doReportArtifactStatusCountsMatch,
   formatReportArtifactStatusCounts,
+  getReportArtifactStatusCountsTotal,
   hasExpectedReportArtifactStatusKeys,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
+  normalizeReportArtifactStatusCounts,
   REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
   REPORT_ARTIFACT_STATUSES,
   normalizeRecommendedActions,
@@ -95,6 +97,32 @@ test('computeReportArtifactStatusCounts aggregates known status rows', () => {
     [REPORT_ARTIFACT_STATUSES.invalid]: 1,
     [REPORT_ARTIFACT_STATUSES.invalidJson]: 1,
   });
+});
+
+test('normalizeReportArtifactStatusCounts canonicalizes sparse inputs', () => {
+  const normalized = normalizeReportArtifactStatusCounts({
+    [REPORT_ARTIFACT_STATUSES.invalid]: 3,
+    [REPORT_ARTIFACT_STATUSES.ok]: 1,
+  });
+  assert.deepEqual(normalized, {
+    [REPORT_ARTIFACT_STATUSES.ok]: 1,
+    [REPORT_ARTIFACT_STATUSES.error]: 0,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 3,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+  });
+});
+
+test('getReportArtifactStatusCountsTotal sums canonical status counts', () => {
+  assert.equal(
+    getReportArtifactStatusCountsTotal({
+      [REPORT_ARTIFACT_STATUSES.ok]: 2,
+      [REPORT_ARTIFACT_STATUSES.error]: 1,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 3,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 4,
+      ignored: 99,
+    }),
+    10,
+  );
 });
 
 test('doReportArtifactStatusCountsMatch compares canonical keys', () => {
