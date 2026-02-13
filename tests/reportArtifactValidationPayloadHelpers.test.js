@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   areRecommendedActionsEqual,
+  buildReportArtifactStatusCounts,
   buildRecommendedActionsFromResults,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
@@ -23,6 +24,20 @@ test('REPORT_ARTIFACT_ENTRY_ERROR_TYPES exposes stable values', () => {
     invalidJson: 'invalid-json',
     readError: 'error',
   });
+});
+
+test('buildReportArtifactStatusCounts creates fresh zeroed status maps', () => {
+  const first = buildReportArtifactStatusCounts();
+  const second = buildReportArtifactStatusCounts();
+
+  assert.deepEqual(first, {
+    [REPORT_ARTIFACT_STATUSES.ok]: 0,
+    [REPORT_ARTIFACT_STATUSES.error]: 0,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 0,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+  });
+  assert.deepEqual(second, first);
+  assert.notEqual(first, second);
 });
 
 test('isValidRecommendedActions validates command/path entries', () => {

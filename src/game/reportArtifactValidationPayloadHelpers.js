@@ -19,6 +19,13 @@ export const REPORT_ARTIFACT_STATUS_ORDER = [
   REPORT_ARTIFACT_STATUSES.invalidJson,
 ];
 export const KNOWN_REPORT_ARTIFACT_STATUSES = new Set(REPORT_ARTIFACT_STATUS_ORDER);
+const REPORT_ARTIFACT_STATUS_COUNTS_TEMPLATE = Object.freeze(
+  Object.fromEntries(REPORT_ARTIFACT_STATUS_ORDER.map((status) => [status, 0])),
+);
+
+export function buildReportArtifactStatusCounts() {
+  return { ...REPORT_ARTIFACT_STATUS_COUNTS_TEMPLATE };
+}
 
 export function isValidRecommendedActions(value) {
   if (!Array.isArray(value)) {

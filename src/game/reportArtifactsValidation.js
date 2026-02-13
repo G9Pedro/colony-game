@@ -1,8 +1,8 @@
 import { REPORT_KINDS, validateReportPayloadByKind } from './reportPayloadValidators.js';
 import {
+  buildReportArtifactStatusCounts,
   REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
   REPORT_ARTIFACT_STATUSES,
-  REPORT_ARTIFACT_STATUS_ORDER,
 } from './reportArtifactValidationPayloadHelpers.js';
 
 export const REPORT_ARTIFACT_TARGETS = [
@@ -111,7 +111,7 @@ export function evaluateReportArtifactEntries(entries) {
       acc[result.status] += 1;
       return acc;
     },
-    Object.fromEntries(REPORT_ARTIFACT_STATUS_ORDER.map((status) => [status, 0])),
+    buildReportArtifactStatusCounts(),
   );
   const recommendedActions = buildRecommendedActions(results);
   return {

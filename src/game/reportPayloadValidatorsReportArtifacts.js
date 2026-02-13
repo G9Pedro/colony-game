@@ -3,6 +3,7 @@ import { isRecordOfNumbers } from './reportPayloadValidatorUtils.js';
 import {
   areRecommendedActionsEqual,
   buildRecommendedActionsFromResults,
+  buildReportArtifactStatusCounts,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
@@ -47,7 +48,7 @@ export function isValidReportArtifactsValidationPayload(payload) {
       acc[result.status] += 1;
       return acc;
     },
-    Object.fromEntries(REPORT_ARTIFACT_STATUS_ORDER.map((status) => [status, 0])),
+    buildReportArtifactStatusCounts(),
   );
   const computedStatusTotal = Object.values(computedStatusCounts).reduce((sum, value) => sum + value, 0);
   const reportedStatusTotal = Object.values(payload.statusCounts).reduce((sum, value) => sum + value, 0);
