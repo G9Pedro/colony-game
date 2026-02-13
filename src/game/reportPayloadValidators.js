@@ -1,3 +1,24 @@
+import {
+  isNonNegativeInteger,
+  isNullableFiniteNumber,
+  isNullableString,
+  isPlainRecord,
+  isRecordOfNonNegativeFiniteNumbers,
+  isRecordOfNullableStrings,
+  isRecordOfNumbers,
+  isRecordOfStrings,
+  isSnippetObjectParityValid,
+  roundToFour,
+  roundToTwo,
+} from './reportPayloadValidatorUtils.js';
+import {
+  areRecommendedActionsEqual,
+  buildRecommendedActionsFromResults,
+  isValidRecommendedActions,
+  isValidReportArtifactResultEntry,
+  KNOWN_REPORT_ARTIFACT_STATUSES,
+} from './reportArtifactValidationPayloadHelpers.js';
+
 export const REPORT_KINDS = {
   baselineSuggestions: 'baseline-suggestions',
   scenarioTuningBaselineSuggestions: 'scenario-tuning-baseline-suggestions',
@@ -30,105 +51,6 @@ function hasValidMeta(payload, expectedKind) {
     typeof payload.meta.generatedAt === 'string' &&
     payload.meta.generatedAt === payload.generatedAt
   );
-}
-
-function isRecordOfNumbers(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false;
-  }
-  return Object.values(value).every((entry) => Number.isInteger(entry) && entry >= 0);
-}
-
-function isPlainRecord(value) {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function isNullableString(value) {
-  return value === null || typeof value === 'string';
-}
-
-function isNullableFiniteNumber(value) {
-  return value === null || Number.isFinite(value);
-}
-
-function roundToTwo(value) {
-  return Number(value.toFixed(2));
-}
-
-function roundToFour(value) {
-  return Number(value.toFixed(4));
-}
-
-function normalizeJsonValue(value) {
-  if (Array.isArray(value)) {
-    return value.map((item) => normalizeJsonValue(item));
-  }
-  if (!isPlainRecord(value)) {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.keys(value)
-      .sort((a, b) => a.localeCompare(b))
-      .map((key) => [key, normalizeJsonValue(value[key])]),
-  );
-}
-
-function areNormalizedJsonValuesEqual(left, right) {
-  return JSON.stringify(normalizeJsonValue(left)) === JSON.stringify(normalizeJsonValue(right));
-}
-
-function parseExportedConstSnippetObject(snippet, constName) {
-  if (typeof snippet !== 'string' || snippet.length === 0) {
-    return { ok: false, value: null };
-  }
-
-  const escapedConstName = constName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(
-    `^\\s*export\\s+const\\s+${escapedConstName}\\s*=\\s*([\\s\\S]+?)\\s*;\\s*$`,
-  );
-  const match = snippet.match(pattern);
-  if (!match) {
-    return { ok: false, value: null };
-  }
-
-  try {
-    const value = JSON.parse(match[1]);
-    if (!isPlainRecord(value)) {
-      return { ok: false, value: null };
-    }
-    return { ok: true, value };
-  } catch {
-    return { ok: false, value: null };
-  }
-}
-
-function isSnippetObjectParityValid({ snippet, constName, expectedValue }) {
-  const parsed = parseExportedConstSnippetObject(snippet, constName);
-  if (!parsed.ok) {
-    return false;
-  }
-  return areNormalizedJsonValuesEqual(parsed.value, expectedValue);
-}
-
-function isRecordOfNullableStrings(value) {
-  if (!isPlainRecord(value)) {
-    return false;
-  }
-  return Object.values(value).every((entry) => isNullableString(entry));
-}
-
-function isRecordOfStrings(value) {
-  if (!isPlainRecord(value)) {
-    return false;
-  }
-  return Object.values(value).every((entry) => typeof entry === 'string' && entry.length > 0);
-}
-
-function isRecordOfNonNegativeFiniteNumbers(value) {
-  if (!isPlainRecord(value)) {
-    return false;
-  }
-  return Object.values(value).every((entry) => Number.isFinite(entry) && entry >= 0);
 }
 
 function isValidBoundsEntry(value) {
@@ -494,85 +416,6 @@ function hasValidDashboardRanking(scenarios, ranking) {
   return rankedScenarioIds.every((scenarioId, index) => scenarioId === expectedOrder[index]);
 }
 
-function isValidRecommendedActions(value) {
-  if (!Array.isArray(value)) {
-    return false;
-  }
-  return value.every(
-    (entry) =>
-      entry &&
-      typeof entry === 'object' &&
-      typeof entry.command === 'string' &&
-      entry.command.length > 0 &&
-      Array.isArray(entry.paths) &&
-      entry.paths.every((path) => typeof path === 'string' && path.length > 0),
-  );
-}
-
-const KNOWN_REPORT_ARTIFACT_STATUSES = new Set(['ok', 'error', 'invalid', 'invalid-json']);
-
-function isValidReportArtifactResultEntry(result) {
-  if (
-    !Boolean(
-      result &&
-        typeof result === 'object' &&
-        typeof result.path === 'string' &&
-        result.path.length > 0 &&
-        typeof result.kind === 'string' &&
-        result.kind.length > 0 &&
-        typeof result.status === 'string' &&
-        KNOWN_REPORT_ARTIFACT_STATUSES.has(result.status) &&
-        typeof result.ok === 'boolean' &&
-        (result.message === null || typeof result.message === 'string') &&
-        (result.recommendedCommand === null || typeof result.recommendedCommand === 'string'),
-    )
-  ) {
-    return false;
-  }
-
-  if (result.ok) {
-    return result.status === 'ok' && result.message === null && result.recommendedCommand === null;
-  }
-
-  return (
-    result.status !== 'ok' &&
-    typeof result.message === 'string' &&
-    result.message.length > 0 &&
-    typeof result.recommendedCommand === 'string' &&
-    result.recommendedCommand.length > 0
-  );
-}
-
-function buildRecommendedActionsFromResults(results) {
-  const byCommand = new Map();
-  for (const result of results ?? []) {
-    if (result.ok) {
-      continue;
-    }
-    const command = result.recommendedCommand;
-    if (!byCommand.has(command)) {
-      byCommand.set(command, new Set());
-    }
-    byCommand.get(command).add(result.path);
-  }
-
-  return Array.from(byCommand.entries())
-    .map(([command, pathSet]) => ({
-      command,
-      paths: Array.from(pathSet).sort((a, b) => a.localeCompare(b)),
-    }))
-    .sort((a, b) => a.command.localeCompare(b.command));
-}
-
-function normalizeRecommendedActions(actions) {
-  return (actions ?? [])
-    .map((action) => ({
-      command: action.command,
-      paths: [...action.paths].sort((a, b) => a.localeCompare(b)),
-    }))
-    .sort((a, b) => a.command.localeCompare(b.command));
-}
-
 export function withReportMeta(kind, payload) {
   if (!(kind in REPORT_SCHEMA_VERSIONS)) {
     throw new Error(`Unknown report kind "${kind}".`);
@@ -884,9 +727,9 @@ export function isValidReportArtifactsValidationPayload(payload) {
   );
   const statusKeySetMatches = Object.keys(payload.statusCounts).length === Object.keys(computedStatusCounts).length;
   const expectedRecommendedActions = buildRecommendedActionsFromResults(results);
-  const recommendedActionsMatch = areNormalizedJsonValuesEqual(
-    normalizeRecommendedActions(payload.recommendedActions),
-    normalizeRecommendedActions(expectedRecommendedActions),
+  const recommendedActionsMatch = areRecommendedActionsEqual(
+    payload.recommendedActions,
+    expectedRecommendedActions,
   );
 
   return Boolean(
@@ -904,10 +747,6 @@ export function isValidReportArtifactsValidationPayload(payload) {
 
 function isKnownTrendComparisonSource(value) {
   return value === 'dashboard' || value === 'signature-baseline';
-}
-
-function isNonNegativeInteger(value) {
-  return Number.isInteger(value) && value >= 0;
 }
 
 function isValidTrendStatusCounts(value) {
