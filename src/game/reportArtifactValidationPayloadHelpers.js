@@ -1,6 +1,7 @@
 import { areNormalizedJsonValuesEqual } from './reportPayloadValidatorUtils.js';
 
-export const KNOWN_REPORT_ARTIFACT_STATUSES = new Set(['ok', 'error', 'invalid', 'invalid-json']);
+export const REPORT_ARTIFACT_STATUS_ORDER = ['ok', 'error', 'invalid', 'invalid-json'];
+export const KNOWN_REPORT_ARTIFACT_STATUSES = new Set(REPORT_ARTIFACT_STATUS_ORDER);
 
 export function isValidRecommendedActions(value) {
   if (!Array.isArray(value)) {

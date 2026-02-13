@@ -87,6 +87,7 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
   assert.deepEqual(report.statusCounts, {
     ok: 1,
     error: 1,
+    invalid: 0,
     'invalid-json': 1,
   });
   assert.deepEqual(report.recommendedActions, [
@@ -106,6 +107,23 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
   assert.equal(resultByPath.get('reports/missing.json')?.recommendedCommand, 'npm run verify');
   assert.equal(resultByPath.get('reports/broken.json')?.status, 'invalid-json');
   assert.equal(resultByPath.get('reports/broken.json')?.recommendedCommand, 'npm run verify');
+});
+
+test('evaluateReportArtifactEntries reports canonical zeroed status keys', () => {
+  const report = evaluateReportArtifactEntries([
+    {
+      path: 'reports/scenario-tuning-dashboard.json',
+      kind: REPORT_KINDS.scenarioTuningDashboard,
+      errorType: 'error',
+    },
+  ]);
+
+  assert.deepEqual(report.statusCounts, {
+    ok: 0,
+    error: 1,
+    invalid: 0,
+    'invalid-json': 0,
+  });
 });
 
 test('evaluateReportArtifactEntries flags schema-invalid payloads', () => {
@@ -154,7 +172,7 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
     overallPassed: false,
     totalChecked: 2,
     failureCount: 1,
-    statusCounts: { ok: 1, invalid: 1 },
+    statusCounts: { ok: 1, error: 0, invalid: 1, 'invalid-json': 0 },
     results: [
       { path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null, recommendedCommand: null },
       {
@@ -168,7 +186,7 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
   });
 
   assert.ok(markdown.includes('# Report Artifacts Validation'));
-  assert.ok(markdown.includes('Status Counts: ok=1, invalid=1'));
+  assert.ok(markdown.includes('Status Counts: ok=1, error=0, invalid=1, invalid-json=0'));
   assert.ok(markdown.includes('| reports/a.json | kind-a | ok |  |'));
   assert.ok(markdown.includes('| reports/b.json | kind-b | invalid | bad payload |'));
   assert.ok(markdown.includes('## Recommended Commands'));
@@ -182,7 +200,7 @@ test('buildReportArtifactsValidationMarkdown includes no-op remediation on pass'
     overallPassed: true,
     totalChecked: 1,
     failureCount: 0,
-    statusCounts: { ok: 1 },
+    statusCounts: { ok: 1, error: 0, invalid: 0, 'invalid-json': 0 },
     results: [{ path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null, ok: true }],
   });
   assert.ok(markdown.includes('No remediation needed. All artifacts are valid.'));

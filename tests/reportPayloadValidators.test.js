@@ -881,7 +881,7 @@ test('isValidReportArtifactsValidationPayload accepts validation summary payload
     overallPassed: true,
     failureCount: 0,
     totalChecked: 2,
-    statusCounts: { ok: 2 },
+    statusCounts: { ok: 2, error: 0, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [],
     results: [
       {
@@ -910,7 +910,7 @@ test('isValidReportArtifactsValidationPayload rejects malformed action and statu
     overallPassed: false,
     failureCount: 1,
     totalChecked: 4,
-    statusCounts: { ok: '4' },
+    statusCounts: { ok: '4', error: 0, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [{ command: 42, paths: [12] }],
     results: [
       {
@@ -931,7 +931,7 @@ test('isValidReportArtifactsValidationPayload rejects inconsistent aggregate cou
     overallPassed: true,
     failureCount: 0,
     totalChecked: 2,
-    statusCounts: { ok: 1, error: 1 },
+    statusCounts: { ok: 1, error: 1, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [{ command: 'npm run verify', paths: ['reports/broken.json'] }],
     results: [
       {
@@ -960,7 +960,7 @@ test('isValidReportArtifactsValidationPayload rejects result status/ok semantic 
     overallPassed: true,
     failureCount: 0,
     totalChecked: 1,
-    statusCounts: { error: 1 },
+    statusCounts: { ok: 0, error: 1, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [],
     results: [
       {
@@ -981,7 +981,7 @@ test('isValidReportArtifactsValidationPayload rejects recommended actions mismat
     overallPassed: false,
     failureCount: 1,
     totalChecked: 1,
-    statusCounts: { error: 1 },
+    statusCounts: { ok: 0, error: 1, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [],
     results: [
       {
@@ -1002,7 +1002,7 @@ test('isValidReportArtifactsValidationPayload rejects unknown result kinds', () 
     overallPassed: true,
     failureCount: 0,
     totalChecked: 1,
-    statusCounts: { ok: 1 },
+    statusCounts: { ok: 1, error: 0, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [],
     results: [
       {
@@ -1023,7 +1023,7 @@ test('isValidReportArtifactsValidationPayload rejects duplicate result paths', (
     overallPassed: true,
     failureCount: 0,
     totalChecked: 2,
-    statusCounts: { ok: 2 },
+    statusCounts: { ok: 2, error: 0, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [],
     results: [
       {
@@ -1052,7 +1052,7 @@ test('isValidReportArtifactsValidationPayload rejects unsorted result paths', ()
     overallPassed: true,
     failureCount: 0,
     totalChecked: 2,
-    statusCounts: { ok: 2 },
+    statusCounts: { ok: 2, error: 0, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [],
     results: [
       {

@@ -8,7 +8,7 @@ function buildReportArtifactsPayload() {
     overallPassed: false,
     failureCount: 1,
     totalChecked: 2,
-    statusCounts: { ok: 1, invalid: 1 },
+    statusCounts: { ok: 1, error: 0, invalid: 1, 'invalid-json': 0 },
     results: [
       {
         path: 'reports/scenario-tuning-dashboard.json',

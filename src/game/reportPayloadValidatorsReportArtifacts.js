@@ -6,6 +6,7 @@ import {
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
+  REPORT_ARTIFACT_STATUS_ORDER,
 } from './reportArtifactValidationPayloadHelpers.js';
 
 export function isValidReportArtifactsValidationPayload(payload) {
@@ -41,19 +42,26 @@ export function isValidReportArtifactsValidationPayload(payload) {
   );
 
   const failureCount = results.filter((result) => !result.ok).length;
-  const computedStatusCounts = results.reduce((acc, result) => {
-    acc[result.status] = (acc[result.status] ?? 0) + 1;
-    return acc;
-  }, {});
+  const computedStatusCounts = results.reduce(
+    (acc, result) => {
+      acc[result.status] += 1;
+      return acc;
+    },
+    Object.fromEntries(REPORT_ARTIFACT_STATUS_ORDER.map((status) => [status, 0])),
+  );
   const computedStatusTotal = Object.values(computedStatusCounts).reduce((sum, value) => sum + value, 0);
   const reportedStatusTotal = Object.values(payload.statusCounts).reduce((sum, value) => sum + value, 0);
-  const statusCountsMatch = Object.keys(computedStatusCounts).every(
+  const hasExpectedStatusKeys =
+    Object.keys(payload.statusCounts).length === REPORT_ARTIFACT_STATUS_ORDER.length &&
+    REPORT_ARTIFACT_STATUS_ORDER.every((status) =>
+      Object.prototype.hasOwnProperty.call(payload.statusCounts, status),
+    );
+  const statusCountsMatch = REPORT_ARTIFACT_STATUS_ORDER.every(
     (status) => payload.statusCounts[status] === computedStatusCounts[status],
   );
   const knownStatusKeysOnly = Object.keys(payload.statusCounts).every((status) =>
     KNOWN_REPORT_ARTIFACT_STATUSES.has(status),
   );
-  const statusKeySetMatches = Object.keys(payload.statusCounts).length === Object.keys(computedStatusCounts).length;
   const expectedRecommendedActions = buildRecommendedActionsFromResults(results);
   const recommendedActionsMatch = areRecommendedActionsEqual(
     payload.recommendedActions,
@@ -66,8 +74,8 @@ export function isValidReportArtifactsValidationPayload(payload) {
       payload.overallPassed === (failureCount === 0) &&
       reportedStatusTotal === payload.totalChecked &&
       computedStatusTotal === payload.totalChecked &&
+      hasExpectedStatusKeys &&
       knownStatusKeysOnly &&
-      statusKeySetMatches &&
       statusCountsMatch &&
       hasKnownResultKinds &&
       hasUniqueResultPaths &&

@@ -1,4 +1,5 @@
 import { REPORT_KINDS, validateReportPayloadByKind } from './reportPayloadValidators.js';
+import { REPORT_ARTIFACT_STATUS_ORDER } from './reportArtifactValidationPayloadHelpers.js';
 
 export const REPORT_ARTIFACT_TARGETS = [
   { path: 'reports/scenario-tuning-validation.json', kind: REPORT_KINDS.scenarioTuningValidation },
@@ -101,10 +102,13 @@ export function evaluateReportArtifactEntries(entries) {
     .sort((left, right) => left.path.localeCompare(right.path));
 
   const failureCount = results.filter((result) => !result.ok).length;
-  const statusCounts = results.reduce((acc, result) => {
-    acc[result.status] = (acc[result.status] ?? 0) + 1;
-    return acc;
-  }, {});
+  const statusCounts = results.reduce(
+    (acc, result) => {
+      acc[result.status] += 1;
+      return acc;
+    },
+    Object.fromEntries(REPORT_ARTIFACT_STATUS_ORDER.map((status) => [status, 0])),
+  );
   const recommendedActions = buildRecommendedActions(results);
   return {
     overallPassed: failureCount === 0,
