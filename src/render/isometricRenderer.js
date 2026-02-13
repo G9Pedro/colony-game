@@ -5,6 +5,7 @@ import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
+import { InteractionController } from './interactionController.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
 import { TerrainLayerRenderer } from './terrainLayer.js';
 
@@ -52,17 +53,6 @@ export class IsometricRenderer {
     });
 
     this.preview = null;
-    this.dragState = {
-      active: false,
-      pointerId: null,
-      lastX: 0,
-      lastY: 0,
-    };
-    this.touchState = {
-      pinching: false,
-      lastX: 0,
-      lastY: 0,
-    };
     this.lastFrameAt = performance.now();
     this.smoothedFps = 60;
     this.devicePixelRatio = 1;
@@ -76,29 +66,24 @@ export class IsometricRenderer {
     this.knownConstructionIds = new Set();
     this.interactiveEntities = [];
     this.terrainLayer = new TerrainLayerRenderer(this.spriteFactory);
+    this.interactionController = new InteractionController({
+      canvas: this.canvas,
+      camera: this.camera,
+      onPreview: (point) => {
+        if (this.onPlacementPreview) {
+          this.onPlacementPreview({ x: point.tile.x, z: point.tile.z });
+        }
+      },
+      onHover: (point) => {
+        this.updateHoverSelection(point.local.x, point.local.y);
+      },
+      onClick: (point) => {
+        this.handleClick(point.local.x, point.local.y, point.tile);
+      },
+    });
 
-    this.boundHandlers = {
-      resize: () => this.resize(),
-      pointerDown: (event) => this.handlePointerDown(event),
-      pointerMove: (event) => this.handlePointerMove(event),
-      pointerUp: (event) => this.handlePointerUp(event),
-      pointerCancel: () => this.handlePointerCancel(),
-      wheel: (event) => this.handleWheel(event),
-      touchStart: (event) => this.handleTouchStart(event),
-      touchMove: (event) => this.handleTouchMove(event),
-      touchEnd: () => this.handleTouchEnd(),
-    };
-
-    window.addEventListener('resize', this.boundHandlers.resize);
-    this.canvas.addEventListener('pointerdown', this.boundHandlers.pointerDown);
-    this.canvas.addEventListener('pointermove', this.boundHandlers.pointerMove);
-    this.canvas.addEventListener('pointerup', this.boundHandlers.pointerUp);
-    this.canvas.addEventListener('pointercancel', this.boundHandlers.pointerCancel);
-    this.canvas.addEventListener('pointerleave', this.boundHandlers.pointerCancel);
-    this.canvas.addEventListener('wheel', this.boundHandlers.wheel, { passive: false });
-    this.canvas.addEventListener('touchstart', this.boundHandlers.touchStart, { passive: false });
-    this.canvas.addEventListener('touchmove', this.boundHandlers.touchMove, { passive: false });
-    this.canvas.addEventListener('touchend', this.boundHandlers.touchEnd, { passive: false });
+    this.boundResize = () => this.resize();
+    window.addEventListener('resize', this.boundResize);
 
     this.resize();
   }
@@ -117,16 +102,9 @@ export class IsometricRenderer {
   }
 
   dispose() {
-    window.removeEventListener('resize', this.boundHandlers.resize);
-    this.canvas.removeEventListener('pointerdown', this.boundHandlers.pointerDown);
-    this.canvas.removeEventListener('pointermove', this.boundHandlers.pointerMove);
-    this.canvas.removeEventListener('pointerup', this.boundHandlers.pointerUp);
-    this.canvas.removeEventListener('pointercancel', this.boundHandlers.pointerCancel);
-    this.canvas.removeEventListener('pointerleave', this.boundHandlers.pointerCancel);
-    this.canvas.removeEventListener('wheel', this.boundHandlers.wheel);
-    this.canvas.removeEventListener('touchstart', this.boundHandlers.touchStart);
-    this.canvas.removeEventListener('touchmove', this.boundHandlers.touchMove);
-    this.canvas.removeEventListener('touchend', this.boundHandlers.touchEnd);
+    window.removeEventListener('resize', this.boundResize);
+    this.interactionController.dispose();
+    this.interactionController = null;
     this.canvas.remove();
     this.interactiveEntities = [];
     this.terrainLayer = null;
@@ -187,124 +165,6 @@ export class IsometricRenderer {
       particles: this.particles.particles.length,
       particleCap: this.particles.maxParticles,
     };
-  }
-
-  localPointFromEvent(clientX, clientY) {
-    const rect = this.canvas.getBoundingClientRect();
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top,
-    };
-  }
-
-  getWorldPointFromClient(clientX, clientY) {
-    const local = this.localPointFromEvent(clientX, clientY);
-    return {
-      local,
-      world: this.camera.screenToWorld(local.x, local.y),
-      tile: this.camera.screenToTile(local.x, local.y),
-    };
-  }
-
-  handlePointerDown(event) {
-    this.dragState.active = true;
-    this.dragState.pointerId = event.pointerId;
-    this.dragState.lastX = event.clientX;
-    this.dragState.lastY = event.clientY;
-    this.camera.startDrag(event.clientX, event.clientY);
-  }
-
-  handlePointerMove(event) {
-    const point = this.getWorldPointFromClient(event.clientX, event.clientY);
-    this.updateHoverSelection(point.local.x, point.local.y);
-    if (this.onPlacementPreview) {
-      this.onPlacementPreview({ x: point.tile.x, z: point.tile.z });
-    }
-
-    if (!this.dragState.active || this.dragState.pointerId !== event.pointerId) {
-      return;
-    }
-    this.camera.dragTo(event.clientX, event.clientY);
-    this.dragState.lastX = event.clientX;
-    this.dragState.lastY = event.clientY;
-  }
-
-  handlePointerUp(event) {
-    if (!this.dragState.active || this.dragState.pointerId !== event.pointerId) {
-      return;
-    }
-
-    this.dragState.active = false;
-    const dragResult = this.camera.endDrag();
-    this.dragState.pointerId = null;
-    if (!dragResult.wasClick) {
-      return;
-    }
-
-    const point = this.getWorldPointFromClient(event.clientX, event.clientY);
-    this.handleClick(point.local.x, point.local.y, point.tile);
-  }
-
-  handlePointerCancel() {
-    this.dragState.active = false;
-    this.dragState.pointerId = null;
-    this.camera.endDrag();
-  }
-
-  handleWheel(event) {
-    event.preventDefault();
-    const local = this.localPointFromEvent(event.clientX, event.clientY);
-    this.camera.zoomAt(event.deltaY * 0.0012, local.x, local.y);
-  }
-
-  handleTouchStart(event) {
-    if (event.touches.length === 2) {
-      this.touchState.pinching = true;
-      this.camera.endDrag();
-      this.camera.beginPinch(event.touches[0], event.touches[1]);
-      return;
-    }
-
-    if (event.touches.length === 1) {
-      const touch = event.touches[0];
-      this.touchState.lastX = touch.clientX;
-      this.touchState.lastY = touch.clientY;
-      this.camera.startDrag(touch.clientX, touch.clientY);
-    }
-  }
-
-  handleTouchMove(event) {
-    event.preventDefault();
-    if (event.touches.length === 2 && this.touchState.pinching) {
-      this.camera.updatePinch(event.touches[0], event.touches[1]);
-      return;
-    }
-    if (event.touches.length !== 1) {
-      return;
-    }
-    const touch = event.touches[0];
-    this.camera.dragTo(touch.clientX, touch.clientY);
-    this.touchState.lastX = touch.clientX;
-    this.touchState.lastY = touch.clientY;
-    const point = this.getWorldPointFromClient(touch.clientX, touch.clientY);
-    this.updateHoverSelection(point.local.x, point.local.y);
-    if (this.onPlacementPreview) {
-      this.onPlacementPreview({ x: point.tile.x, z: point.tile.z });
-    }
-  }
-
-  handleTouchEnd() {
-    if (this.touchState.pinching) {
-      this.touchState.pinching = false;
-      this.camera.endPinch();
-      return;
-    }
-    const result = this.camera.endDrag();
-    if (!result.wasClick) {
-      return;
-    }
-    const point = this.getWorldPointFromClient(this.touchState.lastX, this.touchState.lastY);
-    this.handleClick(point.local.x, point.local.y, point.tile);
   }
 
   updateHoverSelection(localX, localY) {
