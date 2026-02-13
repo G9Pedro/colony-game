@@ -8,6 +8,7 @@ import {
 } from '../scripts/reportDiagnostics.js';
 import {
   assertOutputHasReadFailureScenarioContract,
+  assertReadFailureDiagnosticMatchesScenario,
   assertNodeDiagnosticsScriptReadFailureScenario,
   getReportReadFailureScenarioFromDiagnosticCode,
   getReportReadFailureScenarioContract,
@@ -143,4 +144,26 @@ test('assertOutputHasReadFailureScenarioContract validates read-failure output b
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
+});
+
+test('assertReadFailureDiagnosticMatchesScenario validates direct diagnostic payloads', () => {
+  const diagnostic = {
+    code: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
+    level: 'error',
+    context: {
+      path: 'reports/example.json',
+      status: 'invalid',
+      reason: 'failed validation',
+      errorCode: null,
+    },
+  };
+
+  const observed = assertReadFailureDiagnosticMatchesScenario({
+    diagnostic,
+    scenario: 'invalidPayload',
+    expectedLevel: 'error',
+    expectedPath: 'reports/example.json',
+  });
+
+  assert.equal(observed, diagnostic);
 });

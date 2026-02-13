@@ -1,7 +1,11 @@
 import {
   REPORT_DIAGNOSTIC_CODES,
 } from '../../scripts/reportDiagnostics.js';
-import { assertOutputHasReadFailureDiagnosticContract } from './reportDiagnosticsTestUtils.js';
+import assert from 'node:assert/strict';
+import {
+  assertOutputHasReadFailureDiagnosticContract,
+  assertReadFailureDiagnosticContext,
+} from './reportDiagnosticsTestUtils.js';
 import { assertNodeDiagnosticsScriptRejects } from './reportDiagnosticsScriptTestUtils.js';
 
 export const REPORT_READ_FAILURE_SCENARIO_CONTRACTS = Object.freeze({
@@ -122,4 +126,26 @@ export function assertOutputHasReadFailureScenarioContract({
     expectedStatus: expectedStatus ?? scenarioContract.status,
     expectedErrorCode: expectedErrorCode ?? scenarioContract.errorCode,
   });
+}
+
+export function assertReadFailureDiagnosticMatchesScenario({
+  diagnostic,
+  scenario,
+  expectedPath,
+  expectedLevel = undefined,
+  expectedStatus = undefined,
+  expectedErrorCode = undefined,
+}) {
+  const scenarioContract = getReportReadFailureScenarioContract(scenario);
+  assert.equal(diagnostic.code, scenarioContract.diagnosticCode);
+  if (expectedLevel !== undefined) {
+    assert.equal(diagnostic.level, expectedLevel);
+  }
+  assertReadFailureDiagnosticContext({
+    diagnostic,
+    expectedPath,
+    expectedStatus: expectedStatus ?? scenarioContract.status,
+    expectedErrorCode: expectedErrorCode ?? scenarioContract.errorCode,
+  });
+  return diagnostic;
 }
