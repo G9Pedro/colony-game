@@ -1,6 +1,17 @@
 export const REPORT_DIAGNOSTIC_LEVELS = Object.freeze(['info', 'warn', 'error']);
 export const REPORT_DIAGNOSTICS_SCHEMA_VERSION = 1;
 export const REPORT_DIAGNOSTIC_TYPE = 'report-diagnostic';
+export const REPORT_DIAGNOSTIC_FIELDS = Object.freeze([
+  'type',
+  'schemaVersion',
+  'generatedAt',
+  'script',
+  'runId',
+  'level',
+  'code',
+  'message',
+  'context',
+]);
 
 export const REPORT_DIAGNOSTIC_CODES = Object.freeze({
   artifactMissing: 'artifact-missing',
@@ -17,6 +28,7 @@ export const REPORT_DIAGNOSTIC_CODES = Object.freeze({
 });
 
 const REPORT_DIAGNOSTIC_CODE_SET = new Set(Object.values(REPORT_DIAGNOSTIC_CODES));
+const REPORT_DIAGNOSTIC_FIELD_SET = new Set(REPORT_DIAGNOSTIC_FIELDS);
 
 export function isJsonDiagnosticsEnabled() {
   return process.env.REPORT_DIAGNOSTICS_JSON === '1';
@@ -124,6 +136,16 @@ export function emitJsonDiagnostic({
 
 export function isValidReportDiagnosticPayload(payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return false;
+  }
+  const payloadKeys = Object.keys(payload);
+  if (payloadKeys.length !== REPORT_DIAGNOSTIC_FIELDS.length) {
+    return false;
+  }
+  if (payloadKeys.some((key) => !REPORT_DIAGNOSTIC_FIELD_SET.has(key))) {
+    return false;
+  }
+  if (REPORT_DIAGNOSTIC_FIELDS.some((key) => !Object.prototype.hasOwnProperty.call(payload, key))) {
     return false;
   }
   try {
