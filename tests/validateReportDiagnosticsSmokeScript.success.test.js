@@ -8,9 +8,9 @@ import {
   writeValidSmokeArtifacts,
 } from './helpers/validateReportDiagnosticsSmokeTestUtils.js';
 import {
-  findDiagnosticByCode,
   runValidateReportDiagnosticsSmoke,
 } from './helpers/validateReportDiagnosticsSmokeAssertions.js';
+import { assertOutputHasDiagnostic } from './helpers/reportDiagnosticsTestUtils.js';
 
 test('validate-report-diagnostics-smoke passes for valid and passing summary', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
@@ -48,13 +48,14 @@ test('validate-report-diagnostics-smoke emits summary diagnostic when json diagn
       REPORT_DIAGNOSTICS_RUN_ID: runId,
     });
 
-    const summaryDiagnostic = findDiagnosticByCode(
-      { stdout, stderr },
-      REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary,
-    );
-    assert.ok(summaryDiagnostic);
-    assert.equal(summaryDiagnostic.script, 'diagnostics:smoke:validate');
-    assert.equal(summaryDiagnostic.runId, runId);
+    assertOutputHasDiagnostic({
+      stdout,
+      stderr,
+      diagnosticCode: REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary,
+      expectedScript: 'diagnostics:smoke:validate',
+      expectedRunId: runId,
+      expectedLevel: 'info',
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -106,11 +107,14 @@ test('validate-report-diagnostics-smoke emits summary diagnostic context for mar
       REPORT_DIAGNOSTICS_RUN_ID: runId,
     });
 
-    const summaryDiagnostic = findDiagnosticByCode(
-      { stdout, stderr },
-      REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary,
-    );
-    assert.ok(summaryDiagnostic);
+    const summaryDiagnostic = assertOutputHasDiagnostic({
+      stdout,
+      stderr,
+      diagnosticCode: REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary,
+      expectedScript: 'diagnostics:smoke:validate',
+      expectedRunId: runId,
+      expectedLevel: 'info',
+    });
     assert.equal(summaryDiagnostic.context.markdownValidationEnabled, false);
     assert.equal(summaryDiagnostic.context.markdownPath, null);
   } finally {

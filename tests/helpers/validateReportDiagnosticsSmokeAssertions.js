@@ -18,10 +18,6 @@ export function runValidateReportDiagnosticsSmoke(envOverrides = {}) {
   });
 }
 
-export function findDiagnosticByCode(output, diagnosticCode) {
-  return findDiagnosticByCodeFromOutput(output, diagnosticCode);
-}
-
 export async function assertValidateSmokeRejectsWithDiagnostic({
   envOverrides,
   diagnosticCode,
