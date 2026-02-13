@@ -334,6 +334,23 @@ function isValidDashboardDeltaEntry(entry) {
   );
 }
 
+function isSortedDashboardDeltaEntries(entries) {
+  for (let index = 1; index < entries.length; index += 1) {
+    const previous = entries[index - 1];
+    const current = entries[index];
+    if (previous.absDeltaPercent < current.absDeltaPercent) {
+      return false;
+    }
+    if (
+      previous.absDeltaPercent === current.absDeltaPercent &&
+      previous.key.localeCompare(current.key) > 0
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function isValidDashboardSummary(summary, entries) {
   if (
     !Boolean(
@@ -391,6 +408,13 @@ function isValidScenarioDashboardEntry(entry) {
 
   const allDeltas = [...entry.resourceOutputDeltas, ...entry.jobOutputDeltas, ...entry.jobPriorityDeltas];
   if (!allDeltas.every(isValidDashboardDeltaEntry)) {
+    return false;
+  }
+  if (
+    !isSortedDashboardDeltaEntries(entry.resourceOutputDeltas) ||
+    !isSortedDashboardDeltaEntries(entry.jobOutputDeltas) ||
+    !isSortedDashboardDeltaEntries(entry.jobPriorityDeltas)
+  ) {
     return false;
   }
   if (

@@ -532,6 +532,63 @@ test('isValidScenarioTuningDashboardPayload rejects ranking/signature inconsiste
   assert.equal(isValidScenarioTuningDashboardPayload(payload), false);
 });
 
+test('isValidScenarioTuningDashboardPayload rejects unsorted delta entries', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningDashboard, {
+    scenarioCount: 1,
+    activeScenarioCount: 1,
+    scenarios: [
+      {
+        id: 'frontier',
+        name: 'Frontier',
+        description: 'Baseline',
+        signature: 'aaaa1111',
+        resourceOutputDeltas: [
+          {
+            key: 'wood',
+            multiplier: 1.05,
+            deltaPercent: 5,
+            absDeltaPercent: 5,
+          },
+          {
+            key: 'food',
+            multiplier: 1.1,
+            deltaPercent: 10,
+            absDeltaPercent: 10,
+          },
+        ],
+        jobOutputDeltas: [],
+        jobPriorityDeltas: [],
+        resourceOutputSummary: {
+          count: 2,
+          meanAbsDeltaPercent: 7.5,
+          maxAbsDeltaPercent: 10,
+        },
+        jobOutputSummary: {
+          count: 0,
+          meanAbsDeltaPercent: 0,
+          maxAbsDeltaPercent: 0,
+        },
+        jobPrioritySummary: {
+          count: 0,
+          meanAbsDeltaPercent: 0,
+          maxAbsDeltaPercent: 0,
+        },
+        totalAbsDeltaPercent: 15,
+        isNeutral: false,
+      },
+    ],
+    ranking: [
+      {
+        rank: 1,
+        scenarioId: 'frontier',
+        totalAbsDeltaPercent: 15,
+      },
+    ],
+    signatureMap: { frontier: 'aaaa1111' },
+  });
+  assert.equal(isValidScenarioTuningDashboardPayload(payload), false);
+});
+
 test('isValidScenarioTuningTrendPayload accepts trend report payload', () => {
   const payload = buildValidScenarioTuningTrendPayload();
   assert.equal(isValidScenarioTuningTrendPayload(payload), true);
