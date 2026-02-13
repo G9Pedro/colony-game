@@ -15,6 +15,9 @@ const REPORT_ARTIFACT_TARGET_KIND_SET = new Set(REPORT_ARTIFACT_TARGETS.map((tar
 const REPORT_ARTIFACT_TARGET_KIND_BY_PATH = new Map(
   REPORT_ARTIFACT_TARGETS.map((target) => [target.path, target.kind]),
 );
+const SORTED_REPORT_ARTIFACT_TARGETS = Object.freeze(
+  [...REPORT_ARTIFACT_TARGETS].sort((left, right) => left.path.localeCompare(right.path)),
+);
 
 const REPORT_ARTIFACT_REGEN_COMMANDS = Object.freeze({
   'reports/scenario-tuning-validation.json': 'npm run simulate:validate:tuning',
@@ -33,23 +36,20 @@ export function isValidReportArtifactTarget(path, kind) {
 }
 
 export function hasExactReportArtifactTargets(results = undefined) {
-  if (!Array.isArray(results) || results.length !== REPORT_ARTIFACT_TARGETS.length) {
+  if (!Array.isArray(results) || results.length !== SORTED_REPORT_ARTIFACT_TARGETS.length) {
     return false;
   }
-  const seenTargetKeys = new Set();
-  for (const result of results) {
-    if (!isValidReportArtifactTarget(result?.path, result?.kind)) {
+  for (let index = 0; index < SORTED_REPORT_ARTIFACT_TARGETS.length; index += 1) {
+    const result = results[index];
+    const expectedTarget = SORTED_REPORT_ARTIFACT_TARGETS[index];
+    if (
+      result?.path !== expectedTarget.path ||
+      result?.kind !== expectedTarget.kind
+    ) {
       return false;
     }
-    const targetKey = `${result.path}::${result.kind}`;
-    if (seenTargetKeys.has(targetKey)) {
-      return false;
-    }
-    seenTargetKeys.add(targetKey);
   }
-  return REPORT_ARTIFACT_TARGETS.every((target) =>
-    seenTargetKeys.has(`${target.path}::${target.kind}`),
-  );
+  return true;
 }
 
 export function getReportArtifactRegenerationCommand(path) {

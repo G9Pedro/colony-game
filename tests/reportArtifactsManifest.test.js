@@ -43,7 +43,9 @@ test('isValidReportArtifactTarget validates path-kind pairs', () => {
 });
 
 test('hasExactReportArtifactTargets requires full canonical target set', () => {
-  const completeResults = REPORT_ARTIFACT_TARGETS.map((target) => ({ ...target }));
+  const completeResults = [...REPORT_ARTIFACT_TARGETS]
+    .sort((left, right) => left.path.localeCompare(right.path))
+    .map((target) => ({ ...target }));
   assert.equal(hasExactReportArtifactTargets(completeResults), true);
 
   const missingOne = completeResults.slice(1);
@@ -52,6 +54,9 @@ test('hasExactReportArtifactTargets requires full canonical target set', () => {
   const mismatchedKind = completeResults.map((result) => ({ ...result }));
   mismatchedKind[0].kind = REPORT_KINDS.scenarioTuningTrend;
   assert.equal(hasExactReportArtifactTargets(mismatchedKind), false);
+
+  const unsorted = [...completeResults].reverse();
+  assert.equal(hasExactReportArtifactTargets(unsorted), false);
 });
 
 test('getReportArtifactRegenerationCommand uses target-specific defaults', () => {

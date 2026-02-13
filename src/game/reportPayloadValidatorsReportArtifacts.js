@@ -1,6 +1,5 @@
 import { REPORT_KINDS, hasValidMeta } from './reportPayloadMeta.js';
 import {
-  areReportArtifactResultsSortedByPath,
   areRecommendedActionsEqual,
   buildReportArtifactResultStatistics,
   buildRecommendedActionsFromResults,
@@ -39,7 +38,6 @@ export function isValidReportArtifactsValidationPayload(payload) {
     return false;
   }
   const hasExactTargets = hasExactReportArtifactTargets(results);
-  const hasSortedResultPaths = areReportArtifactResultsSortedByPath(results);
 
   const computedSummary = buildReportArtifactResultStatistics(results);
   const reportedStatusTotal = getReportArtifactStatusCountsTotal(payload.statusCounts);
@@ -61,7 +59,6 @@ export function isValidReportArtifactsValidationPayload(payload) {
       computedSummary.statusTotal === payload.totalChecked &&
       statusCountsMatch &&
       hasExactTargets &&
-      hasSortedResultPaths &&
       recommendedActionsMatch,
   );
 }
