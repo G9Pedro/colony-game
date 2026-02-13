@@ -222,6 +222,13 @@ Contract notes:
 - `code` values are from a fixed, validated code catalog (unknown codes are rejected).
 - `context` is either `null` or an object (never an array/string).
 
+Diagnostics compatibility policy:
+- diagnostics are treated as an automation contract.
+- adding new diagnostic codes is allowed, but existing codes should not be renamed or removed without coordinated consumer updates.
+- schema changes should be explicit and versioned through `schemaVersion`.
+- contract fixtures in `tests/reportDiagnosticsCompatibility.test.js` and
+  `tests/reportDiagnosticsContractsScriptIntegration.test.js` intentionally fail on unreviewed drift.
+
 Enable strict mode in CI:
 1. Open repository **Settings → Secrets and variables → Actions → Variables**.
 2. Add variable `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY` with value `1`.
