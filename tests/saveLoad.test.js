@@ -47,5 +47,6 @@ test('deserializeState migrates legacy save payload fields', () => {
   assert.equal(typeof migrated.rngState, 'number');
   assert.equal(typeof migrated.metrics.peakPopulation, 'number');
   assert.equal(Array.isArray(migrated.runSummaryHistory), true);
+  assert.equal(Array.isArray(migrated.debug.invariantViolations), true);
   assert.equal(migrated.saveMeta.schemaVersion, SAVE_SCHEMA_VERSION);
 });

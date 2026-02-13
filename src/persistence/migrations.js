@@ -59,6 +59,12 @@ export function migrateSaveState(inputState) {
   if (state.lastRunSummary && typeof state.lastRunSummary !== 'object') {
     state.lastRunSummary = null;
   }
+  if (!state.debug || typeof state.debug !== 'object') {
+    state.debug = {};
+  }
+  if (!Array.isArray(state.debug.invariantViolations)) {
+    state.debug.invariantViolations = [];
+  }
 
   state.saveMeta = {
     schemaVersion: SAVE_SCHEMA_VERSION,

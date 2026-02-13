@@ -167,6 +167,9 @@ export function createInitialState(options = {}) {
     },
     runSummaryHistory: [],
     lastRunSummary: null,
+    debug: {
+      invariantViolations: [],
+    },
     lastAutoSaveAt: 0,
     maxWorldRadius: 27,
     rules: {

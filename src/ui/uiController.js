@@ -290,6 +290,7 @@ export class UIController {
   }
 
   renderRunStats(state) {
+    const latestViolation = state.debug?.invariantViolations?.at?.(-1);
     this.el.metricsSummary.innerHTML = `
       <div class="card">
         <div class="kv"><span>Peak Population</span><strong>${state.metrics.peakPopulation}</strong></div>
@@ -297,8 +298,17 @@ export class UIController {
         <div class="kv"><span>Research Completed</span><strong>${state.metrics.researchCompleted}</strong></div>
         <div class="kv"><span>Objectives Completed</span><strong>${state.metrics.objectivesCompleted}</strong></div>
         <div class="kv"><span>Deaths</span><strong>${state.metrics.deaths}</strong></div>
+        <div class="kv"><span>Invariant Violations</span><strong>${state.debug?.invariantViolations?.length ?? 0}</strong></div>
       </div>
     `;
+
+    if (latestViolation) {
+      const warningCard = document.createElement('div');
+      warningCard.className = 'card';
+      warningCard.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+      warningCard.innerHTML = `<small><strong>Latest invariant issue:</strong> ${latestViolation.message}</small>`;
+      this.el.metricsSummary.appendChild(warningCard);
+    }
 
     const history = [...(state.runSummaryHistory ?? [])].slice(-3).reverse();
     if (history.length === 0) {

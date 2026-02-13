@@ -104,6 +104,18 @@ export class GameEngine {
     if (this.state.status === 'playing') {
       const invariants = validateRuntimeState(this.state);
       if (invariants.length > 0) {
+        if (!this.state.debug || !Array.isArray(this.state.debug.invariantViolations)) {
+          this.state.debug = {
+            invariantViolations: [],
+          };
+        }
+        this.state.debug.invariantViolations.push({
+          tick: this.state.tick,
+          timeSeconds: this.state.timeSeconds,
+          message: invariants[0],
+          details: invariants,
+          occurredAt: new Date().toISOString(),
+        });
         this.state.paused = true;
         this.emit('state-invalid', {
           kind: 'error',

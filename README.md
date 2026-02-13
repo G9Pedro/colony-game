@@ -15,6 +15,7 @@ You build structures, manage colonists and resources, research technologies, and
 - Objective rewards automatically scale with scenario difficulty.
 - **Run analytics**: track peak population, completions, deaths, and run outcomes.
 - **Runtime state invariants** to detect and pause on simulation corruption.
+- Invariant violations are logged in run stats for debugging and postmortems.
 - **Scenario presets**: Frontier, Prosperous, and Harsh start conditions.
 - **Deterministic seeded simulation** support for reproducible runs.
 - **Save/Load/Reset** controls backed by `localStorage`.

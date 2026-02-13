@@ -31,5 +31,7 @@ test('GameEngine emits state-invalid and pauses on invariant violation', () => {
   engine.step(0.2);
 
   assert.equal(engine.state.paused, true);
+  assert.equal(engine.state.debug.invariantViolations.length, 1);
+  assert.ok(engine.state.debug.invariantViolations[0].message.includes('duplicate building id'));
   assert.ok(errorMessage.includes('State invariant violation'));
 });
