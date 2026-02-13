@@ -10,6 +10,16 @@ import { REPORT_ARTIFACT_TARGETS } from '../src/game/reportArtifactsValidation.j
 
 const execFileAsync = promisify(execFile);
 
+async function runNodeScript(scriptPath, { cwd, env = {} }) {
+  return execFileAsync(process.execPath, [scriptPath], {
+    cwd,
+    env: {
+      ...process.env,
+      ...env,
+    },
+  });
+}
+
 test('validate-report-artifacts script emits validation report for invalid/missing artifacts', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
   const outputPath = path.join('reports', 'report-artifacts-validation.json');
@@ -55,6 +65,47 @@ test('validate-report-artifacts script emits validation report for invalid/missi
     );
     assert.equal(dashboardRow.status, 'invalid-json');
     assert.match(dashboardRow.message, /unexpected/i);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('validate-report-artifacts script passes after generating all target artifacts', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
+  const validateArtifactsScriptPath = path.resolve('scripts/validate-report-artifacts.js');
+  const validateTuningScriptPath = path.resolve('scripts/validate-scenario-tuning.js');
+  const reportTuningScriptPath = path.resolve('scripts/report-scenario-tuning.js');
+  const reportTrendScriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
+  const suggestTuningBaselineScriptPath = path.resolve('scripts/suggest-scenario-tuning-baseline.js');
+  const suggestBaselineScriptPath = path.resolve('scripts/suggest-baselines.js');
+
+  try {
+    await runNodeScript(validateTuningScriptPath, { cwd: tempDirectory });
+    await runNodeScript(reportTuningScriptPath, { cwd: tempDirectory });
+    await runNodeScript(reportTrendScriptPath, { cwd: tempDirectory });
+    await runNodeScript(suggestTuningBaselineScriptPath, { cwd: tempDirectory });
+    await runNodeScript(suggestBaselineScriptPath, {
+      cwd: tempDirectory,
+      env: {
+        SIM_BASELINE_SUGGEST_RUNS: '2',
+      },
+    });
+
+    const { stdout } = await runNodeScript(validateArtifactsScriptPath, {
+      cwd: tempDirectory,
+    });
+    assert.match(stdout, /failed=0/i);
+
+    const summary = JSON.parse(
+      await readFile(
+        path.join(tempDirectory, 'reports', 'report-artifacts-validation.json'),
+        'utf-8',
+      ),
+    );
+    assert.equal(summary.meta.kind, REPORT_KINDS.reportArtifactsValidation);
+    assert.equal(summary.totalChecked, REPORT_ARTIFACT_TARGETS.length);
+    assert.equal(summary.overallPassed, true);
+    assert.equal(summary.failureCount, 0);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
