@@ -1,5 +1,6 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { readJsonArtifact } from './reportPayloadInput.js';
 
 async function persistPayload(path, payload) {
   await mkdir(dirname(path), { recursive: true });
@@ -16,6 +17,18 @@ function assertPayloadShape({ path, payload, validatePayload, sourceLabel }) {
   throw new Error(`${sourceLabel} payload at "${path}" failed validation.`);
 }
 
+function toReadFailureError({ path, readResult }) {
+  if (readResult?.status === 'invalid-json') {
+    return new SyntaxError(readResult.message);
+  }
+
+  const error = new Error(`Unable to read cached payload at "${path}": ${readResult?.message ?? 'read error'}`);
+  if (readResult?.errorCode) {
+    error.code = readResult.errorCode;
+  }
+  return error;
+}
+
 export async function loadJsonPayloadOrCompute({
   path,
   computePayload,
@@ -23,9 +36,9 @@ export async function loadJsonPayloadOrCompute({
   validatePayload = null,
   recoverOnInvalidPayload = false,
 }) {
-  try {
-    const text = await readFile(path, 'utf-8');
-    const payload = JSON.parse(text);
+  const readResult = await readJsonArtifact(path);
+  if (readResult.ok) {
+    const payload = readResult.payload;
     const isValid = typeof validatePayload === 'function' ? validatePayload(payload) : true;
     if (isValid) {
       return {
@@ -50,25 +63,25 @@ export async function loadJsonPayloadOrCompute({
       source: 'recovered-from-invalid-payload',
       payload: repairedPayload,
     };
-  } catch (error) {
-    const isMissingFile = error?.code === 'ENOENT';
-    const isParseError = error instanceof SyntaxError;
-
-    if (!isMissingFile && !(recoverOnParseError && isParseError)) {
-      throw error;
-    }
-
-    const payload = await computePayload();
-    assertPayloadShape({
-      path,
-      payload,
-      validatePayload,
-      sourceLabel: 'Computed',
-    });
-    await persistPayload(path, payload);
-    return {
-      source: isMissingFile ? 'computed' : 'recovered-from-invalid-json',
-      payload,
-    };
   }
+
+  const shouldRecoverFromMissing = readResult.status === 'missing';
+  const shouldRecoverFromInvalidJson =
+    readResult.status === 'invalid-json' && recoverOnParseError;
+  if (!shouldRecoverFromMissing && !shouldRecoverFromInvalidJson) {
+    throw toReadFailureError({ path, readResult });
+  }
+
+  const payload = await computePayload();
+  assertPayloadShape({
+    path,
+    payload,
+    validatePayload,
+    sourceLabel: 'Computed',
+  });
+  await persistPayload(path, payload);
+  return {
+    source: shouldRecoverFromMissing ? 'computed' : 'recovered-from-invalid-json',
+    payload,
+  };
 }

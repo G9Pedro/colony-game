@@ -136,3 +136,19 @@ test('loadJsonPayloadOrCompute throws when recomputed payload still fails valida
     /recomputed payload .* failed validation/i,
   );
 });
+
+test('loadJsonPayloadOrCompute throws read error for unreadable cache path', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'payload-cache-test-'));
+
+  await assert.rejects(
+    () =>
+      loadJsonPayloadOrCompute({
+        path: dir,
+        computePayload: () => ({ ok: true }),
+      }),
+    (error) =>
+      error instanceof Error &&
+      error.code === 'EISDIR' &&
+      error.message.includes('Unable to read cached payload'),
+  );
+});
