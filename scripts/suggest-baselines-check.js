@@ -8,6 +8,7 @@ const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 
 const { source, payload } = await loadJsonPayloadOrCompute({
   path: inputPath,
+  recoverOnParseError: true,
   computePayload: () =>
     buildBaselineSuggestionPayloadFromSimulations({
       driftRuns,

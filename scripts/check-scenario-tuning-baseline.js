@@ -12,6 +12,7 @@ const inputPath =
 
 const { source, payload } = await loadJsonPayloadOrCompute({
   path: inputPath,
+  recoverOnParseError: true,
   computePayload: () => ({
     generatedAt: new Date().toISOString(),
     ...buildScenarioTuningBaselineSuggestionPayload({

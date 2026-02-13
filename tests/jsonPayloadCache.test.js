@@ -38,3 +38,35 @@ test('loadJsonPayloadOrCompute returns file payload when file exists', async () 
   assert.deepEqual(result.payload, { ok: true, version: 2 });
   assert.equal(computeCalls, 0);
 });
+
+test('loadJsonPayloadOrCompute recovers invalid JSON when enabled', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'payload-cache-test-'));
+  const path = join(dir, 'payload.json');
+  await writeFile(path, '{"broken": ', 'utf-8');
+
+  const result = await loadJsonPayloadOrCompute({
+    path,
+    recoverOnParseError: true,
+    computePayload: () => ({ ok: true, version: 3 }),
+  });
+
+  assert.equal(result.source, 'recovered-from-invalid-json');
+  assert.deepEqual(result.payload, { ok: true, version: 3 });
+  const persisted = JSON.parse(await readFile(path, 'utf-8'));
+  assert.deepEqual(persisted, { ok: true, version: 3 });
+});
+
+test('loadJsonPayloadOrCompute throws on invalid JSON by default', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'payload-cache-test-'));
+  const path = join(dir, 'payload.json');
+  await writeFile(path, '{"broken": ', 'utf-8');
+
+  await assert.rejects(
+    () =>
+      loadJsonPayloadOrCompute({
+        path,
+        computePayload: () => ({ ok: false }),
+      }),
+    SyntaxError,
+  );
+});
