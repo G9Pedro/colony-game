@@ -305,6 +305,11 @@ npm run verify
 - `npm run reports:validate`
 - `npm run simulate:baseline:check`
 
+### CI/Local Parity Tip
+
+- Use `npm run verify` for full local parity with the default CI gate.
+- Use `npm run simulate:tuning:session:strict` when iterating on tuning and you want intensity drift enforcement to match strict CI mode before opening a PR.
+
 ## Gameplay Notes
 
 ### Controls
