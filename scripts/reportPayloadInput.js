@@ -119,6 +119,19 @@ export function buildReadArtifactDiagnostic(readResult) {
   };
 }
 
+export function getReportArtifactStatusDiagnosticCode(status) {
+  if (status === 'invalid-json') {
+    return READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson;
+  }
+  if (status === 'invalid') {
+    return READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload;
+  }
+  if (status === 'error') {
+    return READ_ARTIFACT_DIAGNOSTIC_CODES.readError;
+  }
+  return null;
+}
+
 export function toArtifactValidationEntry({ path, kind, readResult }) {
   if (readResult.ok) {
     return {

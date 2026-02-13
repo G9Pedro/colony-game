@@ -4,7 +4,11 @@ import {
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
-import { readJsonArtifact, toArtifactValidationEntry } from './reportPayloadInput.js';
+import {
+  getReportArtifactStatusDiagnosticCode,
+  readJsonArtifact,
+  toArtifactValidationEntry,
+} from './reportPayloadInput.js';
 import {
   buildValidatedReportPayload,
   writeJsonArtifact,
@@ -43,7 +47,9 @@ report.results.forEach((result) => {
     console.log(`[ok] ${result.path}: kind=${result.kind}`);
     return;
   }
-  console.error(`[${result.status}] ${result.path}: ${result.message}`);
+  const diagnosticCode = getReportArtifactStatusDiagnosticCode(result.status);
+  const diagnosticSuffix = diagnosticCode ? ` (code=${diagnosticCode})` : '';
+  console.error(`[${result.status}] ${result.path}: ${result.message}${diagnosticSuffix}`);
   if (result.recommendedCommand) {
     console.error(`  remediation: run "${result.recommendedCommand}"`);
   }

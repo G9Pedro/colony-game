@@ -7,6 +7,7 @@ import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidator
 import {
   buildReadArtifactFailureLabel,
   buildReadArtifactDiagnostic,
+  getReportArtifactStatusDiagnosticCode,
   getReadArtifactDiagnosticCode,
   READ_ARTIFACT_DIAGNOSTIC_CODES,
   readJsonArtifact,
@@ -188,4 +189,20 @@ test('buildReadArtifactDiagnostic returns structured read failure details', () =
     },
   );
   assert.equal(buildReadArtifactDiagnostic({ ok: true, payload: {} }), null);
+});
+
+test('getReportArtifactStatusDiagnosticCode maps report statuses to codes', () => {
+  assert.equal(
+    getReportArtifactStatusDiagnosticCode('invalid-json'),
+    READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
+  );
+  assert.equal(
+    getReportArtifactStatusDiagnosticCode('invalid'),
+    READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
+  );
+  assert.equal(
+    getReportArtifactStatusDiagnosticCode('error'),
+    READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
+  );
+  assert.equal(getReportArtifactStatusDiagnosticCode('ok'), null);
 });
