@@ -1,5 +1,7 @@
 import { deserializeState, serializeState } from './saveLoad.js';
 
+export const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024;
+
 export function buildExportFilename(state) {
   const scenario = state.scenarioId ?? 'frontier';
   const day = state.day ?? 1;
@@ -20,6 +22,9 @@ export function downloadStateSnapshot(state) {
 }
 
 export async function readStateFromFile(file) {
+  if (file.size > MAX_IMPORT_FILE_BYTES) {
+    throw new Error(`Save file too large. Max size is ${Math.floor(MAX_IMPORT_FILE_BYTES / 1024)} KB.`);
+  }
   const payload = await file.text();
   return deserializeState(payload);
 }

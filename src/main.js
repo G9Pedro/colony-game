@@ -96,7 +96,7 @@ ui.setPersistenceCallbacks({
       ui.setSelectedBuildType(null);
       notify({ kind: 'success', message: 'Save imported successfully.' });
     } catch (error) {
-      notify({ kind: 'error', message: 'Failed to import save file.' });
+      notify({ kind: 'error', message: error?.message ?? 'Failed to import save file.' });
     }
   },
   onReset: () => {

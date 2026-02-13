@@ -19,6 +19,7 @@ You build structures, manage colonists and resources, research technologies, and
 - **Save Export/Import** for portable JSON save files.
 - **Versioned save schema** with migration support for legacy save payloads.
 - **Strict save validation** for imports with actionable error feedback.
+- **Import safety limits** to reject unexpectedly large save files.
 - **3D rendering with Three.js**, plus an automatic 2D fallback when WebGL is unavailable.
 - **Responsive UI** that supports both desktop and touch interactions.
 
