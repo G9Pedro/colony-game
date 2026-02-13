@@ -1,4 +1,7 @@
-import { READ_ARTIFACT_DIAGNOSTIC_CODES } from '../../scripts/reportPayloadInput.js';
+import {
+  READ_ARTIFACT_DIAGNOSTIC_CODES,
+  READ_ARTIFACT_FAILURE_STATUSES,
+} from '../../scripts/reportPayloadInput.js';
 import assert from 'node:assert/strict';
 import {
   assertOutputHasReadFailureDiagnosticContract,
@@ -19,22 +22,22 @@ export const REPORT_READ_FAILURE_SCENARIOS = Object.freeze({
 export const REPORT_READ_FAILURE_SCENARIO_CONTRACTS = Object.freeze({
   [REPORT_READ_FAILURE_SCENARIOS.missing]: Object.freeze({
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.missing,
-    status: 'missing',
+    status: READ_ARTIFACT_FAILURE_STATUSES.missing,
     errorCode: 'ENOENT',
   }),
   [REPORT_READ_FAILURE_SCENARIOS.invalidJson]: Object.freeze({
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
-    status: 'invalid-json',
+    status: READ_ARTIFACT_FAILURE_STATUSES.invalidJson,
     errorCode: null,
   }),
   [REPORT_READ_FAILURE_SCENARIOS.invalidPayload]: Object.freeze({
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
-    status: 'invalid',
+    status: READ_ARTIFACT_FAILURE_STATUSES.invalidPayload,
     errorCode: null,
   }),
   [REPORT_READ_FAILURE_SCENARIOS.unreadable]: Object.freeze({
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
-    status: 'error',
+    status: READ_ARTIFACT_FAILURE_STATUSES.readError,
     errorCode: 'EISDIR',
   }),
 });

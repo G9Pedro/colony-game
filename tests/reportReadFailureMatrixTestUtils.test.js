@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { READ_ARTIFACT_DIAGNOSTIC_CODES } from '../scripts/reportPayloadInput.js';
+import {
+  READ_ARTIFACT_DIAGNOSTIC_CODES,
+  READ_ARTIFACT_FAILURE_STATUSES,
+} from '../scripts/reportPayloadInput.js';
 import {
   REPORT_READ_FAILURE_SCENARIOS,
   assertOutputHasReadFailureScenarioContract,
@@ -28,19 +31,19 @@ test('REPORT_READ_FAILURE_SCENARIOS exposes stable scenario keys', () => {
 test('getReportReadFailureScenarioContract returns stable contracts per scenario', () => {
   assert.deepEqual(getReportReadFailureScenarioContract(REPORT_READ_FAILURE_SCENARIOS.missing), {
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.missing,
-    status: 'missing',
+    status: READ_ARTIFACT_FAILURE_STATUSES.missing,
     errorCode: 'ENOENT',
   });
   assert.deepEqual(getReportReadFailureScenarioContract(REPORT_READ_FAILURE_SCENARIOS.invalidJson), {
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
-    status: 'invalid-json',
+    status: READ_ARTIFACT_FAILURE_STATUSES.invalidJson,
     errorCode: null,
   });
   assert.deepEqual(
     getReportReadFailureScenarioContract(REPORT_READ_FAILURE_SCENARIOS.invalidPayload),
     {
       diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
-      status: 'invalid',
+      status: READ_ARTIFACT_FAILURE_STATUSES.invalidPayload,
       errorCode: null,
     },
   );
@@ -48,7 +51,7 @@ test('getReportReadFailureScenarioContract returns stable contracts per scenario
     getReportReadFailureScenarioContract(REPORT_READ_FAILURE_SCENARIOS.unreadable),
     {
       diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
-      status: 'error',
+      status: READ_ARTIFACT_FAILURE_STATUSES.readError,
       errorCode: 'EISDIR',
     },
   );
@@ -116,7 +119,7 @@ test('assertNodeDiagnosticsScriptReadFailureScenario asserts missing artifact co
 
     assert.deepEqual(observedContract, {
       diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.missing,
-      status: 'missing',
+      status: READ_ARTIFACT_FAILURE_STATUSES.missing,
       errorCode: 'ENOENT',
     });
   } finally {
@@ -202,7 +205,7 @@ test('assertReadFailureDiagnosticMatchesScenario validates direct diagnostic pay
     level: 'error',
     context: {
       path: 'reports/example.json',
-      status: 'invalid',
+      status: READ_ARTIFACT_FAILURE_STATUSES.invalidPayload,
       reason: 'failed validation',
       errorCode: null,
     },

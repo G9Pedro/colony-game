@@ -12,6 +12,7 @@ import {
   getReportArtifactStatusDiagnosticCode,
   getReadArtifactDiagnosticCode,
   READ_ARTIFACT_DIAGNOSTIC_CODES,
+  READ_ARTIFACT_FAILURE_STATUSES,
   readJsonArtifact,
   readTextArtifact,
   readValidatedTextArtifact,
@@ -44,11 +45,11 @@ test('readJsonArtifact classifies missing and invalid-json outcomes', async () =
 
     const missingResult = await readJsonArtifact(missingPath);
     assert.equal(missingResult.ok, false);
-    assert.equal(missingResult.status, 'missing');
+    assert.equal(missingResult.status, READ_ARTIFACT_FAILURE_STATUSES.missing);
 
     const invalidJsonResult = await readJsonArtifact(invalidPath);
     assert.equal(invalidJsonResult.ok, false);
-    assert.equal(invalidJsonResult.status, 'invalid-json');
+    assert.equal(invalidJsonResult.status, READ_ARTIFACT_FAILURE_STATUSES.invalidJson);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -60,7 +61,7 @@ test('readJsonArtifact classifies non-file read failures as error', async () => 
   try {
     const result = await readJsonArtifact(directory);
     assert.equal(result.ok, false);
-    assert.equal(result.status, 'error');
+    assert.equal(result.status, READ_ARTIFACT_FAILURE_STATUSES.readError);
     assert.equal(typeof result.message, 'string');
     assert.equal(result.errorCode, 'EISDIR');
   } finally {
@@ -82,11 +83,11 @@ test('readTextArtifact returns file text and classifies missing/error outcomes',
 
     const missingResult = await readTextArtifact(missingPath);
     assert.equal(missingResult.ok, false);
-    assert.equal(missingResult.status, 'missing');
+    assert.equal(missingResult.status, READ_ARTIFACT_FAILURE_STATUSES.missing);
 
     const unreadableResult = await readTextArtifact(directory);
     assert.equal(unreadableResult.ok, false);
-    assert.equal(unreadableResult.status, 'error');
+    assert.equal(unreadableResult.status, READ_ARTIFACT_FAILURE_STATUSES.readError);
     assert.equal(unreadableResult.errorCode, 'EISDIR');
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -117,7 +118,7 @@ test('readValidatedReportArtifact rejects schema-invalid payloads', async () => 
       kind: REPORT_KINDS.scenarioTuningValidation,
     });
     assert.equal(result.ok, false);
-    assert.equal(result.status, 'invalid');
+    assert.equal(result.status, READ_ARTIFACT_FAILURE_STATUSES.invalidPayload);
     assert.match(result.message, /failed validation/i);
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -137,7 +138,7 @@ test('readValidatedTextArtifact classifies invalid text through validator callba
       invalidMessage: 'Markdown header is invalid.',
     });
     assert.equal(invalidResult.ok, false);
-    assert.equal(invalidResult.status, 'invalid');
+    assert.equal(invalidResult.status, READ_ARTIFACT_FAILURE_STATUSES.invalidPayload);
     assert.equal(invalidResult.message, 'Markdown header is invalid.');
 
     const validResult = await readValidatedTextArtifact({
@@ -171,7 +172,7 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
     kind: REPORT_KINDS.scenarioTuningDashboard,
     readResult: {
       ok: false,
-      status: 'invalid-json',
+      status: READ_ARTIFACT_FAILURE_STATUSES.invalidJson,
       message: 'Unexpected token',
     },
   });
@@ -186,7 +187,7 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
     kind: REPORT_KINDS.scenarioTuningDashboard,
     readResult: {
       ok: false,
-      status: 'missing',
+      status: READ_ARTIFACT_FAILURE_STATUSES.missing,
       message: 'ENOENT',
     },
   });
@@ -198,7 +199,7 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
     kind: REPORT_KINDS.scenarioTuningDashboard,
     readResult: {
       ok: false,
-      status: 'error',
+      status: READ_ARTIFACT_FAILURE_STATUSES.readError,
       message: 'EISDIR',
     },
   });
@@ -211,19 +212,35 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
 
 test('buildReadArtifactFailureLabel returns stable labels by status', () => {
   assert.equal(
-    buildReadArtifactFailureLabel({ ok: false, status: 'missing', message: 'ENOENT' }),
+    buildReadArtifactFailureLabel({
+      ok: false,
+      status: READ_ARTIFACT_FAILURE_STATUSES.missing,
+      message: 'ENOENT',
+    }),
     'missing file',
   );
   assert.equal(
-    buildReadArtifactFailureLabel({ ok: false, status: 'invalid-json', message: 'unexpected' }),
+    buildReadArtifactFailureLabel({
+      ok: false,
+      status: READ_ARTIFACT_FAILURE_STATUSES.invalidJson,
+      message: 'unexpected',
+    }),
     'invalid JSON',
   );
   assert.equal(
-    buildReadArtifactFailureLabel({ ok: false, status: 'invalid', message: 'schema mismatch' }),
+    buildReadArtifactFailureLabel({
+      ok: false,
+      status: READ_ARTIFACT_FAILURE_STATUSES.invalidPayload,
+      message: 'schema mismatch',
+    }),
     'schema mismatch',
   );
   assert.equal(
-    buildReadArtifactFailureLabel({ ok: false, status: 'error', errorCode: 'EISDIR' }),
+    buildReadArtifactFailureLabel({
+      ok: false,
+      status: READ_ARTIFACT_FAILURE_STATUSES.readError,
+      errorCode: 'EISDIR',
+    }),
     'EISDIR',
   );
   assert.equal(buildReadArtifactFailureLabel({ ok: true, payload: {} }), null);
@@ -232,14 +249,22 @@ test('buildReadArtifactFailureLabel returns stable labels by status', () => {
 test('formatReadArtifactFailureMessage renders consistent missing/read/invalid strings', () => {
   assert.equal(
     formatReadArtifactFailureMessage({
-      readResult: { ok: false, status: 'missing', path: 'reports/missing.json' },
+      readResult: {
+        ok: false,
+        status: READ_ARTIFACT_FAILURE_STATUSES.missing,
+        path: 'reports/missing.json',
+      },
       artifactLabel: 'diagnostics smoke report',
     }),
     'Missing diagnostics smoke report at "reports/missing.json".',
   );
   assert.equal(
     formatReadArtifactFailureMessage({
-      readResult: { ok: false, status: 'invalid-json', path: 'reports/invalid.json' },
+      readResult: {
+        ok: false,
+        status: READ_ARTIFACT_FAILURE_STATUSES.invalidJson,
+        path: 'reports/invalid.json',
+      },
       artifactLabel: 'diagnostics smoke report',
     }),
     'diagnostics smoke report at "reports/invalid.json" is not valid JSON.',
@@ -248,7 +273,7 @@ test('formatReadArtifactFailureMessage renders consistent missing/read/invalid s
     formatReadArtifactFailureMessage({
       readResult: {
         ok: false,
-        status: 'error',
+        status: READ_ARTIFACT_FAILURE_STATUSES.readError,
         path: 'reports/broken.json',
         message: 'EISDIR',
       },
@@ -258,7 +283,11 @@ test('formatReadArtifactFailureMessage renders consistent missing/read/invalid s
   );
   assert.equal(
     formatReadArtifactFailureMessage({
-      readResult: { ok: false, status: 'invalid', path: 'reports/broken.md' },
+      readResult: {
+        ok: false,
+        status: READ_ARTIFACT_FAILURE_STATUSES.invalidPayload,
+        path: 'reports/broken.md',
+      },
       artifactLabel: 'diagnostics smoke markdown report',
       invalidMessage: 'Markdown content failed validation.',
     }),
@@ -272,7 +301,7 @@ test('buildReadArtifactFailureContext builds stable diagnostic context fields', 
       {
         ok: false,
         path: 'reports/report.json',
-        status: 'error',
+        status: READ_ARTIFACT_FAILURE_STATUSES.readError,
         message: 'EISDIR',
         errorCode: 'EISDIR',
       },
@@ -280,7 +309,7 @@ test('buildReadArtifactFailureContext builds stable diagnostic context fields', 
     ),
     {
       path: 'reports/report.json',
-      status: 'error',
+      status: READ_ARTIFACT_FAILURE_STATUSES.readError,
       reason: 'EISDIR',
       errorCode: 'EISDIR',
       artifactKind: 'diagnostics-smoke-summary',
@@ -291,19 +320,31 @@ test('buildReadArtifactFailureContext builds stable diagnostic context fields', 
 
 test('getReadArtifactDiagnosticCode maps statuses to stable codes', () => {
   assert.equal(
-    getReadArtifactDiagnosticCode({ ok: false, status: 'missing' }),
+    getReadArtifactDiagnosticCode({
+      ok: false,
+      status: READ_ARTIFACT_FAILURE_STATUSES.missing,
+    }),
     READ_ARTIFACT_DIAGNOSTIC_CODES.missing,
   );
   assert.equal(
-    getReadArtifactDiagnosticCode({ ok: false, status: 'invalid-json' }),
+    getReadArtifactDiagnosticCode({
+      ok: false,
+      status: READ_ARTIFACT_FAILURE_STATUSES.invalidJson,
+    }),
     READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
   );
   assert.equal(
-    getReadArtifactDiagnosticCode({ ok: false, status: 'invalid' }),
+    getReadArtifactDiagnosticCode({
+      ok: false,
+      status: READ_ARTIFACT_FAILURE_STATUSES.invalidPayload,
+    }),
     READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
   );
   assert.equal(
-    getReadArtifactDiagnosticCode({ ok: false, status: 'error' }),
+    getReadArtifactDiagnosticCode({
+      ok: false,
+      status: READ_ARTIFACT_FAILURE_STATUSES.readError,
+    }),
     READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
   );
   assert.equal(getReadArtifactDiagnosticCode({ ok: true, payload: {} }), null);
@@ -313,7 +354,7 @@ test('buildReadArtifactDiagnostic returns structured read failure details', () =
   assert.deepEqual(
     buildReadArtifactDiagnostic({
       ok: false,
-      status: 'invalid-json',
+      status: READ_ARTIFACT_FAILURE_STATUSES.invalidJson,
       message: 'Unexpected token',
     }),
     {
@@ -327,15 +368,15 @@ test('buildReadArtifactDiagnostic returns structured read failure details', () =
 
 test('getReportArtifactStatusDiagnosticCode maps report statuses to codes', () => {
   assert.equal(
-    getReportArtifactStatusDiagnosticCode('invalid-json'),
+    getReportArtifactStatusDiagnosticCode(READ_ARTIFACT_FAILURE_STATUSES.invalidJson),
     READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
   );
   assert.equal(
-    getReportArtifactStatusDiagnosticCode('invalid'),
+    getReportArtifactStatusDiagnosticCode(READ_ARTIFACT_FAILURE_STATUSES.invalidPayload),
     READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
   );
   assert.equal(
-    getReportArtifactStatusDiagnosticCode('error'),
+    getReportArtifactStatusDiagnosticCode(READ_ARTIFACT_FAILURE_STATUSES.readError),
     READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
   );
   assert.equal(getReportArtifactStatusDiagnosticCode('ok'), null);
