@@ -11,6 +11,12 @@ import {
   REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
   REPORT_ARTIFACT_STATUSES,
 } from '../src/game/reportArtifactValidationPayloadHelpers.js';
+import { requireReportArtifactPath } from './helpers/reportArtifactsManifestTestUtils.js';
+
+const BASELINE_SUGGESTIONS_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.baselineSuggestions);
+const DASHBOARD_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.scenarioTuningDashboard);
+const TREND_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.scenarioTuningTrend);
+const VALIDATION_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.scenarioTuningValidation);
 
 test('REPORT_ARTIFACT_TARGETS includes expected report kinds', () => {
   const kinds = new Set(REPORT_ARTIFACT_TARGETS.map((target) => target.kind));
@@ -67,7 +73,7 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
 
   const report = evaluateReportArtifactEntries([
     {
-      path: 'reports/baseline-suggestions.json',
+      path: BASELINE_SUGGESTIONS_ARTIFACT_PATH,
       kind: REPORT_KINDS.baselineSuggestions,
       payload: validBaselinePayload,
     },
@@ -102,14 +108,14 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
   ]);
   assert.deepEqual(
     report.results.map((result) => result.path),
-    ['reports/baseline-suggestions.json', 'reports/broken.json', 'reports/missing.json'],
+    [BASELINE_SUGGESTIONS_ARTIFACT_PATH, 'reports/broken.json', 'reports/missing.json'],
   );
   const resultByPath = new Map(report.results.map((result) => [result.path, result]));
   assert.equal(
-    resultByPath.get('reports/baseline-suggestions.json')?.status,
+    resultByPath.get(BASELINE_SUGGESTIONS_ARTIFACT_PATH)?.status,
     REPORT_ARTIFACT_STATUSES.ok,
   );
-  assert.equal(resultByPath.get('reports/baseline-suggestions.json')?.recommendedCommand, null);
+  assert.equal(resultByPath.get(BASELINE_SUGGESTIONS_ARTIFACT_PATH)?.recommendedCommand, null);
   assert.equal(resultByPath.get('reports/missing.json')?.status, REPORT_ARTIFACT_STATUSES.error);
   assert.equal(resultByPath.get('reports/missing.json')?.recommendedCommand, 'npm run verify');
   assert.equal(
@@ -122,7 +128,7 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
 test('evaluateReportArtifactEntries reports canonical zeroed status keys', () => {
   const report = evaluateReportArtifactEntries([
     {
-      path: 'reports/scenario-tuning-dashboard.json',
+      path: DASHBOARD_ARTIFACT_PATH,
       kind: REPORT_KINDS.scenarioTuningDashboard,
       errorType: REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError,
     },
@@ -139,7 +145,7 @@ test('evaluateReportArtifactEntries reports canonical zeroed status keys', () =>
 test('evaluateReportArtifactEntries flags schema-invalid payloads', () => {
   const report = evaluateReportArtifactEntries([
     {
-      path: 'reports/scenario-tuning-dashboard.json',
+      path: DASHBOARD_ARTIFACT_PATH,
       kind: REPORT_KINDS.scenarioTuningDashboard,
       payload: { meta: { kind: REPORT_KINDS.scenarioTuningDashboard } },
     },
@@ -154,12 +160,12 @@ test('evaluateReportArtifactEntries flags schema-invalid payloads', () => {
 test('evaluateReportArtifactEntries groups recommended actions by command', () => {
   const report = evaluateReportArtifactEntries([
     {
-      path: 'reports/scenario-tuning-dashboard.json',
+      path: DASHBOARD_ARTIFACT_PATH,
       kind: REPORT_KINDS.scenarioTuningDashboard,
       errorType: REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError,
     },
     {
-      path: 'reports/scenario-tuning-validation.json',
+      path: VALIDATION_ARTIFACT_PATH,
       kind: REPORT_KINDS.scenarioTuningValidation,
       errorType: REPORT_ARTIFACT_ENTRY_ERROR_TYPES.readError,
     },
@@ -168,11 +174,11 @@ test('evaluateReportArtifactEntries groups recommended actions by command', () =
   assert.deepEqual(report.recommendedActions, [
     {
       command: 'npm run simulate:report:tuning',
-      paths: ['reports/scenario-tuning-dashboard.json'],
+      paths: [DASHBOARD_ARTIFACT_PATH],
     },
     {
       command: 'npm run simulate:validate:tuning',
-      paths: ['reports/scenario-tuning-validation.json'],
+      paths: [VALIDATION_ARTIFACT_PATH],
     },
   ]);
 });
@@ -242,11 +248,11 @@ test('buildReportArtifactsValidationMarkdown includes no-op remediation on pass'
 
 test('getReportArtifactRegenerationCommand returns specific command when available', () => {
   assert.equal(
-    getReportArtifactRegenerationCommand('reports/baseline-suggestions.json'),
+    getReportArtifactRegenerationCommand(BASELINE_SUGGESTIONS_ARTIFACT_PATH),
     'npm run simulate:baseline:suggest',
   );
   assert.equal(
-    getReportArtifactRegenerationCommand('reports/scenario-tuning-trend.json'),
+    getReportArtifactRegenerationCommand(TREND_ARTIFACT_PATH),
     'npm run simulate:report:tuning:trend',
   );
   assert.equal(
