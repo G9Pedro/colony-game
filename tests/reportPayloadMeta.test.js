@@ -47,3 +47,14 @@ test('hasValidMeta rejects unknown expected report kind', () => {
 test('withReportMeta rejects unknown report kind', () => {
   assert.throws(() => withReportMeta('unknown-kind', {}), /Unknown report kind/i);
 });
+
+test('withReportMeta rejects non-object payloads', () => {
+  assert.throws(
+    () => withReportMeta(REPORT_KINDS.baselineSuggestions, 'bad-payload'),
+    /payload must be an object/i,
+  );
+  assert.throws(
+    () => withReportMeta(REPORT_KINDS.baselineSuggestions, ['bad-payload']),
+    /payload must be an object/i,
+  );
+});

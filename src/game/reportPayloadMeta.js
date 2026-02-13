@@ -50,6 +50,12 @@ export function withReportMeta(kind, payload) {
   if (!(kind in REPORT_SCHEMA_VERSIONS)) {
     throw new Error(`Unknown report kind "${kind}".`);
   }
+  if (payload !== undefined && payload !== null && typeof payload !== 'object') {
+    throw new TypeError('Report payload must be an object when provided.');
+  }
+  if (Array.isArray(payload)) {
+    throw new TypeError('Report payload must be an object when provided.');
+  }
 
   const generatedAt = new Date().toISOString();
   return {
