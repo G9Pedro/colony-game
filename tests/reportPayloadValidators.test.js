@@ -83,6 +83,9 @@ test('isValidScenarioTuningSuggestionPayload accepts fully shaped payload', () =
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
     results: [],
     intensityResults: [],
+    strictIntensityRecommended: false,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
     snippets: {
       scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};',
       scenarioTuningTotalAbsDeltaBaseline:
@@ -94,6 +97,22 @@ test('isValidScenarioTuningSuggestionPayload accepts fully shaped payload', () =
 
 test('isValidScenarioTuningSuggestionPayload rejects wrong report kind', () => {
   const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
+    results: [],
+    intensityResults: [],
+    strictIntensityRecommended: false,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
+    snippets: {
+      scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};',
+      scenarioTuningTotalAbsDeltaBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {};',
+    },
+  });
+  assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
+});
+
+test('isValidScenarioTuningSuggestionPayload rejects missing strict enforcement fields', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
     results: [],
     intensityResults: [],
     snippets: {

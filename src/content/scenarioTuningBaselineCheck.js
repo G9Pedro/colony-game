@@ -116,6 +116,9 @@ export function buildScenarioTuningBaselineSuggestionPayload({
       intensityResults.every((result) => !result.changed),
     changedCount,
     intensityChangedCount,
+    strictIntensityRecommended: intensityChangedCount > 0,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
     currentSignatures,
     expectedSignatures,
     currentTotalAbsDelta,
@@ -138,6 +141,7 @@ export function buildScenarioTuningBaselineSuggestionMarkdown(payload) {
     '',
     `- Changed signatures: ${changed.length}`,
     `- Changed total |delta| baselines: ${intensityChanged.length}`,
+    `- Strict intensity enforcement recommended: ${payload.strictIntensityRecommended ? 'yes' : 'no'}`,
     '',
   ];
 
@@ -183,7 +187,7 @@ export function buildScenarioTuningBaselineSuggestionMarkdown(payload) {
     '## Enforcement Guidance',
     '',
     '- Signature baseline drift is always enforced by `npm run simulate:check:tuning-baseline`.',
-    '- To also enforce total |delta| baseline drift, run with `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline`.',
+    `- To also enforce total |delta| baseline drift, run with \`${payload.strictIntensityCommand}\`.`,
     '',
   );
   return lines.join('\n');

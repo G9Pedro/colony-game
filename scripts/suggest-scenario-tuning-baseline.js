@@ -40,3 +40,6 @@ console.log(`Scenario tuning baseline suggestions written to: ${outputPath}`);
 console.log(`Scenario tuning baseline suggestions markdown written to: ${markdownOutputPath}`);
 console.log(`Changed signatures detected: ${summary.changedSignatures}`);
 console.log(`Changed total |delta| baselines detected: ${summary.changedTotalAbsDelta}`);
+if (payload.strictIntensityRecommended) {
+  console.log(`Strict intensity enforcement recommendation: ${payload.strictIntensityCommand}`);
+}

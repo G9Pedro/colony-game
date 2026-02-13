@@ -66,7 +66,5 @@ if (summary.changedTotalAbsDelta > 0) {
     console.error('Scenario tuning intensity baseline drift detected with strict enforcement enabled.');
     process.exit(1);
   }
-  console.warn(
-    'Tip: set SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 to enforce total |delta| baseline drift as a hard failure.',
-  );
+  console.warn(`Tip: run "${payload.strictIntensityCommand}" to enforce intensity drift as a hard failure.`);
 }

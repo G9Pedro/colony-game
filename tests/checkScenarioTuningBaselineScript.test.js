@@ -14,6 +14,9 @@ function buildIntensityOnlyDriftPayload() {
     overallPassed: false,
     changedCount: 0,
     intensityChangedCount: 1,
+    strictIntensityRecommended: true,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
     currentSignatures: { frontier: 'aaaa1111' },
     expectedSignatures: { frontier: 'aaaa1111' },
     currentTotalAbsDelta: { frontier: 12 },

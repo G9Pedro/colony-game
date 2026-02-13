@@ -101,6 +101,8 @@ test('buildScenarioTuningBaselineSuggestionPayload mirrors report payload', () =
 
   assert.equal(payload.changedCount, 1);
   assert.equal(payload.intensityChangedCount, 1);
+  assert.equal(payload.strictIntensityRecommended, true);
+  assert.ok(payload.strictIntensityCommand.includes('SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1'));
   assert.equal(payload.results[0].changed, true);
   assert.equal(payload.intensityResults[0].changed, true);
 });
@@ -147,6 +149,9 @@ test('buildScenarioTuningBaselineSuggestionMarkdown renders changed scenarios', 
       scenarioTuningTotalAbsDeltaBaseline:
         'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {};\n',
     },
+    strictIntensityRecommended: true,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
   });
 
   assert.ok(markdown.includes('# Scenario Tuning Baseline Suggestions'));
@@ -154,6 +159,7 @@ test('buildScenarioTuningBaselineSuggestionMarkdown renders changed scenarios', 
   assert.ok(markdown.includes('EXPECTED_SCENARIO_TUNING_SIGNATURES'));
   assert.ok(markdown.includes('EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA'));
   assert.ok(markdown.includes('## Enforcement Guidance'));
+  assert.ok(markdown.includes('Strict intensity enforcement recommended: yes'));
   assert.ok(markdown.includes('SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1'));
 });
 

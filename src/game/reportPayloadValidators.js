@@ -87,6 +87,8 @@ export function isValidScenarioTuningSuggestionPayload(payload) {
     hasValidMeta(payload, REPORT_KINDS.scenarioTuningBaselineSuggestions) &&
       Array.isArray(payload.results) &&
       Array.isArray(payload.intensityResults) &&
+      typeof payload.strictIntensityRecommended === 'boolean' &&
+      typeof payload.strictIntensityCommand === 'string' &&
       payload.snippets &&
       typeof payload.snippets.scenarioTuningBaseline === 'string' &&
       typeof payload.snippets.scenarioTuningTotalAbsDeltaBaseline === 'string',
