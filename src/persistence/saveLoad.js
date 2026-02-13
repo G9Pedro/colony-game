@@ -1,11 +1,19 @@
+import { migrateSaveState, SAVE_SCHEMA_VERSION } from './migrations.js';
+
 const STORAGE_KEY = 'colony-frontier-save-v1';
 
 export function serializeState(state) {
-  return JSON.stringify(state);
+  const payload = JSON.parse(JSON.stringify(state));
+  payload.saveMeta = {
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    savedAt: new Date().toISOString(),
+  };
+  return JSON.stringify(payload);
 }
 
 export function deserializeState(serialized) {
-  return JSON.parse(serialized);
+  const parsed = JSON.parse(serialized);
+  return migrateSaveState(parsed);
 }
 
 export function saveGameState(state) {

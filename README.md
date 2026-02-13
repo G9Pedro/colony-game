@@ -15,6 +15,7 @@ You build structures, manage colonists and resources, research technologies, and
 - **Deterministic seeded simulation** support for reproducible runs.
 - **Save/Load/Reset** controls backed by `localStorage`.
 - **Save Export/Import** for portable JSON save files.
+- **Versioned save schema** with migration support for legacy save payloads.
 - **3D rendering with Three.js**, plus an automatic 2D fallback when WebGL is unavailable.
 - **Responsive UI** that supports both desktop and touch interactions.
 
