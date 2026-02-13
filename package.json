@@ -9,6 +9,7 @@
     "simulate": "node scripts/simulate.js",
     "simulate:assert": "node scripts/simulate-assert.js",
     "simulate:report": "node scripts/simulate-report.js",
+    "simulate:drift": "node scripts/simulate-drift.js",
     "verify": "npm test && npm run simulate:assert"
   },
   "keywords": [],

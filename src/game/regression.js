@@ -61,3 +61,77 @@ export function buildRegressionReport({
     results,
   };
 }
+
+function mean(values) {
+  if (values.length === 0) {
+    return 0;
+  }
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function computeScenarioAggregateMetrics(summaries) {
+  return {
+    runCount: summaries.length,
+    alivePopulationMean: Number(mean(summaries.map((summary) => summary.alivePopulation)).toFixed(4)),
+    buildingsMean: Number(mean(summaries.map((summary) => summary.buildings)).toFixed(4)),
+    dayMean: Number(mean(summaries.map((summary) => summary.day)).toFixed(4)),
+    survivalRate: Number(
+      mean(summaries.map((summary) => (summary.status === 'playing' || summary.status === 'won' ? 1 : 0))).toFixed(
+        4,
+      ),
+    ),
+    masonryCompletionRate: Number(
+      mean(
+        summaries.map((summary) => (summary.completedResearch.includes('masonry') ? 1 : 0)),
+      ).toFixed(4),
+    ),
+  };
+}
+
+function evaluateBounds(metrics, expectedBounds) {
+  const failures = [];
+  for (const [metricKey, bounds] of Object.entries(expectedBounds)) {
+    const value = metrics[metricKey];
+    if (typeof value !== 'number') {
+      failures.push(`metric "${metricKey}" missing`);
+      continue;
+    }
+    if (value < bounds.min || value > bounds.max) {
+      failures.push(
+        `metric "${metricKey}" expected ${bounds.min}..${bounds.max}, got ${value}`,
+      );
+    }
+  }
+  return failures;
+}
+
+export function buildAggregateRegressionReport({
+  summaries,
+  baselineBounds,
+}) {
+  const grouped = summaries.reduce((acc, summary) => {
+    if (!acc[summary.scenarioId]) {
+      acc[summary.scenarioId] = [];
+    }
+    acc[summary.scenarioId].push(summary);
+    return acc;
+  }, {});
+
+  const scenarioResults = Object.entries(grouped).map(([scenarioId, scenarioSummaries]) => {
+    const metrics = computeScenarioAggregateMetrics(scenarioSummaries);
+    const bounds = baselineBounds[scenarioId];
+    const failures = bounds ? evaluateBounds(metrics, bounds) : ['No baseline configured'];
+    return {
+      scenarioId,
+      metrics,
+      failures,
+      passed: failures.length === 0,
+    };
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    overallPassed: scenarioResults.every((result) => result.passed),
+    scenarioResults,
+  };
+}

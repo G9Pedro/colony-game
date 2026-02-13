@@ -97,10 +97,17 @@ Generate a machine-readable regression report:
 npm run simulate:report
 ```
 
+Run multi-seed drift checks against baseline bounds:
+
+```bash
+npm run simulate:drift
+```
+
 CI now runs:
 - `npm test`
 - `npm run simulate:assert`
 - `npm run simulate:report` (uploaded as artifact)
+- `npm run simulate:drift` (uploaded as artifact)
 
 One-command local verification:
 

@@ -38,3 +38,12 @@ jobs:
         with:
           name: simulation-regression-report
           path: reports/simulation-regression.json
+
+      - name: Run simulation drift baseline check
+        run: npm run simulate:drift
+
+      - name: Upload simulation drift report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-drift-report
+          path: reports/simulation-drift.json
