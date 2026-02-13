@@ -14,7 +14,7 @@ async function runTrendScript({ tempDirectory, baselinePath }) {
   const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
   const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
-  await execFileAsync(process.execPath, [scriptPath], {
+  const { stdout } = await execFileAsync(process.execPath, [scriptPath], {
     env: {
       ...process.env,
       SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
@@ -23,7 +23,10 @@ async function runTrendScript({ tempDirectory, baselinePath }) {
     },
   });
 
-  return JSON.parse(await readFile(outputPath, 'utf-8'));
+  return {
+    payload: JSON.parse(await readFile(outputPath, 'utf-8')),
+    stdout,
+  };
 }
 
 test('trend script falls back to signature baseline when dashboard baseline is missing', async () => {
@@ -31,7 +34,7 @@ test('trend script falls back to signature baseline when dashboard baseline is m
   const missingBaselinePath = path.join(tempDirectory, 'missing-baseline.json');
 
   try {
-    const payload = await runTrendScript({
+    const { payload, stdout } = await runTrendScript({
       tempDirectory,
       baselinePath: missingBaselinePath,
     });
@@ -48,6 +51,7 @@ test('trend script falls back to signature baseline when dashboard baseline is m
         payload.statusCounts.unchanged,
       payload.scenarioCount,
     );
+    assert.match(stdout, /statuses=added:\d+,changed:\d+,removed:\d+,unchanged:\d+/);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -73,7 +77,7 @@ test('trend script uses dashboard comparison when baseline dashboard payload exi
     });
     await writeFile(baselinePath, JSON.stringify(baselinePayload, null, 2), 'utf-8');
 
-    const payload = await runTrendScript({
+    const { payload, stdout } = await runTrendScript({
       tempDirectory,
       baselinePath,
     });
@@ -90,6 +94,7 @@ test('trend script uses dashboard comparison when baseline dashboard payload exi
         payload.statusCounts.unchanged,
       payload.scenarioCount,
     );
+    assert.match(stdout, /statuses=added:\d+,changed:\d+,removed:\d+,unchanged:\d+/);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

@@ -162,7 +162,7 @@ test('isValidScenarioTuningTrendPayload accepts trend report payload', () => {
       removed: 0,
       unchanged: 3,
     },
-    scenarios: [],
+    scenarios: [{ scenarioId: 'a' }, { scenarioId: 'b' }, { scenarioId: 'c' }],
     changedScenarioIds: [],
   });
   assert.equal(isValidScenarioTuningTrendPayload(payload), true);
@@ -184,8 +184,8 @@ test('isValidScenarioTuningTrendPayload rejects unknown comparison source', () =
       removed: 0,
       unchanged: 0,
     },
-    scenarios: [],
-    changedScenarioIds: [],
+    scenarios: [{ scenarioId: 'new' }],
+    changedScenarioIds: ['new'],
   });
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });
@@ -204,7 +204,7 @@ test('isValidScenarioTuningTrendPayload rejects missing baseline dashboard metad
       removed: 0,
       unchanged: 1,
     },
-    scenarios: [],
+    scenarios: [{ scenarioId: 'frontier' }],
     changedScenarioIds: [],
   });
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
@@ -224,8 +224,30 @@ test('isValidScenarioTuningTrendPayload rejects invalid status counts', () => {
       changed: 1,
       unchanged: 1,
     },
-    scenarios: [],
-    changedScenarioIds: [],
+    scenarios: [{ scenarioId: 'changed' }, { scenarioId: 'unchanged' }],
+    changedScenarioIds: ['changed'],
+  });
+  assert.equal(isValidScenarioTuningTrendPayload(payload), false);
+});
+
+test('isValidScenarioTuningTrendPayload rejects arithmetic count inconsistencies', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
+    comparisonSource: 'dashboard',
+    baselineReference: 'reports/scenario-tuning-dashboard.baseline.json',
+    hasBaselineDashboard: true,
+    baselineScenarioCount: 2,
+    scenarioCount: 2,
+    changedCount: 1,
+    unchangedCount: 1,
+    hasChanges: true,
+    statusCounts: {
+      added: 0,
+      changed: 0,
+      removed: 0,
+      unchanged: 2,
+    },
+    scenarios: [{ scenarioId: 'frontier' }, { scenarioId: 'prosperous' }],
+    changedScenarioIds: ['prosperous'],
   });
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });

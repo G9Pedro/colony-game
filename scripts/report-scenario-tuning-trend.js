@@ -73,7 +73,7 @@ await writeFile(outputPath, JSON.stringify(payload, null, 2), 'utf-8');
 await writeFile(markdownOutputPath, markdown, 'utf-8');
 
 console.log(
-  `Scenario tuning trend generated: source=${payload.comparisonSource}, changed=${payload.changedCount}/${payload.scenarioCount}`,
+  `Scenario tuning trend generated: source=${payload.comparisonSource}, changed=${payload.changedCount}/${payload.scenarioCount}, statuses=added:${payload.statusCounts?.added ?? 0},changed:${payload.statusCounts?.changed ?? 0},removed:${payload.statusCounts?.removed ?? 0},unchanged:${payload.statusCounts?.unchanged ?? 0}`,
 );
 console.log(`Scenario tuning trend JSON written to: ${outputPath}`);
 console.log(`Scenario tuning trend markdown written to: ${markdownOutputPath}`);

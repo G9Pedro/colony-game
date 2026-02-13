@@ -134,11 +134,40 @@ function isKnownTrendComparisonSource(value) {
   return value === 'dashboard' || value === 'signature-baseline';
 }
 
+function isNonNegativeInteger(value) {
+  return Number.isInteger(value) && value >= 0;
+}
+
 function isValidTrendStatusCounts(value) {
   if (!isRecordOfNumbers(value)) {
     return false;
   }
-  return ['added', 'changed', 'removed', 'unchanged'].every((key) => typeof value[key] === 'number');
+  return ['added', 'changed', 'removed', 'unchanged'].every((key) =>
+    isNonNegativeInteger(value[key]),
+  );
+}
+
+function hasValidTrendCountConsistency(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return false;
+  }
+
+  const addedCount = payload.statusCounts?.added ?? 0;
+  const changedStatusCount = payload.statusCounts?.changed ?? 0;
+  const removedCount = payload.statusCounts?.removed ?? 0;
+  const unchangedStatusCount = payload.statusCounts?.unchanged ?? 0;
+  const changedByStatus = addedCount + changedStatusCount + removedCount;
+  const totalByStatus = changedByStatus + unchangedStatusCount;
+
+  return (
+    payload.scenarioCount === payload.changedCount + payload.unchangedCount &&
+    payload.changedCount === changedByStatus &&
+    payload.unchangedCount === unchangedStatusCount &&
+    payload.scenarioCount === totalByStatus &&
+    payload.hasChanges === payload.changedCount > 0 &&
+    payload.scenarioCount === payload.scenarios.length &&
+    payload.changedCount === payload.changedScenarioIds.length
+  );
 }
 
 export function isValidScenarioTuningTrendPayload(payload) {
@@ -147,14 +176,16 @@ export function isValidScenarioTuningTrendPayload(payload) {
       isKnownTrendComparisonSource(payload.comparisonSource) &&
       (typeof payload.baselineReference === 'string' || payload.baselineReference === null) &&
       typeof payload.hasBaselineDashboard === 'boolean' &&
-      typeof payload.baselineScenarioCount === 'number' &&
-      typeof payload.scenarioCount === 'number' &&
-      typeof payload.changedCount === 'number' &&
-      typeof payload.unchangedCount === 'number' &&
+      isNonNegativeInteger(payload.baselineScenarioCount) &&
+      isNonNegativeInteger(payload.scenarioCount) &&
+      isNonNegativeInteger(payload.changedCount) &&
+      isNonNegativeInteger(payload.unchangedCount) &&
       typeof payload.hasChanges === 'boolean' &&
       isValidTrendStatusCounts(payload.statusCounts) &&
       Array.isArray(payload.scenarios) &&
-      Array.isArray(payload.changedScenarioIds),
+      Array.isArray(payload.changedScenarioIds) &&
+      payload.changedScenarioIds.every((scenarioId) => typeof scenarioId === 'string') &&
+      hasValidTrendCountConsistency(payload),
   );
 }
 
