@@ -18,6 +18,7 @@
     "simulate:report:tuning:trend": "node scripts/report-scenario-tuning-trend.js",
     "simulate:suggest:tuning-baseline": "node scripts/suggest-scenario-tuning-baseline.js",
     "simulate:check:tuning-baseline": "node scripts/check-scenario-tuning-baseline.js",
+    "simulate:tuning:session": "npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:report:tuning:trend && npm run simulate:suggest:tuning-baseline && npm run simulate:check:tuning-baseline",
     "reports:validate": "node scripts/validate-report-artifacts.js",
     "simulate:baseline:suggest": "node scripts/suggest-baselines.js",
     "simulate:baseline:check": "node scripts/suggest-baselines-check.js",

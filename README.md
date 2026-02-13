@@ -187,6 +187,30 @@ npm run simulate:suggest:tuning-baseline
 | `npm run simulate:report:tuning:trend` | Compare current tuning against dashboard/signature+intensity baselines | `reports/scenario-tuning-trend.json/.md` |
 | `npm run simulate:suggest:tuning-baseline` | Suggest baseline updates for signatures and total intensity | `reports/scenario-tuning-baseline-suggestions.json/.md` |
 | `npm run simulate:check:tuning-baseline` | Enforce tuning baseline drift policy | console output + exit status |
+| `npm run simulate:tuning:session` | Run the recommended manual tuning command sequence | all tuning reports + baseline check output |
+
+### Recommended Manual Tuning Session Order
+
+For local balancing sessions, use this order to get deterministic, review-friendly outputs:
+
+1. Edit scenario tuning multipliers in `src/content/scenarios.js`.
+2. Run the full tuning workflow:
+
+   ```bash
+   npm run simulate:tuning:session
+   ```
+
+3. If you are intentionally redefining dashboard-based trend comparisons, capture a fresh dashboard baseline:
+
+   ```bash
+   npm run simulate:capture:tuning-dashboard-baseline
+   ```
+
+4. If intensity drift should fail locally during review, rerun the check in strict mode:
+
+   ```bash
+   SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline
+   ```
 
 This suggestion report now includes copy-ready snippets for both:
 - `EXPECTED_SCENARIO_TUNING_SIGNATURES`
