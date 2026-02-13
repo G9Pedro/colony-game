@@ -7,6 +7,7 @@ import {
   getScenarioTuningBaselineChangeSummary,
 } from '../src/content/scenarioTuningBaselineCheck.js';
 import { SCENARIO_DEFINITIONS } from '../src/content/scenarios.js';
+import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 
 const outputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
@@ -15,24 +16,18 @@ const markdownOutputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_MD_PATH ??
   'reports/scenario-tuning-baseline-suggestions.md';
 
-const payload = buildScenarioTuningBaselineSuggestionPayload({
+const suggestionPayload = buildScenarioTuningBaselineSuggestionPayload({
   scenarios: SCENARIO_DEFINITIONS,
   expectedSignatures: EXPECTED_SCENARIO_TUNING_SIGNATURES,
 });
+const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, suggestionPayload);
 const summary = getScenarioTuningBaselineChangeSummary(payload);
 const markdown = buildScenarioTuningBaselineSuggestionMarkdown(payload);
 
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(
   outputPath,
-  JSON.stringify(
-    {
-      generatedAt: new Date().toISOString(),
-      ...payload,
-    },
-    null,
-    2,
-  ),
+  JSON.stringify(payload, null, 2),
   'utf-8',
 );
 await writeFile(markdownOutputPath, markdown, 'utf-8');

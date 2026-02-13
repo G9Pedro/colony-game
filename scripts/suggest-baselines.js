@@ -3,6 +3,7 @@ import { dirname } from 'node:path';
 import {
   buildBaselineSuggestionMarkdown,
 } from '../src/game/baselineSuggestion.js';
+import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import { buildBaselineSuggestionPayloadFromSimulations } from './baselineSuggestionRuntime.js';
 
 const outputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-suggestions.json';
@@ -10,10 +11,11 @@ const markdownOutputPath = process.env.SIM_BASELINE_SUGGEST_MD_PATH ?? 'reports/
 const driftRuns = Number(process.env.SIM_BASELINE_SUGGEST_RUNS ?? 8);
 const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 
-const payload = buildBaselineSuggestionPayloadFromSimulations({
+const baselinePayload = buildBaselineSuggestionPayloadFromSimulations({
   driftRuns,
   strategyProfileId,
 });
+const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, baselinePayload);
 
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, JSON.stringify(payload, null, 2), 'utf-8');
