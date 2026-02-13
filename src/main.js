@@ -130,6 +130,12 @@ ui.setPersistenceCallbacks({
   onRendererModeChange: (mode) => {
     const switched = renderer.setRendererMode?.(mode) ?? false;
     ui.attachRenderer(renderer);
+    if (switched) {
+      notify({
+        kind: 'success',
+        message: `Renderer switched to ${renderer.getRendererMode?.() ?? mode}.`,
+      });
+    }
     return switched;
   },
 });
