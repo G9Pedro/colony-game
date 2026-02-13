@@ -1,10 +1,10 @@
-import { readFile } from 'node:fs/promises';
 import {
   buildReportArtifactsValidationMarkdown,
   evaluateReportArtifactEntries,
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
+import { readJsonArtifact, toArtifactValidationEntry } from './reportPayloadInput.js';
 import {
   buildValidatedReportPayload,
   writeJsonArtifact,
@@ -18,21 +18,14 @@ const markdownOutputPath =
 
 const entries = [];
 for (const target of REPORT_ARTIFACT_TARGETS) {
-  try {
-    const payloadText = await readFile(target.path, 'utf-8');
-    entries.push({
+  const readResult = await readJsonArtifact(target.path);
+  entries.push(
+    toArtifactValidationEntry({
       path: target.path,
       kind: target.kind,
-      payload: JSON.parse(payloadText),
-    });
-  } catch (error) {
-    entries.push({
-      path: target.path,
-      kind: target.kind,
-      errorType: error instanceof SyntaxError ? 'invalid-json' : 'error',
-      message: error.message,
-    });
-  }
+      readResult,
+    }),
+  );
 }
 
 const baseReport = evaluateReportArtifactEntries(entries);

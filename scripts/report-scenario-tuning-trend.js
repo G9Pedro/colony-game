@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { SCENARIO_DEFINITIONS } from '../src/content/scenarios.js';
 import {
   EXPECTED_SCENARIO_TUNING_SIGNATURES,
@@ -11,8 +10,8 @@ import {
 } from '../src/content/scenarioTuningTrend.js';
 import {
   REPORT_KINDS,
-  validateReportPayloadByKind,
 } from '../src/game/reportPayloadValidators.js';
+import { readValidatedReportArtifact } from './reportPayloadInput.js';
 import {
   buildValidatedReportPayload,
   writeJsonArtifact,
@@ -33,32 +32,35 @@ let baselineReference = 'src/content/scenarioTuningBaseline.js';
 let baselineDashboard = null;
 
 try {
-  const payloadText = await readFile(baselineDashboardPath, 'utf-8');
-  const parsedPayload = JSON.parse(payloadText);
-  const baselineValidation = validateReportPayloadByKind(
-    REPORT_KINDS.scenarioTuningDashboard,
-    parsedPayload,
-  );
-  if (baselineValidation.ok) {
+  const baselineDashboardResult = await readValidatedReportArtifact({
+    path: baselineDashboardPath,
+    kind: REPORT_KINDS.scenarioTuningDashboard,
+  });
+  if (baselineDashboardResult.ok) {
     comparisonSource = 'dashboard';
     baselineReference = baselineDashboardPath;
-    baselineDashboard = parsedPayload;
-  } else {
+    baselineDashboard = baselineDashboardResult.payload;
+  } else if (baselineDashboardResult.status === 'invalid') {
     console.warn(
-      `Baseline dashboard payload at ${baselineDashboardPath} is invalid (${baselineValidation.reason}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
+      `Baseline dashboard payload at ${baselineDashboardPath} is invalid (${baselineDashboardResult.message}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
-  }
-} catch (error) {
-  if (error?.code === 'ENOENT') {
+  } else if (baselineDashboardResult.status === 'missing') {
     console.log(
       `Baseline dashboard not found at ${baselineDashboardPath}; using signature baseline comparison. To create one, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
   } else {
-    const label = error instanceof SyntaxError ? 'invalid JSON' : error.code ?? error.message;
+    const label =
+      baselineDashboardResult.status === 'invalid-json'
+        ? 'invalid JSON'
+        : baselineDashboardResult.errorCode ?? baselineDashboardResult.message;
     console.warn(
       `Unable to read baseline dashboard from ${baselineDashboardPath} (${label}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
   }
+} catch (error) {
+  console.warn(
+    `Unexpected baseline dashboard handling failure (${error.message}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
+  );
 }
 
 const report = buildScenarioTuningTrendReport({
