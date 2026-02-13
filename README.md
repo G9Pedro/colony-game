@@ -146,7 +146,9 @@ npm run verify
 - `npm test`
 - `npm run simulate:assert`
 - `npm run simulate:drift`
+- `SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot`
 - `npm run simulate:balance`
+- `npm run simulate:baseline:suggest`
 
 ## Gameplay Notes
 
