@@ -3,17 +3,11 @@ import assert from 'node:assert/strict';
 import { REPORT_KINDS } from '../src/game/reportPayloadMeta.js';
 import { isValidReportArtifactsValidationPayload } from '../src/game/reportPayloadValidatorsReportArtifacts.js';
 import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
-import { getReportArtifactTargetPath } from '../src/game/reportArtifactsManifest.js';
 import {
   buildFailingReportArtifactResultOverride,
   buildReportArtifactsValidationPayloadFixture,
 } from './helpers/reportArtifactsValidationFixtures.js';
-
-function requireReportArtifactPath(kind) {
-  const path = getReportArtifactTargetPath(kind);
-  assert.notEqual(path, null);
-  return path;
-}
+import { requireReportArtifactPath } from './helpers/reportArtifactsManifestTestUtils.js';
 
 const TREND_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.scenarioTuningTrend);
 const DASHBOARD_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.scenarioTuningDashboard);
