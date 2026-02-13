@@ -1,25 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import {
   assertOutputHasReadFailureDiagnostic,
 } from './helpers/reportDiagnosticsTestUtils.js';
-
-const execFileAsync = promisify(execFile);
+import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
+import {
+  createInvalidJsonArtifact,
+  createJsonArtifact,
+  createUnreadableArtifactPath,
+} from './helpers/reportReadFailureFixtures.js';
 
 async function runTrendScript({ tempDirectory, baselinePath, extraEnv = {} }) {
   const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
   const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
   const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
-  const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+  const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
     env: {
-      ...process.env,
       SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
       SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
       SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: baselinePath,
@@ -131,7 +132,11 @@ test('trend script uses dashboard comparison when baseline dashboard payload exi
       ranking: [{ rank: 1, scenarioId: 'frontier', totalAbsDeltaPercent: 0 }],
       signatureMap: { frontier: 'aaaa1111' },
     });
-    await writeFile(baselinePath, JSON.stringify(baselinePayload, null, 2), 'utf-8');
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-dashboard.baseline.json',
+      payload: baselinePayload,
+    });
 
     const { payload, stdout } = await runTrendScript({
       tempDirectory,
@@ -161,9 +166,10 @@ test('trend script suggests baseline capture command when baseline payload is in
   const baselinePath = path.join(tempDirectory, 'scenario-tuning-dashboard.baseline.json');
 
   try {
-    await writeFile(
-      baselinePath,
-      JSON.stringify(withReportMeta(REPORT_KINDS.scenarioTuningDashboard, {
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-dashboard.baseline.json',
+      payload: withReportMeta(REPORT_KINDS.scenarioTuningDashboard, {
         scenarioCount: 1,
         activeScenarioCount: 0,
         scenarios: [
@@ -225,9 +231,8 @@ test('trend script suggests baseline capture command when baseline payload is in
           { rank: 2, scenarioId: 'zeta', totalAbsDeltaPercent: 0 },
         ],
         signatureMap: { alpha: 'aaaa1111', zeta: 'bbbb2222' },
-      }), null, 2),
-      'utf-8',
-    );
+      }),
+    });
 
     const { payload, stderr } = await runTrendScript({
       tempDirectory,
@@ -260,7 +265,10 @@ test('trend script warns and falls back when baseline payload is invalid JSON', 
   const baselinePath = path.join(tempDirectory, 'scenario-tuning-dashboard.baseline.json');
 
   try {
-    await writeFile(baselinePath, '{"broken": ', 'utf-8');
+    await createInvalidJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-dashboard.baseline.json',
+    });
 
     const { payload, stderr } = await runTrendScript({
       tempDirectory,
@@ -291,11 +299,20 @@ test('trend script warns and falls back when baseline payload is invalid JSON', 
 
 test('trend script warns and falls back when baseline path is unreadable as file', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-trend-script-'));
+  const unreadableBaselinePath = path.join(
+    tempDirectory,
+    'scenario-tuning-dashboard.baseline.unreadable.json',
+  );
 
   try {
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-dashboard.baseline.unreadable.json',
+    });
+
     const { payload, stderr } = await runTrendScript({
       tempDirectory,
-      baselinePath: tempDirectory,
+      baselinePath: unreadableBaselinePath,
       extraEnv: {
         REPORT_DIAGNOSTICS_JSON: '1',
       },
@@ -309,12 +326,12 @@ test('trend script warns and falls back when baseline path is unreadable as file
       stderr,
       diagnosticCode: 'artifact-read-error',
       expectedScript: 'simulate:report:tuning:trend',
-      expectedPath: tempDirectory,
+      expectedPath: unreadableBaselinePath,
       expectedStatus: 'error',
       expectedErrorCode: 'EISDIR',
     });
     assert.equal(diagnostic.level, 'warn');
-    assert.equal(diagnostic.context?.baselinePath, tempDirectory);
+    assert.equal(diagnostic.context?.baselinePath, unreadableBaselinePath);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
