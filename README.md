@@ -213,6 +213,19 @@ For local balancing sessions, use this order to get deterministic, review-friend
    npm run simulate:tuning:session:strict
    ```
 
+### Tuning PR Checklist (Quick)
+
+Before opening a tuning-focused PR, run:
+
+```bash
+npm run simulate:tuning:session:strict
+```
+
+Then review these artifacts:
+- `reports/scenario-tuning-dashboard.md` for current multiplier deltas/rankings.
+- `reports/scenario-tuning-trend.md` to confirm intended scenario changes only.
+- `reports/scenario-tuning-baseline-suggestions.md` for copy-ready baseline updates (signature + total intensity).
+
 This suggestion report now includes copy-ready snippets for both:
 - `EXPECTED_SCENARIO_TUNING_SIGNATURES`
 - `EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA`
