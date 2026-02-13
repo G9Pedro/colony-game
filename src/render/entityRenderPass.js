@@ -1,0 +1,218 @@
+function createRoundedRectPath(ctx, x, y, width, height, radius = 8) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function isRectVisibleInViewport({
+  x,
+  y,
+  width,
+  height,
+  viewportWidth,
+  viewportHeight,
+  padding = 48,
+}) {
+  if (x + width < -padding) {
+    return false;
+  }
+  if (y + height < -padding) {
+    return false;
+  }
+  if (x > viewportWidth + padding) {
+    return false;
+  }
+  return y <= viewportHeight + padding;
+}
+
+export function buildEntityRenderPass({
+  state,
+  now,
+  daylight,
+  camera,
+  spriteFactory,
+  animations,
+  particles,
+  colonistRenderState,
+}) {
+  const interactiveEntities = [];
+  const renderables = [];
+
+  state.constructionQueue.forEach((item) => {
+    const sprite = spriteFactory.getBuildingSprite(item.type, { construction: true });
+    const completeSprite = spriteFactory.getBuildingSprite(item.type, { construction: false });
+    const screen = camera.worldToScreen(item.x, item.z);
+    const progress = clamp(item.progress / Math.max(0.1, item.buildTime), 0, 1);
+    const drawX = screen.x - sprite.anchorX * camera.zoom;
+    const drawY = screen.y - sprite.anchorY * camera.zoom;
+    const drawW = sprite.canvas.width * camera.zoom;
+    const drawH = sprite.canvas.height * camera.zoom;
+    if (!isRectVisibleInViewport({
+      x: drawX,
+      y: drawY,
+      width: drawW,
+      height: drawH,
+      viewportWidth: camera.viewportWidth,
+      viewportHeight: camera.viewportHeight,
+    })) {
+      return;
+    }
+    renderables.push({
+      depth: item.x + item.z + 0.04,
+      draw: (ctx) => {
+        ctx.save();
+        ctx.globalAlpha = 0.95;
+        ctx.drawImage(sprite.canvas, drawX, drawY, drawW, drawH);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(drawX, drawY + drawH * (1 - progress), drawW, drawH * progress);
+        ctx.clip();
+        ctx.drawImage(completeSprite.canvas, drawX, drawY, drawW, drawH);
+        ctx.restore();
+
+        const barW = 40 * camera.zoom;
+        const barH = 5 * camera.zoom;
+        const barX = screen.x - barW * 0.5;
+        const barY = screen.y - drawH * 0.42;
+        createRoundedRectPath(ctx, barX, barY, barW, barH, 3);
+        ctx.fillStyle = 'rgba(38, 31, 24, 0.75)';
+        ctx.fill();
+        createRoundedRectPath(ctx, barX, barY, barW * progress, barH, 3);
+        ctx.fillStyle = 'rgba(89, 183, 120, 0.95)';
+        ctx.fill();
+        ctx.restore();
+      },
+    });
+  });
+
+  state.buildings.forEach((building) => {
+    const sprite = spriteFactory.getBuildingSprite(building.type);
+    const screen = camera.worldToScreen(building.x, building.z);
+    const scale = animations.getPlacementScale(building.id, now) * camera.zoom;
+    const drawW = sprite.canvas.width * scale;
+    const drawH = sprite.canvas.height * scale;
+    const drawX = screen.x - sprite.anchorX * scale;
+    const drawY = screen.y - sprite.anchorY * scale;
+    if (!isRectVisibleInViewport({
+      x: drawX,
+      y: drawY,
+      width: drawW,
+      height: drawH,
+      viewportWidth: camera.viewportWidth,
+      viewportHeight: camera.viewportHeight,
+    })) {
+      return;
+    }
+    const isNight = 1 - daylight;
+    renderables.push({
+      depth: building.x + building.z + 0.15,
+      draw: (ctx) => {
+        ctx.drawImage(sprite.canvas, drawX, drawY, drawW, drawH);
+        if (isNight > 0.45 && ['house', 'apartment', 'library', 'school', 'hut'].includes(building.type)) {
+          ctx.save();
+          ctx.globalAlpha = isNight * 0.35;
+          ctx.fillStyle = 'rgba(255, 195, 116, 0.65)';
+          createRoundedRectPath(
+            ctx,
+            drawX + drawW * 0.42,
+            drawY + drawH * 0.44,
+            drawW * 0.17,
+            drawH * 0.14,
+            4,
+          );
+          ctx.fill();
+          ctx.restore();
+        }
+      },
+    });
+
+    interactiveEntities.push({
+      entity: {
+        type: 'building',
+        id: building.id,
+        buildingType: building.type,
+        x: building.x,
+        z: building.z,
+      },
+      centerX: screen.x,
+      centerY: screen.y - drawH * 0.15,
+      halfWidth: Math.max(14, drawW * 0.2),
+      halfHeight: Math.max(12, drawH * 0.2),
+      depth: building.x + building.z + 0.15,
+    });
+  });
+
+  state.colonists.forEach((colonist) => {
+    if (!colonist.alive) {
+      return;
+    }
+    const renderState = colonistRenderState.get(colonist.id);
+    if (!renderState) {
+      return;
+    }
+    const frame = Math.floor((state.timeSeconds * 6 + colonist.age) % 3);
+    const idle = colonist.task !== 'Working';
+    const sprite = spriteFactory.getColonistSprite(colonist.job, frame, { idle });
+    const bob = idle
+      ? Math.sin((state.timeSeconds + colonist.age) * 2.5) * 1.5
+      : Math.sin((state.timeSeconds + colonist.age) * 11) * 1.4;
+    const screen = camera.worldToScreen(renderState.x, renderState.z);
+    const drawW = sprite.width * camera.zoom;
+    const drawH = sprite.height * camera.zoom;
+    const drawX = screen.x - drawW * 0.5;
+    const drawY = screen.y - drawH * 0.8 - bob * camera.zoom;
+    if (!isRectVisibleInViewport({
+      x: drawX,
+      y: drawY,
+      width: drawW,
+      height: drawH,
+      viewportWidth: camera.viewportWidth,
+      viewportHeight: camera.viewportHeight,
+      padding: 36,
+    })) {
+      return;
+    }
+    renderables.push({
+      depth: renderState.x + renderState.z + 0.28,
+      draw: (ctx) => {
+        ctx.drawImage(sprite, drawX, drawY, drawW, drawH);
+      },
+    });
+
+    interactiveEntities.push({
+      entity: {
+        type: 'colonist',
+        id: colonist.id,
+        colonistId: colonist.id,
+        x: renderState.x,
+        z: renderState.z,
+      },
+      centerX: screen.x,
+      centerY: screen.y - drawH * 0.2,
+      halfWidth: Math.max(8, drawW * 0.35),
+      halfHeight: Math.max(10, drawH * 0.5),
+      depth: renderState.x + renderState.z + 0.28,
+    });
+  });
+
+  renderables.push(...particles.buildRenderables(camera));
+
+  return {
+    renderables,
+    interactiveEntities,
+  };
+}
+

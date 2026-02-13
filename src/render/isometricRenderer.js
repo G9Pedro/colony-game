@@ -4,6 +4,8 @@ import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
+import { buildEntityRenderPass } from './entityRenderPass.js';
+import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
 import { buildPathTileSet, buildStructureTileSet, buildTerrainSignature, getTerrainBoundsFromCorners } from './terrainUtils.js';
 
 function clamp(value, min, max) {
@@ -13,20 +15,6 @@ function clamp(value, min, max) {
 function hash2d(x, z, salt = 0) {
   const value = Math.sin((x + 3.31 + salt) * 127.1 + (z + 7.17 - salt) * 311.7) * 43758.5453123;
   return value - Math.floor(value);
-}
-
-function createRoundedRectPath(ctx, x, y, width, height, radius = 8) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
 }
 
 export class IsometricRenderer {
@@ -488,21 +476,7 @@ export class IsometricRenderer {
   }
 
   drawBackground(state, width, height, daylight) {
-    const skyGradient = this.ctx.createLinearGradient(0, 0, 0, height);
-    skyGradient.addColorStop(0, daylight > 0.42 ? '#89c5f2' : '#2f466f');
-    skyGradient.addColorStop(1, daylight > 0.42 ? '#dfd2ad' : '#4d4b5f');
-    this.ctx.fillStyle = skyGradient;
-    this.ctx.fillRect(0, 0, width, height);
-
-    this.ctx.fillStyle = daylight > 0.42 ? 'rgba(84, 126, 67, 0.24)' : 'rgba(42, 56, 70, 0.33)';
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, height * 0.38);
-    this.ctx.bezierCurveTo(width * 0.2, height * 0.32, width * 0.44, height * 0.43, width * 0.62, height * 0.34);
-    this.ctx.bezierCurveTo(width * 0.75, height * 0.3, width * 0.88, height * 0.39, width, height * 0.31);
-    this.ctx.lineTo(width, height);
-    this.ctx.lineTo(0, height);
-    this.ctx.closePath();
-    this.ctx.fill();
+    drawBackgroundLayer(this.ctx, width, height, daylight);
   }
 
   drawTerrain(state) {
@@ -601,68 +575,12 @@ export class IsometricRenderer {
     };
   }
 
-  isRectVisible(x, y, width, height, padding = 48) {
-    if (x + width < -padding) {
-      return false;
-    }
-    if (y + height < -padding) {
-      return false;
-    }
-    if (x > this.camera.viewportWidth + padding) {
-      return false;
-    }
-    return y <= this.camera.viewportHeight + padding;
-  }
-
   drawPreview() {
-    if (!this.preview) {
-      return;
-    }
-    const screen = this.camera.worldToScreen(this.preview.x, this.preview.z);
-    const width = this.camera.tileWidth * this.camera.zoom;
-    const height = this.camera.tileHeight * this.camera.zoom;
-    const color = this.preview.valid ? 'rgba(60, 173, 91, 0.78)' : 'rgba(207, 86, 71, 0.78)';
-
-    this.ctx.save();
-    this.ctx.strokeStyle = color;
-    this.ctx.lineWidth = 2;
-    this.ctx.beginPath();
-    this.ctx.moveTo(screen.x, screen.y - height * 0.5);
-    this.ctx.lineTo(screen.x + width * 0.5, screen.y);
-    this.ctx.lineTo(screen.x, screen.y + height * 0.5);
-    this.ctx.lineTo(screen.x - width * 0.5, screen.y);
-    this.ctx.closePath();
-    this.ctx.stroke();
-    this.ctx.restore();
+    drawPlacementPreview(this.ctx, this.camera, this.preview);
   }
 
   drawSelectionOverlay(entity, pulseAlpha) {
-    if (!entity) {
-      return;
-    }
-    this.ctx.save();
-    if (entity.type === 'building') {
-      const screen = this.camera.worldToScreen(entity.x, entity.z);
-      const width = this.camera.tileWidth * this.camera.zoom * 1.35;
-      const height = this.camera.tileHeight * this.camera.zoom * 0.8;
-      this.ctx.strokeStyle = `rgba(244, 219, 152, ${pulseAlpha})`;
-      this.ctx.lineWidth = 3;
-      this.ctx.beginPath();
-      this.ctx.moveTo(screen.x, screen.y - height * 0.5);
-      this.ctx.lineTo(screen.x + width * 0.5, screen.y);
-      this.ctx.lineTo(screen.x, screen.y + height * 0.5);
-      this.ctx.lineTo(screen.x - width * 0.5, screen.y);
-      this.ctx.closePath();
-      this.ctx.stroke();
-    } else if (entity.type === 'colonist') {
-      const screen = this.camera.worldToScreen(entity.x, entity.z);
-      this.ctx.strokeStyle = `rgba(245, 227, 173, ${pulseAlpha})`;
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.ellipse(screen.x, screen.y + 8 * this.camera.zoom, 9 * this.camera.zoom, 4.5 * this.camera.zoom, 0, 0, Math.PI * 2);
-      this.ctx.stroke();
-    }
-    this.ctx.restore();
+    drawSelectionHighlight(this.ctx, this.camera, entity, pulseAlpha);
   }
 
   maybeEmitBuildingEffects(state, deltaSeconds) {
@@ -697,148 +615,19 @@ export class IsometricRenderer {
   }
 
   drawEntities(state, now, daylight) {
-    this.interactiveEntities = [];
-    const renderables = [];
-
-    state.constructionQueue.forEach((item) => {
-      const sprite = this.spriteFactory.getBuildingSprite(item.type, { construction: true });
-      const completeSprite = this.spriteFactory.getBuildingSprite(item.type, { construction: false });
-      const screen = this.camera.worldToScreen(item.x, item.z);
-      const progress = clamp(item.progress / Math.max(0.1, item.buildTime), 0, 1);
-      const drawX = screen.x - sprite.anchorX * this.camera.zoom;
-      const drawY = screen.y - sprite.anchorY * this.camera.zoom;
-      const drawW = sprite.canvas.width * this.camera.zoom;
-      const drawH = sprite.canvas.height * this.camera.zoom;
-      if (!this.isRectVisible(drawX, drawY, drawW, drawH)) {
-        return;
-      }
-      renderables.push({
-        depth: item.x + item.z + 0.04,
-        draw: (ctx) => {
-          ctx.save();
-          ctx.globalAlpha = 0.95;
-          ctx.drawImage(sprite.canvas, drawX, drawY, drawW, drawH);
-
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(drawX, drawY + drawH * (1 - progress), drawW, drawH * progress);
-          ctx.clip();
-          ctx.drawImage(completeSprite.canvas, drawX, drawY, drawW, drawH);
-          ctx.restore();
-
-          const barW = 40 * this.camera.zoom;
-          const barH = 5 * this.camera.zoom;
-          const barX = screen.x - barW * 0.5;
-          const barY = screen.y - drawH * 0.42;
-          createRoundedRectPath(ctx, barX, barY, barW, barH, 3);
-          ctx.fillStyle = 'rgba(38, 31, 24, 0.75)';
-          ctx.fill();
-          createRoundedRectPath(ctx, barX, barY, barW * progress, barH, 3);
-          ctx.fillStyle = 'rgba(89, 183, 120, 0.95)';
-          ctx.fill();
-          ctx.restore();
-        },
-      });
+    const pass = buildEntityRenderPass({
+      state,
+      now,
+      daylight,
+      camera: this.camera,
+      spriteFactory: this.spriteFactory,
+      animations: this.animations,
+      particles: this.particles,
+      colonistRenderState: this.colonistRenderState,
     });
-
-    state.buildings.forEach((building) => {
-      const sprite = this.spriteFactory.getBuildingSprite(building.type);
-      const screen = this.camera.worldToScreen(building.x, building.z);
-      const scale = this.animations.getPlacementScale(building.id, now) * this.camera.zoom;
-      const drawW = sprite.canvas.width * scale;
-      const drawH = sprite.canvas.height * scale;
-      const drawX = screen.x - sprite.anchorX * scale;
-      const drawY = screen.y - sprite.anchorY * scale;
-      if (!this.isRectVisible(drawX, drawY, drawW, drawH)) {
-        return;
-      }
-      const isNight = 1 - daylight;
-      renderables.push({
-        depth: building.x + building.z + 0.15,
-        draw: (ctx) => {
-          ctx.drawImage(sprite.canvas, drawX, drawY, drawW, drawH);
-          if (isNight > 0.45 && ['house', 'apartment', 'library', 'school', 'hut'].includes(building.type)) {
-            ctx.save();
-            ctx.globalAlpha = isNight * 0.35;
-            ctx.fillStyle = 'rgba(255, 195, 116, 0.65)';
-            createRoundedRectPath(
-              ctx,
-              drawX + drawW * 0.42,
-              drawY + drawH * 0.44,
-              drawW * 0.17,
-              drawH * 0.14,
-              4,
-            );
-            ctx.fill();
-            ctx.restore();
-          }
-        },
-      });
-
-      this.interactiveEntities.push({
-        entity: {
-          type: 'building',
-          id: building.id,
-          buildingType: building.type,
-          x: building.x,
-          z: building.z,
-        },
-        centerX: screen.x,
-        centerY: screen.y - drawH * 0.15,
-        halfWidth: Math.max(14, drawW * 0.2),
-        halfHeight: Math.max(12, drawH * 0.2),
-        depth: building.x + building.z + 0.15,
-      });
-    });
-
-    state.colonists.forEach((colonist) => {
-      if (!colonist.alive) {
-        return;
-      }
-      const renderState = this.colonistRenderState.get(colonist.id);
-      if (!renderState) {
-        return;
-      }
-      const frame = Math.floor((state.timeSeconds * 6 + colonist.age) % 3);
-      const idle = colonist.task !== 'Working';
-      const sprite = this.spriteFactory.getColonistSprite(colonist.job, frame, { idle });
-      const bob = idle ? Math.sin((state.timeSeconds + colonist.age) * 2.5) * 1.5 : Math.sin((state.timeSeconds + colonist.age) * 11) * 1.4;
-      const screen = this.camera.worldToScreen(renderState.x, renderState.z);
-      const drawW = sprite.width * this.camera.zoom;
-      const drawH = sprite.height * this.camera.zoom;
-      const drawX = screen.x - drawW * 0.5;
-      const drawY = screen.y - drawH * 0.8 - bob * this.camera.zoom;
-      if (!this.isRectVisible(drawX, drawY, drawW, drawH, 36)) {
-        return;
-      }
-      renderables.push({
-        depth: renderState.x + renderState.z + 0.28,
-        draw: (ctx) => {
-          ctx.drawImage(sprite, drawX, drawY, drawW, drawH);
-        },
-      });
-
-      this.interactiveEntities.push({
-        entity: {
-          type: 'colonist',
-          id: colonist.id,
-          colonistId: colonist.id,
-          x: renderState.x,
-          z: renderState.z,
-        },
-        centerX: screen.x,
-        centerY: screen.y - drawH * 0.2,
-        halfWidth: Math.max(8, drawW * 0.35),
-        halfHeight: Math.max(10, drawH * 0.5),
-        depth: renderState.x + renderState.z + 0.28,
-      });
-    });
-
-    const particleRenderables = this.particles.buildRenderables(this.camera);
-    renderables.push(...particleRenderables);
-
-    renderables.sort((a, b) => a.depth - b.depth);
-    renderables.forEach((item) => item.draw(this.ctx));
+    this.interactiveEntities = pass.interactiveEntities;
+    pass.renderables.sort((a, b) => a.depth - b.depth);
+    pass.renderables.forEach((item) => item.draw(this.ctx));
   }
 
   render(state) {
@@ -875,13 +664,13 @@ export class IsometricRenderer {
       this.drawSelectionOverlay(this.selectedEntity, this.animations.getSelectionPulse(now));
     }
 
-    const nightFactor = 1 - daylight;
-    if (nightFactor > 0.05) {
-      this.ctx.fillStyle = `rgba(19, 28, 59, ${nightFactor * 0.35})`;
-      this.ctx.fillRect(0, 0, width, height);
-    }
-    this.ctx.fillStyle = this.getSeasonTint(state);
-    this.ctx.fillRect(0, 0, width, height);
+    drawTimeAndSeasonOverlays(
+      this.ctx,
+      width,
+      height,
+      1 - daylight,
+      this.getSeasonTint(state),
+    );
   }
 }
 
