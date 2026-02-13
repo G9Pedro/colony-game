@@ -48,6 +48,7 @@ This guide and the PR template are intentionally synchronized process references
 When checklist commands change, update both files in the same PR and do a quick consistency pass.
 If npm scripts are renamed, also update command references in `README.md` in that same PR.
 After script renames, confirm CI `npm run ...` commands in `.github/workflows/ci.yml` still match `package.json` scripts.
+For command-rename PRs, add a brief docs-sync note in the PR summary listing updated docs/CI references.
 
 | PR Template Item | Command | What to Review |
 | --- | --- | --- |
