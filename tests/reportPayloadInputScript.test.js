@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import {
+  buildReadArtifactFailureLabel,
   readJsonArtifact,
   readValidatedReportArtifact,
   toArtifactValidationEntry,
@@ -126,4 +127,24 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
     },
   });
   assert.equal(missingEntry.errorType, 'error');
+});
+
+test('buildReadArtifactFailureLabel returns stable labels by status', () => {
+  assert.equal(
+    buildReadArtifactFailureLabel({ ok: false, status: 'missing', message: 'ENOENT' }),
+    'missing file',
+  );
+  assert.equal(
+    buildReadArtifactFailureLabel({ ok: false, status: 'invalid-json', message: 'unexpected' }),
+    'invalid JSON',
+  );
+  assert.equal(
+    buildReadArtifactFailureLabel({ ok: false, status: 'invalid', message: 'schema mismatch' }),
+    'schema mismatch',
+  );
+  assert.equal(
+    buildReadArtifactFailureLabel({ ok: false, status: 'error', errorCode: 'EISDIR' }),
+    'EISDIR',
+  );
+  assert.equal(buildReadArtifactFailureLabel({ ok: true, payload: {} }), null);
 });

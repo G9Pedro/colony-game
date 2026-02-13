@@ -11,7 +11,10 @@ import {
 import {
   REPORT_KINDS,
 } from '../src/game/reportPayloadValidators.js';
-import { readValidatedReportArtifact } from './reportPayloadInput.js';
+import {
+  buildReadArtifactFailureLabel,
+  readValidatedReportArtifact,
+} from './reportPayloadInput.js';
 import {
   buildValidatedReportPayload,
   writeJsonArtifact,
@@ -49,10 +52,7 @@ try {
       `Baseline dashboard not found at ${baselineDashboardPath}; using signature baseline comparison. To create one, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
   } else {
-    const label =
-      baselineDashboardResult.status === 'invalid-json'
-        ? 'invalid JSON'
-        : baselineDashboardResult.errorCode ?? baselineDashboardResult.message;
+    const label = buildReadArtifactFailureLabel(baselineDashboardResult);
     console.warn(
       `Unable to read baseline dashboard from ${baselineDashboardPath} (${label}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );

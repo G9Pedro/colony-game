@@ -60,6 +60,26 @@ export async function readValidatedReportArtifact({ path, kind }) {
   return readResult;
 }
 
+export function buildReadArtifactFailureLabel(readResult) {
+  if (!readResult || readResult.ok) {
+    return null;
+  }
+
+  if (readResult.status === 'missing') {
+    return 'missing file';
+  }
+
+  if (readResult.status === 'invalid-json') {
+    return 'invalid JSON';
+  }
+
+  if (readResult.status === 'invalid') {
+    return readResult.message ?? 'invalid payload';
+  }
+
+  return readResult.errorCode ?? readResult.message ?? 'read error';
+}
+
 export function toArtifactValidationEntry({ path, kind, readResult }) {
   if (readResult.ok) {
     return {
