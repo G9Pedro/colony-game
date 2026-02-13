@@ -10,7 +10,7 @@ import {
   REPORT_DIAGNOSTICS_SMOKE_SUMMARY_TYPE,
 } from '../scripts/reportDiagnosticsSmokeSummary.js';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
-import { collectReportDiagnostics } from './helpers/reportDiagnosticsTestUtils.js';
+import { findDiagnosticByCodeFromOutput } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -77,11 +77,10 @@ test('report diagnostics smoke script emits structured diagnostics when enabled'
       },
     });
 
-    const diagnostics = collectReportDiagnostics(stdout, stderr);
-    const summaryDiagnostic = diagnostics.find(
-      (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeRunSummary,
+    const summaryDiagnostic = findDiagnosticByCodeFromOutput(
+      { stdout, stderr },
+      REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeRunSummary,
     );
-    assert.ok(summaryDiagnostic);
     assert.equal(summaryDiagnostic.script, 'diagnostics:smoke');
     assert.equal(summaryDiagnostic.runId, runId);
   } finally {
