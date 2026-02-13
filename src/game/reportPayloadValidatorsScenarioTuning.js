@@ -435,6 +435,11 @@ export function isValidScenarioTuningDashboardPayload(payload) {
   }
 
   const scenarios = payload.scenarios;
+  for (let index = 1; index < scenarios.length; index += 1) {
+    if (scenarios[index - 1].id.localeCompare(scenarios[index].id) > 0) {
+      return false;
+    }
+  }
   const activeScenarioCount = scenarios.filter((scenario) => !scenario.isNeutral).length;
   return Boolean(
     payload.scenarioCount === scenarios.length &&

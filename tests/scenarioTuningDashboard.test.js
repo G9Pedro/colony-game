@@ -57,6 +57,30 @@ test('buildScenarioTuningDashboard ignores neutral and invalid values', () => {
   assert.equal(dashboard.scenarios[0].isNeutral, true);
 });
 
+test('buildScenarioTuningDashboard returns scenarios sorted by id', () => {
+  const dashboard = buildScenarioTuningDashboard({
+    zeta: {
+      id: 'zeta',
+      name: 'Zeta',
+      description: 'Out-of-order entry.',
+      productionMultipliers: { resource: {}, job: {} },
+      jobPriorityMultipliers: {},
+    },
+    alpha: {
+      id: 'alpha',
+      name: 'Alpha',
+      description: 'Out-of-order entry.',
+      productionMultipliers: { resource: {}, job: {} },
+      jobPriorityMultipliers: {},
+    },
+  });
+
+  assert.deepEqual(
+    dashboard.scenarios.map((scenario) => scenario.id),
+    ['alpha', 'zeta'],
+  );
+});
+
 test('buildScenarioTuningDashboardMarkdown renders ranking and details', () => {
   const markdown = buildScenarioTuningDashboardMarkdown({
     scenarioCount: 2,

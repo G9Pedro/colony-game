@@ -50,30 +50,32 @@ function formatDeltaEntry(entry) {
 }
 
 export function buildScenarioTuningDashboard(scenarios = SCENARIO_DEFINITIONS) {
-  const scenarioCards = Object.values(scenarios).map((scenario) => {
-    const resourceOutputDeltas = buildDeltaEntries(scenario.productionMultipliers?.resource ?? {});
-    const jobOutputDeltas = buildDeltaEntries(scenario.productionMultipliers?.job ?? {});
-    const jobPriorityDeltas = buildDeltaEntries(scenario.jobPriorityMultipliers ?? {});
-    const allDeltas = [...resourceOutputDeltas, ...jobOutputDeltas, ...jobPriorityDeltas];
-    const totalAbsDeltaPercent = round(
-      allDeltas.reduce((sum, entry) => sum + entry.absDeltaPercent, 0),
-    );
+  const scenarioCards = Object.values(scenarios)
+    .map((scenario) => {
+      const resourceOutputDeltas = buildDeltaEntries(scenario.productionMultipliers?.resource ?? {});
+      const jobOutputDeltas = buildDeltaEntries(scenario.productionMultipliers?.job ?? {});
+      const jobPriorityDeltas = buildDeltaEntries(scenario.jobPriorityMultipliers ?? {});
+      const allDeltas = [...resourceOutputDeltas, ...jobOutputDeltas, ...jobPriorityDeltas];
+      const totalAbsDeltaPercent = round(
+        allDeltas.reduce((sum, entry) => sum + entry.absDeltaPercent, 0),
+      );
 
-    return {
-      id: scenario.id,
-      name: scenario.name,
-      description: scenario.description,
-      signature: buildScenarioTuningSignature(scenario),
-      resourceOutputDeltas,
-      jobOutputDeltas,
-      jobPriorityDeltas,
-      resourceOutputSummary: buildDeltaSummary(resourceOutputDeltas),
-      jobOutputSummary: buildDeltaSummary(jobOutputDeltas),
-      jobPrioritySummary: buildDeltaSummary(jobPriorityDeltas),
-      totalAbsDeltaPercent,
-      isNeutral: allDeltas.length === 0,
-    };
-  });
+      return {
+        id: scenario.id,
+        name: scenario.name,
+        description: scenario.description,
+        signature: buildScenarioTuningSignature(scenario),
+        resourceOutputDeltas,
+        jobOutputDeltas,
+        jobPriorityDeltas,
+        resourceOutputSummary: buildDeltaSummary(resourceOutputDeltas),
+        jobOutputSummary: buildDeltaSummary(jobOutputDeltas),
+        jobPrioritySummary: buildDeltaSummary(jobPriorityDeltas),
+        totalAbsDeltaPercent,
+        isNeutral: allDeltas.length === 0,
+      };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
 
   const ranking = [...scenarioCards]
     .sort((a, b) => b.totalAbsDeltaPercent - a.totalAbsDeltaPercent || a.id.localeCompare(b.id))

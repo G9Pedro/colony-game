@@ -263,3 +263,47 @@ test('scenario tuning module validation validator rejects unsorted issues', () =
 
   assert.equal(isValidScenarioTuningValidationPayload(payload), false);
 });
+
+test('scenario tuning module dashboard validator rejects unsorted scenario rows', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningDashboard, {
+    scenarioCount: 2,
+    activeScenarioCount: 0,
+    scenarios: [
+      {
+        id: 'zeta',
+        name: 'Zeta',
+        description: 'Out of order',
+        signature: 'bbbb2222',
+        resourceOutputDeltas: [],
+        jobOutputDeltas: [],
+        jobPriorityDeltas: [],
+        resourceOutputSummary: { count: 0, meanAbsDeltaPercent: 0, maxAbsDeltaPercent: 0 },
+        jobOutputSummary: { count: 0, meanAbsDeltaPercent: 0, maxAbsDeltaPercent: 0 },
+        jobPrioritySummary: { count: 0, meanAbsDeltaPercent: 0, maxAbsDeltaPercent: 0 },
+        totalAbsDeltaPercent: 0,
+        isNeutral: true,
+      },
+      {
+        id: 'alpha',
+        name: 'Alpha',
+        description: 'Out of order',
+        signature: 'aaaa1111',
+        resourceOutputDeltas: [],
+        jobOutputDeltas: [],
+        jobPriorityDeltas: [],
+        resourceOutputSummary: { count: 0, meanAbsDeltaPercent: 0, maxAbsDeltaPercent: 0 },
+        jobOutputSummary: { count: 0, meanAbsDeltaPercent: 0, maxAbsDeltaPercent: 0 },
+        jobPrioritySummary: { count: 0, meanAbsDeltaPercent: 0, maxAbsDeltaPercent: 0 },
+        totalAbsDeltaPercent: 0,
+        isNeutral: true,
+      },
+    ],
+    signatureMap: { alpha: 'aaaa1111', zeta: 'bbbb2222' },
+    ranking: [
+      { rank: 1, scenarioId: 'alpha', totalAbsDeltaPercent: 0 },
+      { rank: 2, scenarioId: 'zeta', totalAbsDeltaPercent: 0 },
+    ],
+  });
+
+  assert.equal(isValidScenarioTuningDashboardPayload(payload), false);
+});
