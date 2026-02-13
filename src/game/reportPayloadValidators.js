@@ -51,6 +51,10 @@ function isNullableFiniteNumber(value) {
   return value === null || Number.isFinite(value);
 }
 
+function roundToTwo(value) {
+  return Number(value.toFixed(2));
+}
+
 function isRecordOfNullableStrings(value) {
   if (!isPlainRecord(value)) {
     return false;
@@ -153,6 +157,157 @@ function hasValidSnapshotDeltaConsistency(payload) {
   }
 
   return seenKeys.size === allKeys.size && snapshotDelta.length === allKeys.size;
+}
+
+function isValidDashboardDeltaEntry(entry) {
+  return Boolean(
+    entry &&
+      typeof entry === 'object' &&
+      typeof entry.key === 'string' &&
+      entry.key.length > 0 &&
+      Number.isFinite(entry.multiplier) &&
+      entry.multiplier > 0 &&
+      Number.isFinite(entry.deltaPercent) &&
+      Number.isFinite(entry.absDeltaPercent) &&
+      entry.absDeltaPercent >= 0 &&
+      roundToTwo(Math.abs(entry.deltaPercent)) === roundToTwo(entry.absDeltaPercent),
+  );
+}
+
+function isValidDashboardSummary(summary, entries) {
+  if (
+    !Boolean(
+      summary &&
+        typeof summary === 'object' &&
+        isNonNegativeInteger(summary.count) &&
+        Number.isFinite(summary.meanAbsDeltaPercent) &&
+        summary.meanAbsDeltaPercent >= 0 &&
+        Number.isFinite(summary.maxAbsDeltaPercent) &&
+        summary.maxAbsDeltaPercent >= 0,
+    )
+  ) {
+    return false;
+  }
+
+  const count = entries.length;
+  if (summary.count !== count) {
+    return false;
+  }
+
+  if (count === 0) {
+    return summary.meanAbsDeltaPercent === 0 && summary.maxAbsDeltaPercent === 0;
+  }
+
+  const totalAbsDelta = entries.reduce((sum, entry) => sum + entry.absDeltaPercent, 0);
+  const maxAbsDelta = entries.reduce((max, entry) => Math.max(max, entry.absDeltaPercent), 0);
+  return (
+    roundToTwo(summary.meanAbsDeltaPercent) === roundToTwo(totalAbsDelta / count) &&
+    roundToTwo(summary.maxAbsDeltaPercent) === roundToTwo(maxAbsDelta)
+  );
+}
+
+function isValidScenarioDashboardEntry(entry) {
+  if (
+    !Boolean(
+      entry &&
+        typeof entry === 'object' &&
+        typeof entry.id === 'string' &&
+        entry.id.length > 0 &&
+        typeof entry.name === 'string' &&
+        entry.name.length > 0 &&
+        typeof entry.description === 'string' &&
+        typeof entry.signature === 'string' &&
+        entry.signature.length > 0 &&
+        Array.isArray(entry.resourceOutputDeltas) &&
+        Array.isArray(entry.jobOutputDeltas) &&
+        Array.isArray(entry.jobPriorityDeltas) &&
+        Number.isFinite(entry.totalAbsDeltaPercent) &&
+        entry.totalAbsDeltaPercent >= 0 &&
+        typeof entry.isNeutral === 'boolean',
+    )
+  ) {
+    return false;
+  }
+
+  const allDeltas = [...entry.resourceOutputDeltas, ...entry.jobOutputDeltas, ...entry.jobPriorityDeltas];
+  if (!allDeltas.every(isValidDashboardDeltaEntry)) {
+    return false;
+  }
+  if (
+    !isValidDashboardSummary(entry.resourceOutputSummary, entry.resourceOutputDeltas) ||
+    !isValidDashboardSummary(entry.jobOutputSummary, entry.jobOutputDeltas) ||
+    !isValidDashboardSummary(entry.jobPrioritySummary, entry.jobPriorityDeltas)
+  ) {
+    return false;
+  }
+
+  const computedTotalAbs = roundToTwo(
+    allDeltas.reduce((sum, deltaEntry) => sum + deltaEntry.absDeltaPercent, 0),
+  );
+  if (roundToTwo(entry.totalAbsDeltaPercent) !== computedTotalAbs) {
+    return false;
+  }
+  return entry.isNeutral === (allDeltas.length === 0);
+}
+
+function hasValidDashboardSignatureMap(scenarios, signatureMap) {
+  if (!isPlainRecord(signatureMap)) {
+    return false;
+  }
+  const scenarioIds = scenarios.map((scenario) => scenario.id);
+  const sortedScenarioIds = [...scenarioIds].sort((a, b) => a.localeCompare(b));
+  const signatureMapKeys = Object.keys(signatureMap).sort((a, b) => a.localeCompare(b));
+  if (sortedScenarioIds.length !== signatureMapKeys.length) {
+    return false;
+  }
+  for (let index = 0; index < sortedScenarioIds.length; index += 1) {
+    if (sortedScenarioIds[index] !== signatureMapKeys[index]) {
+      return false;
+    }
+  }
+  return scenarios.every((scenario) => signatureMap[scenario.id] === scenario.signature);
+}
+
+function hasValidDashboardRanking(scenarios, ranking) {
+  if (!Array.isArray(ranking) || ranking.length !== scenarios.length) {
+    return false;
+  }
+
+  const scenarioById = new Map(scenarios.map((scenario) => [scenario.id, scenario]));
+  const expectedOrder = [...scenarios]
+    .sort(
+      (a, b) =>
+        b.totalAbsDeltaPercent - a.totalAbsDeltaPercent ||
+        a.id.localeCompare(b.id),
+    )
+    .map((scenario) => scenario.id);
+
+  const rankedScenarioIds = [];
+  for (let index = 0; index < ranking.length; index += 1) {
+    const entry = ranking[index];
+    if (
+      !Boolean(
+        entry &&
+          typeof entry === 'object' &&
+          isNonNegativeInteger(entry.rank) &&
+          entry.rank === index + 1 &&
+          typeof entry.scenarioId === 'string' &&
+          Number.isFinite(entry.totalAbsDeltaPercent),
+      )
+    ) {
+      return false;
+    }
+    const scenario = scenarioById.get(entry.scenarioId);
+    if (!scenario) {
+      return false;
+    }
+    if (roundToTwo(entry.totalAbsDeltaPercent) !== roundToTwo(scenario.totalAbsDeltaPercent)) {
+      return false;
+    }
+    rankedScenarioIds.push(entry.scenarioId);
+  }
+
+  return rankedScenarioIds.every((scenarioId, index) => scenarioId === expectedOrder[index]);
 }
 
 function isValidRecommendedActions(value) {
@@ -288,14 +443,25 @@ export function isValidScenarioTuningValidationPayload(payload) {
 }
 
 export function isValidScenarioTuningDashboardPayload(payload) {
+  if (
+    !Boolean(
+      hasValidMeta(payload, REPORT_KINDS.scenarioTuningDashboard) &&
+        isNonNegativeInteger(payload.scenarioCount) &&
+        isNonNegativeInteger(payload.activeScenarioCount) &&
+        Array.isArray(payload.scenarios) &&
+        payload.scenarios.every(isValidScenarioDashboardEntry),
+    )
+  ) {
+    return false;
+  }
+
+  const scenarios = payload.scenarios;
+  const activeScenarioCount = scenarios.filter((scenario) => !scenario.isNeutral).length;
   return Boolean(
-    hasValidMeta(payload, REPORT_KINDS.scenarioTuningDashboard) &&
-      typeof payload.scenarioCount === 'number' &&
-      typeof payload.activeScenarioCount === 'number' &&
-      Array.isArray(payload.scenarios) &&
-      Array.isArray(payload.ranking) &&
-      payload.signatureMap &&
-      typeof payload.signatureMap === 'object',
+    payload.scenarioCount === scenarios.length &&
+      payload.activeScenarioCount === activeScenarioCount &&
+      hasValidDashboardSignatureMap(scenarios, payload.signatureMap) &&
+      hasValidDashboardRanking(scenarios, payload.ranking),
   );
 }
 

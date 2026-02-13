@@ -68,11 +68,32 @@ test('trend script uses dashboard comparison when baseline dashboard payload exi
       scenarios: [
         {
           id: 'frontier',
+          name: 'Frontier',
+          description: 'Baseline',
           signature: 'aaaa1111',
+          resourceOutputDeltas: [],
+          jobOutputDeltas: [],
+          jobPriorityDeltas: [],
+          resourceOutputSummary: {
+            count: 0,
+            meanAbsDeltaPercent: 0,
+            maxAbsDeltaPercent: 0,
+          },
+          jobOutputSummary: {
+            count: 0,
+            meanAbsDeltaPercent: 0,
+            maxAbsDeltaPercent: 0,
+          },
+          jobPrioritySummary: {
+            count: 0,
+            meanAbsDeltaPercent: 0,
+            maxAbsDeltaPercent: 0,
+          },
           totalAbsDeltaPercent: 0,
+          isNeutral: true,
         },
       ],
-      ranking: [],
+      ranking: [{ rank: 1, scenarioId: 'frontier', totalAbsDeltaPercent: 0 }],
       signatureMap: { frontier: 'aaaa1111' },
     });
     await writeFile(baselinePath, JSON.stringify(baselinePayload, null, 2), 'utf-8');

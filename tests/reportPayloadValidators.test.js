@@ -235,13 +235,97 @@ test('isValidScenarioTuningValidationPayload accepts validation report payload',
 
 test('isValidScenarioTuningDashboardPayload accepts dashboard report payload', () => {
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningDashboard, {
-    scenarioCount: 3,
-    activeScenarioCount: 2,
-    scenarios: [],
-    ranking: [],
-    signatureMap: {},
+    scenarioCount: 1,
+    activeScenarioCount: 1,
+    scenarios: [
+      {
+        id: 'frontier',
+        name: 'Frontier',
+        description: 'Baseline',
+        signature: 'aaaa1111',
+        resourceOutputDeltas: [
+          {
+            key: 'food',
+            multiplier: 1.1,
+            deltaPercent: 10,
+            absDeltaPercent: 10,
+          },
+        ],
+        jobOutputDeltas: [],
+        jobPriorityDeltas: [],
+        resourceOutputSummary: {
+          count: 1,
+          meanAbsDeltaPercent: 10,
+          maxAbsDeltaPercent: 10,
+        },
+        jobOutputSummary: {
+          count: 0,
+          meanAbsDeltaPercent: 0,
+          maxAbsDeltaPercent: 0,
+        },
+        jobPrioritySummary: {
+          count: 0,
+          meanAbsDeltaPercent: 0,
+          maxAbsDeltaPercent: 0,
+        },
+        totalAbsDeltaPercent: 10,
+        isNeutral: false,
+      },
+    ],
+    ranking: [
+      {
+        rank: 1,
+        scenarioId: 'frontier',
+        totalAbsDeltaPercent: 10,
+      },
+    ],
+    signatureMap: { frontier: 'aaaa1111' },
   });
   assert.equal(isValidScenarioTuningDashboardPayload(payload), true);
+});
+
+test('isValidScenarioTuningDashboardPayload rejects ranking/signature inconsistencies', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningDashboard, {
+    scenarioCount: 1,
+    activeScenarioCount: 1,
+    scenarios: [
+      {
+        id: 'frontier',
+        name: 'Frontier',
+        description: 'Baseline',
+        signature: 'aaaa1111',
+        resourceOutputDeltas: [],
+        jobOutputDeltas: [],
+        jobPriorityDeltas: [],
+        resourceOutputSummary: {
+          count: 0,
+          meanAbsDeltaPercent: 0,
+          maxAbsDeltaPercent: 0,
+        },
+        jobOutputSummary: {
+          count: 0,
+          meanAbsDeltaPercent: 0,
+          maxAbsDeltaPercent: 0,
+        },
+        jobPrioritySummary: {
+          count: 0,
+          meanAbsDeltaPercent: 0,
+          maxAbsDeltaPercent: 0,
+        },
+        totalAbsDeltaPercent: 0,
+        isNeutral: true,
+      },
+    ],
+    ranking: [
+      {
+        rank: 1,
+        scenarioId: 'frontier',
+        totalAbsDeltaPercent: 25,
+      },
+    ],
+    signatureMap: { frontier: 'bbbb2222' },
+  });
+  assert.equal(isValidScenarioTuningDashboardPayload(payload), false);
 });
 
 test('isValidScenarioTuningTrendPayload accepts trend report payload', () => {
