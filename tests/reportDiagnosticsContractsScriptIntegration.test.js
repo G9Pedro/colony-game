@@ -278,13 +278,19 @@ test('baseline suggestion check diagnostics follow contract fixture', async () =
 
 test('baseline suggestion check emits read-error diagnostics for unreadable cache path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-baseline-read-error-'));
+  const unreadableCachePath = path.join(tempDirectory, 'baseline-suggestions.unreadable.json');
   const scriptPath = path.resolve('scripts/suggest-baselines-check.js');
 
   try {
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'baseline-suggestions.unreadable.json',
+    });
+
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
       env: {
-        SIM_BASELINE_SUGGEST_PATH: tempDirectory,
+        SIM_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
@@ -296,7 +302,7 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'simulate:baseline:check',
           expectedRunId: RUN_ID,
-          expectedPath: tempDirectory,
+          expectedPath: unreadableCachePath,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
         });
@@ -337,13 +343,22 @@ test('diagnostics smoke script diagnostics follow contract fixture', async () =>
 
 test('scenario tuning baseline check emits read-error diagnostics for unreadable cache path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-tuning-read-error-'));
+  const unreadableCachePath = path.join(
+    tempDirectory,
+    'scenario-tuning-baseline-suggestions.unreadable.json',
+  );
   const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
 
   try {
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-baseline-suggestions.unreadable.json',
+    });
+
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
       env: {
-        SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: tempDirectory,
+        SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
@@ -355,7 +370,7 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'simulate:check:tuning-baseline',
           expectedRunId: RUN_ID,
-          expectedPath: tempDirectory,
+          expectedPath: unreadableCachePath,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
         });

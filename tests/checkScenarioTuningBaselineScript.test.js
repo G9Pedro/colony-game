@@ -14,6 +14,7 @@ import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
+import { createUnreadableArtifactPath } from './helpers/reportReadFailureFixtures.js';
 
 test('check-scenario-tuning-baseline allows intensity drift when strict mode is off', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'check-tuning-baseline-'));
@@ -125,14 +126,20 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
 
 test('check-scenario-tuning-baseline emits read-error diagnostic for unreadable cache path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'check-tuning-baseline-'));
+  const unreadableCachePath = path.join(tempDirectory, 'scenario-tuning-baseline.unreadable.json');
   const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
   const runId = 'tuning-baseline-check-read-error-run';
 
   try {
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-baseline.unreadable.json',
+    });
+
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
       env: {
-        SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: tempDirectory,
+        SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
@@ -146,7 +153,7 @@ test('check-scenario-tuning-baseline emits read-error diagnostic for unreadable 
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'simulate:check:tuning-baseline',
           expectedRunId: runId,
-          expectedPath: tempDirectory,
+          expectedPath: unreadableCachePath,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
         });

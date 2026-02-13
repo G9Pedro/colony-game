@@ -14,6 +14,7 @@ import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
+import { createUnreadableArtifactPath } from './helpers/reportReadFailureFixtures.js';
 
 test('suggest-baselines-check passes with no drift and emits summary diagnostic', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'suggest-baselines-check-'));
@@ -117,14 +118,20 @@ test('suggest-baselines-check fails on drift and emits drift diagnostic', async 
 
 test('suggest-baselines-check emits read-error diagnostic for unreadable cache path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'suggest-baselines-check-'));
+  const unreadableCachePath = path.join(tempDirectory, 'baseline-suggestions.unreadable.json');
   const scriptPath = path.resolve('scripts/suggest-baselines-check.js');
   const runId = 'suggest-baseline-check-read-error-run';
 
   try {
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'baseline-suggestions.unreadable.json',
+    });
+
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
       env: {
-        SIM_BASELINE_SUGGEST_PATH: tempDirectory,
+        SIM_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
@@ -138,7 +145,7 @@ test('suggest-baselines-check emits read-error diagnostic for unreadable cache p
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'simulate:baseline:check',
           expectedRunId: runId,
-          expectedPath: tempDirectory,
+          expectedPath: unreadableCachePath,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
         });
