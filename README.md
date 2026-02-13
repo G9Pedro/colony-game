@@ -161,6 +161,12 @@ Fail CI/local checks if suggested baselines diverge from committed baselines:
 npm run simulate:baseline:check
 ```
 
+Validate generated JSON report artifacts against schema-tagged payload contracts:
+
+```bash
+npm run reports:validate
+```
+
 CI now runs:
 - `npm test`
 - `npm run simulate:validate:tuning` (uploaded as artifact)
@@ -173,6 +179,7 @@ CI now runs:
 - `npm run simulate:snapshot` (uploaded as artifact, enforced)
 - `npm run simulate:balance` (uploaded as artifact)
 - `npm run simulate:baseline:suggest` (uploaded as artifact)
+- `npm run reports:validate`
 - `npm run simulate:baseline:check` (enforced)
 
 One-command local verification:
@@ -192,6 +199,7 @@ npm run verify
 - `SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot`
 - `npm run simulate:balance`
 - `npm run simulate:baseline:suggest`
+- `npm run reports:validate`
 - `npm run simulate:baseline:check`
 
 ## Gameplay Notes

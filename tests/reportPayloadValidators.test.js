@@ -2,11 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   isValidBaselineSuggestionPayload,
+  isKnownReportKind,
   isValidScenarioTuningDashboardPayload,
   isValidScenarioTuningSuggestionPayload,
   isValidScenarioTuningValidationPayload,
   REPORT_KINDS,
   REPORT_SCHEMA_VERSIONS,
+  validateReportPayloadByKind,
   withReportMeta,
 } from '../src/game/reportPayloadValidators.js';
 
@@ -91,4 +93,35 @@ test('withReportMeta throws for unknown report kind', () => {
     () => withReportMeta('unknown-report-kind', {}),
     /Unknown report kind/i,
   );
+});
+
+test('isKnownReportKind returns true for registered kinds', () => {
+  assert.equal(isKnownReportKind(REPORT_KINDS.baselineSuggestions), true);
+  assert.equal(isKnownReportKind('unknown-kind'), false);
+});
+
+test('validateReportPayloadByKind validates payload and reports reason', () => {
+  const validPayload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
+    aggregateDelta: {},
+    snapshotDelta: [],
+    snippets: {
+      regressionBaseline: 'export const AGGREGATE_BASELINE_BOUNDS = {};',
+      regressionSnapshots: 'export const EXPECTED_SUMMARY_SIGNATURES = {};',
+    },
+  });
+
+  const validResult = validateReportPayloadByKind(REPORT_KINDS.baselineSuggestions, validPayload);
+  assert.equal(validResult.ok, true);
+  assert.equal(validResult.reason, null);
+
+  const invalidResult = validateReportPayloadByKind(REPORT_KINDS.baselineSuggestions, {
+    ...validPayload,
+    snippets: {},
+  });
+  assert.equal(invalidResult.ok, false);
+  assert.ok(invalidResult.reason?.includes('failed validation'));
+
+  const unknownResult = validateReportPayloadByKind('unknown-kind', validPayload);
+  assert.equal(unknownResult.ok, false);
+  assert.ok(unknownResult.reason?.includes('Unknown report kind'));
 });

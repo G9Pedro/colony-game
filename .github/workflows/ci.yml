@@ -103,6 +103,9 @@ jobs:
       - name: Generate baseline suggestion report
         run: npm run simulate:baseline:suggest
 
+      - name: Validate generated report artifacts
+        run: npm run reports:validate
+
       - name: Enforce baseline suggestion check
         run: npm run simulate:baseline:check
 
