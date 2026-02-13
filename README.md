@@ -87,6 +87,10 @@ Run a deterministic scenario simulation matrix from CLI:
 npm run simulate
 ```
 
+Most simulation CLI commands support:
+
+- `SIM_STRATEGY_PROFILE` (defaults to `baseline`)
+
 Run deterministic regression assertions (fails on balance regressions):
 
 ```bash

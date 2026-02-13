@@ -5,8 +5,11 @@ import { runStrategy } from './simulationMatrix.js';
 
 const outputPath = process.env.SIM_REPORT_PATH ?? 'reports/simulation-regression.json';
 const scenarios = Object.keys(DEFAULT_REGRESSION_EXPECTATIONS);
+const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 
-const summaries = scenarios.map((scenarioId) => runStrategy(scenarioId, `assert-${scenarioId}`));
+const summaries = scenarios.map((scenarioId) =>
+  runStrategy(scenarioId, `assert-${scenarioId}`, { strategyProfileId }),
+);
 const report = buildRegressionReport({
   summaries,
   expectations: DEFAULT_REGRESSION_EXPECTATIONS,

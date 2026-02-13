@@ -18,12 +18,13 @@ import { runStrategy } from './simulationMatrix.js';
 const outputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-suggestions.json';
 const markdownOutputPath = process.env.SIM_BASELINE_SUGGEST_MD_PATH ?? 'reports/baseline-suggestions.md';
 const driftRuns = Number(process.env.SIM_BASELINE_SUGGEST_RUNS ?? 8);
+const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 
 const driftSummaries = [];
 for (const scenarioId of Object.keys(AGGREGATE_BASELINE_BOUNDS)) {
   for (let index = 0; index < driftRuns; index += 1) {
     driftSummaries.push(
-      runStrategy(scenarioId, `suggest-${scenarioId}-${index}`),
+      runStrategy(scenarioId, `suggest-${scenarioId}-${index}`, { strategyProfileId }),
     );
   }
 }
@@ -36,6 +37,7 @@ const aggregateReport = buildAggregateRegressionReport({
 const snapshotSummaries = SNAPSHOT_CASES.map((snapshotCase) =>
   runStrategy(snapshotCase.scenarioId, snapshotCase.seed, {
     balanceProfileId: snapshotCase.balanceProfileId,
+    strategyProfileId,
   }),
 );
 const snapshotReport = buildSnapshotRegressionReport({

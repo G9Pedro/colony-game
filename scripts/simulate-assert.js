@@ -1,9 +1,10 @@
 import { runStrategy } from './simulationMatrix.js';
 import { DEFAULT_REGRESSION_EXPECTATIONS, evaluateSimulationSummary } from '../src/game/regression.js';
 
+const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 let hasFailure = false;
 for (const [scenarioId, expected] of Object.entries(DEFAULT_REGRESSION_EXPECTATIONS)) {
-  const summary = runStrategy(scenarioId, `assert-${scenarioId}`);
+  const summary = runStrategy(scenarioId, `assert-${scenarioId}`, { strategyProfileId });
   const failures = evaluateSimulationSummary(summary, expected);
   if (failures.length > 0) {
     hasFailure = true;

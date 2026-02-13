@@ -1,22 +1,15 @@
 import { GameEngine } from '../src/game/gameEngine.js';
+import { getStrategyProfile } from '../src/content/strategyProfiles.js';
 import { getSimulationSummary, runScriptedSimulation } from '../src/game/simulationHarness.js';
-
-function queueAt(step, type, x, z) {
-  return { step, type, x, z };
-}
-
-const DEFAULT_BUILD_PLAN = [
-  queueAt(0, 'hut', 14, -14),
-  queueAt(0, 'farm', -14, -14),
-  queueAt(20, 'lumberCamp', -15, 14),
-  queueAt(90, 'school', 14, 0),
-];
 
 export function runStrategy(scenarioId, seed, options = {}) {
   const balanceProfileId = options.balanceProfileId ?? 'standard';
+  const strategyProfile = getStrategyProfile(options.strategyProfileId ?? 'baseline');
   const engine = new GameEngine({ scenarioId, seed, balanceProfileId });
-  const buildPlan = options.buildPlan ?? DEFAULT_BUILD_PLAN;
-  const stepCount = options.steps ?? 900;
+  const buildPlan = options.buildPlan ?? strategyProfile.buildActions;
+  const stepCount = options.steps ?? strategyProfile.steps;
+  const hireSteps = new Set(options.hireSteps ?? strategyProfile.hireSteps);
+  const researchActions = options.researchActions ?? strategyProfile.researchActions;
 
   runScriptedSimulation({
     engine,
@@ -28,14 +21,18 @@ export function runStrategy(scenarioId, seed, options = {}) {
           engine.queueBuilding(item.type, item.x, item.z);
         });
 
-      if (step === 140) {
+      if (hireSteps.has(step)) {
         engine.hireColonist();
       }
-      if (step === 220) {
-        engine.hireColonist();
-      }
-      if (step >= 300 && !engine.state.research.current && !engine.state.research.completed.includes('masonry')) {
-        engine.beginResearch('masonry');
+
+      for (const action of researchActions) {
+        if (
+          step >= action.startAtStep &&
+          !engine.state.research.current &&
+          !engine.state.research.completed.includes(action.techId)
+        ) {
+          engine.beginResearch(action.techId);
+        }
       }
     },
   });

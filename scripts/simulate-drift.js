@@ -7,12 +7,13 @@ import { runStrategy } from './simulationMatrix.js';
 const outputPath = process.env.SIM_DRIFT_PATH ?? 'reports/simulation-drift.json';
 const runCount = Number(process.env.SIM_DRIFT_RUNS ?? 8);
 const scenarioIds = Object.keys(AGGREGATE_BASELINE_BOUNDS);
+const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 
 const summaries = [];
 for (const scenarioId of scenarioIds) {
   for (let index = 0; index < runCount; index += 1) {
     const seed = `drift-${scenarioId}-${index}`;
-    summaries.push(runStrategy(scenarioId, seed));
+    summaries.push(runStrategy(scenarioId, seed, { strategyProfileId }));
   }
 }
 

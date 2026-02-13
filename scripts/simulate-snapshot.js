@@ -6,10 +6,12 @@ import { runStrategy } from './simulationMatrix.js';
 
 const outputPath = process.env.SIM_SNAPSHOT_PATH ?? 'reports/simulation-snapshot.json';
 const enforce = process.env.SIM_SNAPSHOT_ENFORCE === '1';
+const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 
 const summaries = SNAPSHOT_CASES.map((snapshotCase) =>
   runStrategy(snapshotCase.scenarioId, snapshotCase.seed, {
     balanceProfileId: snapshotCase.balanceProfileId,
+    strategyProfileId,
   }),
 );
 

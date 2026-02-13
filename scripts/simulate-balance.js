@@ -8,10 +8,12 @@ import { buildBalanceProfileRegressionReport } from '../src/game/regression.js';
 import { runStrategy } from './simulationMatrix.js';
 
 const outputPath = process.env.SIM_BALANCE_PATH ?? 'reports/simulation-balance.json';
+const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 
 const summaries = BALANCE_REGRESSION_CASES.map((testCase) =>
   runStrategy(testCase.scenarioId, testCase.seed, {
     balanceProfileId: testCase.balanceProfileId,
+    strategyProfileId,
   }),
 );
 
