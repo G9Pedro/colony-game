@@ -190,6 +190,14 @@ export function buildScenarioTuningBaselineSuggestionMarkdown(payload) {
     `- To also enforce total |delta| baseline drift, run with \`${payload.strictIntensityCommand}\`.`,
     '',
   );
+  lines.push(
+    '## Strict Mode Command',
+    '',
+    '```bash',
+    payload.strictIntensityCommand,
+    '```',
+    '',
+  );
   return lines.join('\n');
 }
 

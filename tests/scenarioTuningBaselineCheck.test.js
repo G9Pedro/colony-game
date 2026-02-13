@@ -161,6 +161,8 @@ test('buildScenarioTuningBaselineSuggestionMarkdown renders changed scenarios', 
   assert.ok(markdown.includes('## Enforcement Guidance'));
   assert.ok(markdown.includes('Strict intensity enforcement recommended: yes'));
   assert.ok(markdown.includes('SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1'));
+  assert.ok(markdown.includes('## Strict Mode Command'));
+  assert.ok(markdown.includes('```bash'));
 });
 
 test('getScenarioTuningBaselineChangeSummary counts changes', () => {
