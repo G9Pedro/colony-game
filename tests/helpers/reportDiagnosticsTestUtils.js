@@ -9,6 +9,10 @@ export function collectReportDiagnostics(stdout = '', stderr = '') {
   return [...parseReportDiagnosticsFromText(stdout), ...parseReportDiagnosticsFromText(stderr)];
 }
 
+export function getDiagnosticByCode(diagnostics, code) {
+  return (diagnostics ?? []).find((entry) => entry.code === code) ?? null;
+}
+
 export function assertReportDiagnosticsContract({
   diagnostics,
   expectedCodes = [],
@@ -39,9 +43,13 @@ export function assertReportDiagnosticsContract({
 }
 
 export function findDiagnosticByCode(diagnostics, code) {
-  const diagnostic = (diagnostics ?? []).find((entry) => entry.code === code) ?? null;
+  const diagnostic = getDiagnosticByCode(diagnostics, code);
   assert.ok(diagnostic);
   return diagnostic;
+}
+
+export function getDiagnosticByCodeFromOutput({ stdout = '', stderr = '' }, code) {
+  return getDiagnosticByCode(collectReportDiagnostics(stdout, stderr), code);
 }
 
 export function assertReadFailureDiagnosticContext({
