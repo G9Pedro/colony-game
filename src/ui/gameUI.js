@@ -21,6 +21,14 @@ function formatRate(value) {
   return `${rounded > 0 ? '+' : ''}${rounded.toFixed(1)}/day`;
 }
 
+function formatResourceFlow(flow = {}) {
+  const entries = Object.entries(flow);
+  if (entries.length === 0) {
+    return '—';
+  }
+  return entries.map(([resource, value]) => `${value.toFixed(2)} ${resource}`).join(', ');
+}
+
 export class GameUI {
   constructor({ elements, buildingDefinitions, researchDefinitions, resourceDefinitions, spriteFactory }) {
     this.el = elements;
@@ -346,11 +354,24 @@ export class GameUI {
         this.el.infoPanelBody.innerHTML = '<small>Building data unavailable.</small>';
         return;
       }
+      const assignedColonists = state.colonists
+        .filter((colonist) => colonist.alive && colonist.assignedBuildingId === building.id)
+        .slice(0, 4)
+        .map((colonist) => colonist.name);
+      const workerSummary = assignedColonists.length > 0
+        ? assignedColonists.join(', ')
+        : 'No assigned colonists';
+      const inputFlow = formatResourceFlow(definition.inputPerWorker);
+      const outputFlow = formatResourceFlow(definition.outputPerWorker);
+
       this.el.infoPanelBody.innerHTML = `
         <div class="kv"><span>Type</span><strong>${definition.category}</strong></div>
         <div class="kv"><span>Health</span><strong>${Math.floor(building.health)}</strong></div>
         <div class="kv"><span>Workers</span><strong>${building.workersAssigned}</strong></div>
         <div class="kv"><span>Operational</span><strong>${building.isOperational ? 'Yes' : 'No'}</strong></div>
+        <div class="kv"><span>Input/worker</span><strong>${inputFlow}</strong></div>
+        <div class="kv"><span>Output/worker</span><strong>${outputFlow}</strong></div>
+        <div class="kv"><span>Assigned</span><strong>${workerSummary}</strong></div>
       `;
       return;
     }
@@ -365,6 +386,7 @@ export class GameUI {
       this.el.infoPanelBody.innerHTML = `
         <div class="kv"><span>Job</span><strong>${colonist.job}</strong></div>
         <div class="kv"><span>Task</span><strong>${colonist.task}</strong></div>
+        <div class="kv"><span>Assigned Building</span><strong>${colonist.assignedBuildingId ?? 'None'}</strong></div>
         <div class="kv"><span>Morale</span><strong>${Math.floor(colonist.needs.morale)}</strong></div>
         <div class="kv"><span>Hunger</span><strong>${Math.floor(colonist.needs.hunger)}</strong></div>
         <div class="kv"><span>Health</span><strong>${Math.floor(colonist.needs.health)}</strong></div>
