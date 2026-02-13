@@ -55,8 +55,11 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
     'invalid-json': 1,
   });
   assert.equal(report.results[0].status, 'ok');
+  assert.equal(report.results[0].recommendedCommand, null);
   assert.equal(report.results[1].status, 'error');
+  assert.equal(report.results[1].recommendedCommand, 'npm run verify');
   assert.equal(report.results[2].status, 'invalid-json');
+  assert.equal(report.results[2].recommendedCommand, 'npm run verify');
 });
 
 test('evaluateReportArtifactEntries flags schema-invalid payloads', () => {
@@ -81,8 +84,14 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
     failureCount: 1,
     statusCounts: { ok: 1, invalid: 1 },
     results: [
-      { path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null },
-      { path: 'reports/b.json', kind: 'kind-b', status: 'invalid', message: 'bad payload' },
+      { path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null, recommendedCommand: null },
+      {
+        path: 'reports/b.json',
+        kind: 'kind-b',
+        status: 'invalid',
+        message: 'bad payload',
+        recommendedCommand: 'npm run custom:regen',
+      },
     ],
   });
 
@@ -91,7 +100,7 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
   assert.ok(markdown.includes('| reports/a.json | kind-a | ok |  |'));
   assert.ok(markdown.includes('| reports/b.json | kind-b | invalid | bad payload |'));
   assert.ok(markdown.includes('## Remediation Hints'));
-  assert.ok(markdown.includes('npm run verify'));
+  assert.ok(markdown.includes('npm run custom:regen'));
 });
 
 test('buildReportArtifactsValidationMarkdown includes no-op remediation on pass', () => {

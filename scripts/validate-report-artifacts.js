@@ -53,6 +53,9 @@ report.results.forEach((result) => {
     return;
   }
   console.error(`[${result.status}] ${result.path}: ${result.message}`);
+  if (result.recommendedCommand) {
+    console.error(`  remediation: run "${result.recommendedCommand}"`);
+  }
 });
 
 console.log(

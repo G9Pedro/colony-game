@@ -30,6 +30,7 @@ export function getReportArtifactRegenerationCommand(path) {
 
 export function evaluateReportArtifactEntries(entries) {
   const results = entries.map((entry) => {
+    const recommendedCommand = getReportArtifactRegenerationCommand(entry.path);
     if (entry.errorType === 'invalid-json') {
       return {
         path: entry.path,
@@ -37,6 +38,7 @@ export function evaluateReportArtifactEntries(entries) {
         status: 'invalid-json',
         ok: false,
         message: entry.message ?? 'Invalid JSON payload.',
+        recommendedCommand,
       };
     }
 
@@ -47,6 +49,7 @@ export function evaluateReportArtifactEntries(entries) {
         status: 'error',
         ok: false,
         message: entry.message ?? 'Failed to read report artifact.',
+        recommendedCommand,
       };
     }
 
@@ -58,6 +61,7 @@ export function evaluateReportArtifactEntries(entries) {
         status: 'invalid',
         ok: false,
         message: validation.reason,
+        recommendedCommand,
       };
     }
 
@@ -67,6 +71,7 @@ export function evaluateReportArtifactEntries(entries) {
       status: 'ok',
       ok: true,
       message: null,
+      recommendedCommand: null,
     };
   });
 
@@ -121,7 +126,7 @@ export function buildReportArtifactsValidationMarkdown(report) {
       continue;
     }
     seenPaths.add(result.path);
-    const command = getReportArtifactRegenerationCommand(result.path);
+    const command = result.recommendedCommand ?? getReportArtifactRegenerationCommand(result.path);
     lines.push(`- ${result.path}: run \`${command}\` then re-run \`npm run reports:validate\`.`);
   }
 
