@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import {
-  assertOutputHasReadFailureScenarioContract,
+  assertNodeDiagnosticsScriptOutputsReadFailureScenario,
 } from './helpers/reportReadFailureMatrixTestUtils.js';
 import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
 import {
@@ -67,23 +67,27 @@ test('trend script falls back to signature baseline when dashboard baseline is m
 test('trend script emits JSON diagnostics when enabled', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-trend-script-'));
   const missingBaselinePath = path.join(tempDirectory, 'missing-baseline.json');
+  const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
+  const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
+  const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
   try {
-    const { payload, stdout } = await runTrendScript({
-      tempDirectory,
-      baselinePath: missingBaselinePath,
-      extraEnv: {
+    const { diagnostic } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
+      scriptPath,
+      scenario: 'missing',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedLevel: 'info',
+      expectedPath: missingBaselinePath,
+      env: {
+        SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
+        SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
+        SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: missingBaselinePath,
         REPORT_DIAGNOSTICS_JSON: '1',
       },
     });
+    const payload = JSON.parse(await readFile(outputPath, 'utf-8'));
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
-    const diagnostic = assertOutputHasReadFailureScenarioContract({
-      stdout,
-      scenario: 'missing',
-      expectedScript: 'simulate:report:tuning:trend',
-      expectedPath: missingBaselinePath,
-    });
     assert.equal(diagnostic.level, 'info');
     assert.equal(diagnostic.context?.baselinePath, missingBaselinePath);
   } finally {
@@ -162,6 +166,9 @@ test('trend script uses dashboard comparison when baseline dashboard payload exi
 test('trend script suggests baseline capture command when baseline payload is invalid', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-trend-script-'));
   const baselinePath = path.join(tempDirectory, 'scenario-tuning-dashboard.baseline.json');
+  const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
+  const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
+  const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
   try {
     await createJsonArtifact({
@@ -232,23 +239,24 @@ test('trend script suggests baseline capture command when baseline payload is in
       }),
     });
 
-    const { payload, stderr } = await runTrendScript({
-      tempDirectory,
-      baselinePath,
-      extraEnv: {
+    const { diagnostic, stderr } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
+      scriptPath,
+      scenario: 'invalidPayload',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedLevel: 'warn',
+      expectedPath: baselinePath,
+      env: {
+        SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
+        SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
+        SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: baselinePath,
         REPORT_DIAGNOSTICS_JSON: '1',
       },
     });
+    const payload = JSON.parse(await readFile(outputPath, 'utf-8'));
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
     assert.match(stderr, /code=artifact-invalid-payload/);
-    const diagnostic = assertOutputHasReadFailureScenarioContract({
-      stderr,
-      scenario: 'invalidPayload',
-      expectedScript: 'simulate:report:tuning:trend',
-      expectedPath: baselinePath,
-    });
     assert.equal(diagnostic.level, 'warn');
     assert.equal(diagnostic.context?.baselinePath, baselinePath);
   } finally {
@@ -259,6 +267,9 @@ test('trend script suggests baseline capture command when baseline payload is in
 test('trend script warns and falls back when baseline payload is invalid JSON', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-trend-script-'));
   const baselinePath = path.join(tempDirectory, 'scenario-tuning-dashboard.baseline.json');
+  const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
+  const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
+  const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
   try {
     await createInvalidJsonArtifact({
@@ -266,24 +277,25 @@ test('trend script warns and falls back when baseline payload is invalid JSON', 
       relativePath: 'scenario-tuning-dashboard.baseline.json',
     });
 
-    const { payload, stderr } = await runTrendScript({
-      tempDirectory,
-      baselinePath,
-      extraEnv: {
+    const { diagnostic, stderr } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
+      scriptPath,
+      scenario: 'invalidJson',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedLevel: 'warn',
+      expectedPath: baselinePath,
+      env: {
+        SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
+        SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
+        SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: baselinePath,
         REPORT_DIAGNOSTICS_JSON: '1',
       },
     });
+    const payload = JSON.parse(await readFile(outputPath, 'utf-8'));
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /invalid JSON/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
     assert.match(stderr, /code=artifact-invalid-json/);
-    const diagnostic = assertOutputHasReadFailureScenarioContract({
-      stderr,
-      scenario: 'invalidJson',
-      expectedScript: 'simulate:report:tuning:trend',
-      expectedPath: baselinePath,
-    });
     assert.equal(diagnostic.level, 'warn');
     assert.equal(diagnostic.context?.baselinePath, baselinePath);
   } finally {
@@ -297,6 +309,9 @@ test('trend script warns and falls back when baseline path is unreadable as file
     tempDirectory,
     'scenario-tuning-dashboard.baseline.unreadable.json',
   );
+  const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
+  const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
+  const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
   try {
     await createUnreadableArtifactPath({
@@ -304,24 +319,25 @@ test('trend script warns and falls back when baseline path is unreadable as file
       relativePath: 'scenario-tuning-dashboard.baseline.unreadable.json',
     });
 
-    const { payload, stderr } = await runTrendScript({
-      tempDirectory,
-      baselinePath: unreadableBaselinePath,
-      extraEnv: {
+    const { diagnostic, stderr } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
+      scriptPath,
+      scenario: 'unreadable',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedLevel: 'warn',
+      expectedPath: unreadableBaselinePath,
+      env: {
+        SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
+        SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
+        SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: unreadableBaselinePath,
         REPORT_DIAGNOSTICS_JSON: '1',
       },
     });
+    const payload = JSON.parse(await readFile(outputPath, 'utf-8'));
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /falling back to signature baseline/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
     assert.match(stderr, /code=artifact-read-error/);
-    const diagnostic = assertOutputHasReadFailureScenarioContract({
-      stderr,
-      scenario: 'unreadable',
-      expectedScript: 'simulate:report:tuning:trend',
-      expectedPath: unreadableBaselinePath,
-    });
     assert.equal(diagnostic.level, 'warn');
     assert.equal(diagnostic.context?.baselinePath, unreadableBaselinePath);
   } finally {
