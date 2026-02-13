@@ -12,6 +12,11 @@ import {
   buildBaselineSuggestionPayload,
   buildScenarioTuningIntensityOnlyDriftPayload,
 } from './reportDiagnosticsFixtures.js';
+import { writeJsonArtifact } from './reportPayloadOutput.js';
+import {
+  buildDiagnosticsSmokeSummary,
+  isValidDiagnosticsSmokeSummaryPayload,
+} from './reportDiagnosticsSmokeSummary.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -21,14 +26,6 @@ const runId = process.env.REPORT_DIAGNOSTICS_RUN_ID ?? `report-diagnostics-smoke
 
 function collectDiagnostics(stdout = '', stderr = '') {
   return [...parseReportDiagnosticsFromText(stdout), ...parseReportDiagnosticsFromText(stderr)];
-}
-
-function countBy(entries, getKey) {
-  return entries.reduce((acc, entry) => {
-    const key = getKey(entry);
-    acc[key] = (acc[key] ?? 0) + 1;
-    return acc;
-  }, {});
 }
 
 async function runNodeScript(scriptPath, { cwd, env }) {
@@ -236,32 +233,16 @@ async function main() {
       );
     }
 
-    const allDiagnostics = scenarioResults.flatMap((result) => result.diagnostics);
     const failedScenarios = scenarioResults.filter((result) => !result.ok);
-    const summary = {
-      generatedAt: new Date().toISOString(),
+    const summary = buildDiagnosticsSmokeSummary({
       runId,
-      scenarioCount: scenarioResults.length,
-      passedScenarioCount: scenarioResults.length - failedScenarios.length,
-      failedScenarioCount: failedScenarios.length,
-      diagnosticsCount: allDiagnostics.length,
-      diagnosticsByCode: countBy(allDiagnostics, (entry) => entry.code),
-      diagnosticsByLevel: countBy(allDiagnostics, (entry) => entry.level),
-      diagnosticsByScript: countBy(allDiagnostics, (entry) => entry.script ?? 'null'),
-      scenarios: scenarioResults.map((result) => ({
-        name: result.name,
-        expectedScript: result.expectedScript,
-        expectedExitCode: result.expectedExitCode,
-        actualExitCode: result.actualExitCode,
-        diagnosticsCount: result.diagnostics.length,
-        observedCodes: result.observedCodes,
-        ok: result.ok,
-        errors: result.errors,
-      })),
-    };
+      scenarioResults,
+    });
+    if (!isValidDiagnosticsSmokeSummaryPayload(summary)) {
+      throw new Error('Diagnostics smoke summary payload failed validation.');
+    }
 
-    await mkdir(path.dirname(outputPath), { recursive: true });
-    await writeFile(outputPath, JSON.stringify(summary, null, 2), 'utf-8');
+    await writeJsonArtifact(outputPath, summary);
 
     console.log(
       `Diagnostics smoke summary: scenarios=${summary.scenarioCount}, failed=${summary.failedScenarioCount}, diagnostics=${summary.diagnosticsCount}`,

@@ -5,6 +5,10 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import {
+  REPORT_DIAGNOSTICS_SMOKE_SCHEMA_VERSION,
+  REPORT_DIAGNOSTICS_SMOKE_SUMMARY_TYPE,
+} from '../scripts/reportDiagnosticsSmokeSummary.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -25,6 +29,8 @@ test('report diagnostics smoke script emits passing diagnostics summary report',
 
     assert.match(stdout, /Diagnostics smoke summary: scenarios=\d+, failed=0, diagnostics=\d+/);
     const summary = JSON.parse(await readFile(outputPath, 'utf-8'));
+    assert.equal(summary.type, REPORT_DIAGNOSTICS_SMOKE_SUMMARY_TYPE);
+    assert.equal(summary.schemaVersion, REPORT_DIAGNOSTICS_SMOKE_SCHEMA_VERSION);
     assert.equal(summary.runId, runId);
     assert.equal(summary.scenarioCount, 4);
     assert.equal(summary.failedScenarioCount, 0);
