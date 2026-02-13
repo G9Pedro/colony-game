@@ -18,6 +18,7 @@ export const SCENARIO_DEFINITIONS = {
       populationCap: 0,
       storageCap: 0,
     },
+    objectiveRewardMultiplier: 1,
   },
   prosperous: {
     id: 'prosperous',
@@ -38,6 +39,7 @@ export const SCENARIO_DEFINITIONS = {
       populationCap: 2,
       storageCap: 120,
     },
+    objectiveRewardMultiplier: 0.85,
   },
   harsh: {
     id: 'harsh',
@@ -58,6 +60,7 @@ export const SCENARIO_DEFINITIONS = {
       populationCap: -1,
       storageCap: -60,
     },
+    objectiveRewardMultiplier: 1.25,
   },
 };
 

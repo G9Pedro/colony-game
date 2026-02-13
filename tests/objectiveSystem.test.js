@@ -87,3 +87,26 @@ test('formatObjectiveReward returns player-readable text', () => {
   assert.ok(description.includes('15 stone'));
   assert.ok(description.includes('+1 morale'));
 });
+
+test('objective rewards scale by scenario reward multiplier', () => {
+  const harshState = createInitialState({ scenarioId: 'harsh', seed: 'objective-seed' });
+  harshState.research.completed.push('masonry');
+  harshState.resources.wood = 0;
+  harshState.resources.stone = 0;
+  runObjectiveSystem({
+    state: harshState,
+    emit: () => {},
+  });
+
+  const prosperousState = createInitialState({ scenarioId: 'prosperous', seed: 'objective-seed' });
+  prosperousState.research.completed.push('masonry');
+  prosperousState.resources.wood = 0;
+  prosperousState.resources.stone = 0;
+  runObjectiveSystem({
+    state: prosperousState,
+    emit: () => {},
+  });
+
+  assert.ok(harshState.resources.wood > prosperousState.resources.wood);
+  assert.ok(harshState.resources.stone > prosperousState.resources.stone);
+});

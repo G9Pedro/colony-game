@@ -1,4 +1,5 @@
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
+import { getScenarioDefinition } from '../content/scenarios.js';
 
 const OBJECTIVE_DEFINITIONS = [
   {
@@ -75,30 +76,62 @@ export function getCurrentObjectiveIds(state) {
   );
 }
 
-function applyObjectiveReward(state, objective) {
+export function getObjectiveRewardMultiplier(state) {
+  const scenario = getScenarioDefinition(state?.scenarioId);
+  return scenario.objectiveRewardMultiplier ?? 1;
+}
+
+function toScaledRewardAmount(amount, multiplier) {
+  const scaled = Math.round(amount * multiplier);
+  return Math.max(1, scaled);
+}
+
+function getScaledReward(reward, multiplier) {
+  if (!reward) {
+    return null;
+  }
+
+  const scaled = {
+    resources: {},
+    moraleBoost: reward.moraleBoost
+      ? toScaledRewardAmount(reward.moraleBoost, multiplier)
+      : 0,
+  };
+
+  for (const [resourceKey, amount] of Object.entries(reward.resources ?? {})) {
+    scaled.resources[resourceKey] = toScaledRewardAmount(amount, multiplier);
+  }
+
+  return scaled;
+}
+
+function applyObjectiveReward(state, objective, multiplier) {
   if (!objective.reward) {
     return;
   }
 
-  for (const [resourceKey, amount] of Object.entries(objective.reward.resources ?? {})) {
+  const scaledReward = getScaledReward(objective.reward, multiplier);
+
+  for (const [resourceKey, amount] of Object.entries(scaledReward.resources ?? {})) {
     state.resources[resourceKey] = Math.max(0, (state.resources[resourceKey] ?? 0) + amount);
   }
 
-  if (objective.reward.moraleBoost) {
+  if (scaledReward.moraleBoost) {
     for (const colonist of state.colonists) {
       if (!colonist.alive) {
         continue;
       }
-      colonist.needs.morale = Math.min(100, colonist.needs.morale + objective.reward.moraleBoost);
+      colonist.needs.morale = Math.min(100, colonist.needs.morale + scaledReward.moraleBoost);
     }
   }
 }
 
-export function formatObjectiveReward(objective) {
-  const resourceParts = Object.entries(objective.reward?.resources ?? {}).map(
+export function formatObjectiveReward(objective, multiplier = 1) {
+  const scaledReward = getScaledReward(objective.reward, multiplier);
+  const resourceParts = Object.entries(scaledReward?.resources ?? {}).map(
     ([resourceKey, amount]) => `${amount} ${resourceKey}`,
   );
-  const moralePart = objective.reward?.moraleBoost ? `+${objective.reward.moraleBoost} morale` : null;
+  const moralePart = scaledReward?.moraleBoost ? `+${scaledReward.moraleBoost} morale` : null;
   return [...resourceParts, moralePart].filter(Boolean).join(', ');
 }
 
@@ -107,6 +140,7 @@ export function runObjectiveSystem(context) {
   if (state.status !== 'playing') {
     return;
   }
+  const rewardMultiplier = getObjectiveRewardMultiplier(state);
 
   for (const objective of OBJECTIVE_DEFINITIONS) {
     if (state.objectives.completed.includes(objective.id)) {
@@ -118,10 +152,10 @@ export function runObjectiveSystem(context) {
 
     state.objectives.completed.push(objective.id);
     state.metrics.objectivesCompleted += 1;
-    applyObjectiveReward(state, objective);
+    applyObjectiveReward(state, objective, rewardMultiplier);
     emit('objective-complete', {
       kind: 'success',
-      message: `Objective complete: ${objective.title}${objective.reward ? ` (Reward: ${formatObjectiveReward(objective)})` : ''}`,
+      message: `Objective complete: ${objective.title}${objective.reward ? ` (Reward: ${formatObjectiveReward(objective, rewardMultiplier)})` : ''}`,
     });
   }
 }
