@@ -6,6 +6,7 @@ import path from 'node:path';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import {
   assertValidateSmokeRejectsWithDiagnostic,
+  assertValidateSmokeRejectsWithReadFailureScenario,
 } from './helpers/validateReportDiagnosticsSmokeAssertions.js';
 import {
   buildMissingArtifactPath,
@@ -34,6 +35,32 @@ test('assertValidateSmokeRejectsWithDiagnostic validates read-failure diagnostic
       expectedRunId: runId,
       expectedLevel: 'error',
       expectedPath: missingReportPath,
+    });
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('assertValidateSmokeRejectsWithReadFailureScenario validates read-failure scenarios directly', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-assertions-'));
+  const missingReportPath = buildMissingArtifactPath({
+    rootDirectory: tempDirectory,
+    relativePath: 'missing-report-diagnostics-smoke.json',
+  });
+  const runId = 'validate-smoke-assertions-missing-scenario-run';
+
+  try {
+    await assertValidateSmokeRejectsWithReadFailureScenario({
+      envOverrides: {
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: missingReportPath,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+      scenario: 'missing',
+      expectedRunId: runId,
+      expectedLevel: 'error',
+      expectedPath: missingReportPath,
+      expectedDiagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

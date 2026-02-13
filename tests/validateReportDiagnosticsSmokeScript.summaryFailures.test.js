@@ -12,6 +12,7 @@ import {
 } from './helpers/validateReportDiagnosticsSmokeTestUtils.js';
 import {
   assertValidateSmokeRejectsWithDiagnostic,
+  assertValidateSmokeRejectsWithReadFailureScenario,
   runValidateReportDiagnosticsSmoke,
 } from './helpers/validateReportDiagnosticsSmokeAssertions.js';
 import {
@@ -126,13 +127,13 @@ test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for mi
   const runId = 'validate-smoke-json-missing-summary-run';
 
   try {
-    await assertValidateSmokeRejectsWithDiagnostic({
+    await assertValidateSmokeRejectsWithReadFailureScenario({
       envOverrides: {
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+      scenario: 'missing',
       expectedRunId: runId,
       expectedPath: reportPath,
     });
@@ -179,13 +180,13 @@ test('validate-report-diagnostics-smoke emits invalid-json diagnostic for invali
       contents: '{"broken": ',
     });
 
-    await assertValidateSmokeRejectsWithDiagnostic({
+    await assertValidateSmokeRejectsWithReadFailureScenario({
       envOverrides: {
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
+      scenario: 'invalidJson',
       expectedRunId: runId,
       expectedPath: reportPath,
     });
@@ -226,13 +227,13 @@ test('validate-report-diagnostics-smoke emits read-error diagnostic for unreadab
       rootDirectory: tempDirectory,
       relativePath: 'report-diagnostics-smoke-as-directory',
     });
-    await assertValidateSmokeRejectsWithDiagnostic({
+    await assertValidateSmokeRejectsWithReadFailureScenario({
       envOverrides: {
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportDirectoryPath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+      scenario: 'unreadable',
       expectedRunId: runId,
       expectedPath: reportDirectoryPath,
       expectedStatus: 'error',

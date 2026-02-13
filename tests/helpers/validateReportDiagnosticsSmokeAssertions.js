@@ -17,6 +17,30 @@ export function runValidateReportDiagnosticsSmoke(envOverrides = {}) {
   });
 }
 
+export async function assertValidateSmokeRejectsWithReadFailureScenario({
+  envOverrides,
+  scenario,
+  expectedRunId,
+  expectedLevel = undefined,
+  expectedPath,
+  expectedStatus = undefined,
+  expectedErrorCode = undefined,
+  expectedDiagnosticCode = undefined,
+}) {
+  await assertNodeDiagnosticsScriptReadFailureScenario({
+    scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
+    env: envOverrides,
+    scenario,
+    expectedScript: 'diagnostics:smoke:validate',
+    expectedRunId,
+    expectedLevel,
+    expectedPath,
+    expectedStatus,
+    expectedErrorCode,
+    expectedCodes: expectedDiagnosticCode === undefined ? undefined : [expectedDiagnosticCode],
+  });
+}
+
 export async function assertValidateSmokeRejectsWithDiagnostic({
   envOverrides,
   diagnosticCode,
@@ -36,17 +60,15 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
         { cause: error },
       );
     }
-    await assertNodeDiagnosticsScriptReadFailureScenario({
-      scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
-      env: envOverrides,
+    await assertValidateSmokeRejectsWithReadFailureScenario({
+      envOverrides,
       scenario: readFailureScenario,
-      expectedScript: 'diagnostics:smoke:validate',
       expectedRunId,
       expectedLevel,
       expectedPath,
       expectedStatus,
       expectedErrorCode,
-      expectedCodes: [diagnosticCode],
+      expectedDiagnosticCode: diagnosticCode,
     });
     return;
   }

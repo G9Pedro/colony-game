@@ -3,14 +3,13 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import {
   buildSmokeArtifactPath,
   createPassingSummary,
   writeSmokeSummaryArtifact,
 } from './helpers/validateReportDiagnosticsSmokeTestUtils.js';
 import {
-  assertValidateSmokeRejectsWithDiagnostic,
+  assertValidateSmokeRejectsWithReadFailureScenario,
   runValidateReportDiagnosticsSmoke,
 } from './helpers/validateReportDiagnosticsSmokeAssertions.js';
 import {
@@ -68,14 +67,14 @@ test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for mi
       summary,
     });
 
-    await assertValidateSmokeRejectsWithDiagnostic({
+    await assertValidateSmokeRejectsWithReadFailureScenario({
       envOverrides: {
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
         REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownPath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+      scenario: 'missing',
       expectedRunId: runId,
       expectedPath: markdownPath,
     });
@@ -139,14 +138,14 @@ test('validate-report-diagnostics-smoke emits invalid-payload diagnostic for inv
       contents: '# Broken markdown payload',
     });
 
-    await assertValidateSmokeRejectsWithDiagnostic({
+    await assertValidateSmokeRejectsWithReadFailureScenario({
       envOverrides: {
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
         REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownPath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
+      scenario: 'invalidPayload',
       expectedRunId: runId,
       expectedPath: markdownPath,
     });
