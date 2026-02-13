@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { REPORT_KINDS } from '../src/game/reportPayloadMeta.js';
 import { isValidReportArtifactsValidationPayload } from '../src/game/reportPayloadValidatorsReportArtifacts.js';
 import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
-import { getReportArtifactRegenerationCommand } from '../src/game/reportArtifactsManifest.js';
 import {
+  buildFailingReportArtifactResultOverride,
   buildReportArtifactValidationResults,
   buildReportArtifactsValidationPayloadFixture,
   buildValidReportArtifactsValidationPayload,
@@ -14,12 +14,10 @@ function buildReportArtifactsPayload() {
   const invalidTargetPath = 'reports/scenario-tuning-trend.json';
   return buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      [invalidTargetPath]: {
+      [invalidTargetPath]: buildFailingReportArtifactResultOverride(invalidTargetPath, {
         status: REPORT_ARTIFACT_STATUSES.invalid,
-        ok: false,
         message: 'payload schema mismatch',
-        recommendedCommand: getReportArtifactRegenerationCommand(invalidTargetPath),
-      },
+      }),
     },
   });
 }

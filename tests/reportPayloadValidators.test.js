@@ -14,8 +14,8 @@ import {
   withReportMeta,
 } from '../src/game/reportPayloadValidators.js';
 import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
-import { getReportArtifactRegenerationCommand } from '../src/game/reportArtifactsManifest.js';
 import {
+  buildFailingReportArtifactResultOverride,
   buildReportArtifactValidationResults,
   buildReportArtifactsValidationPayloadFixture,
   buildValidReportArtifactsValidationPayload,
@@ -995,12 +995,9 @@ test('isValidReportArtifactsValidationPayload rejects recommended actions mismat
   const failurePath = 'reports/scenario-tuning-dashboard.json';
   const payload = buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      [failurePath]: {
-        status: REPORT_ARTIFACT_STATUSES.error,
-        ok: false,
+      [failurePath]: buildFailingReportArtifactResultOverride(failurePath, {
         message: 'read failure',
-        recommendedCommand: getReportArtifactRegenerationCommand(failurePath),
-      },
+      }),
     },
     payloadOverrides: {
       recommendedActions: [],

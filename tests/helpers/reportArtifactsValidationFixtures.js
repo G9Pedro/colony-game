@@ -4,7 +4,10 @@ import {
   buildRecommendedActionsFromResults,
   REPORT_ARTIFACT_STATUSES,
 } from '../../src/game/reportArtifactValidationPayloadHelpers.js';
-import { REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH } from '../../src/game/reportArtifactsManifest.js';
+import {
+  getReportArtifactRegenerationCommand,
+  REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH,
+} from '../../src/game/reportArtifactsManifest.js';
 
 const REPORT_ARTIFACT_TARGET_PATHS = new Set(
   REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.map((target) => target.path),
@@ -49,6 +52,23 @@ export function buildValidReportArtifactsValidationPayload(overrides = {}) {
     results,
     ...overrides,
   });
+}
+
+export function buildFailingReportArtifactResultOverride(path, overrides = {}) {
+  const {
+    status = REPORT_ARTIFACT_STATUSES.error,
+    message = 'fixture failure',
+    recommendedCommand = getReportArtifactRegenerationCommand(path),
+    ...rest
+  } = overrides ?? {};
+
+  return {
+    ...rest,
+    status,
+    ok: false,
+    message,
+    recommendedCommand,
+  };
 }
 
 export function buildReportArtifactsValidationPayloadFixture({

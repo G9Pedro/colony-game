@@ -7,6 +7,7 @@ import {
   REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH,
 } from '../src/game/reportArtifactsManifest.js';
 import {
+  buildFailingReportArtifactResultOverride,
   buildReportArtifactValidationResults,
   buildReportArtifactsValidationPayloadFixture,
   buildValidReportArtifactsValidationPayload,
@@ -36,18 +37,27 @@ test('buildReportArtifactValidationResults returns sorted canonical rows', () =>
 test('buildReportArtifactValidationResults applies path-based overrides', () => {
   const failurePath = 'reports/scenario-tuning-trend.json';
   const results = buildReportArtifactValidationResults({
-    [failurePath]: {
-      status: REPORT_ARTIFACT_STATUSES.error,
-      ok: false,
+    [failurePath]: buildFailingReportArtifactResultOverride(failurePath, {
       message: 'failed to read',
-      recommendedCommand: getReportArtifactRegenerationCommand(failurePath),
-    },
+    }),
   });
   const failure = results.find((result) => result.path === failurePath);
   assert.equal(failure.status, REPORT_ARTIFACT_STATUSES.error);
   assert.equal(failure.ok, false);
   assert.equal(failure.message, 'failed to read');
   assert.equal(failure.recommendedCommand, getReportArtifactRegenerationCommand(failurePath));
+});
+
+test('buildFailingReportArtifactResultOverride provides stable defaults', () => {
+  const failurePath = 'reports/scenario-tuning-dashboard.json';
+  const override = buildFailingReportArtifactResultOverride(failurePath);
+  assert.equal(override.status, REPORT_ARTIFACT_STATUSES.error);
+  assert.equal(override.ok, false);
+  assert.equal(override.message, 'fixture failure');
+  assert.equal(
+    override.recommendedCommand,
+    getReportArtifactRegenerationCommand(failurePath),
+  );
 });
 
 test('buildReportArtifactValidationResults rejects unknown override paths', () => {
