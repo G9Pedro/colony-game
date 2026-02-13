@@ -17,6 +17,7 @@ npm start
 ## Pull Request Checklist Mapping
 
 The pull request template checkboxes map to these commands/artifacts:
+Template path: `.github/pull_request_template.md`.
 
 | PR Template Item | Command | What to Review |
 | --- | --- | --- |
