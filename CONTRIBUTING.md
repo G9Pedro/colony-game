@@ -43,6 +43,7 @@ Use this minimal flow before opening a PR:
 The pull request template checkboxes map to these commands/artifacts:
 Template path: `.github/pull_request_template.md`.
 This guide and the PR template are intentionally synchronized process references.
+When checklist commands change, update both files in the same PR and do a quick consistency pass.
 
 | PR Template Item | Command | What to Review |
 | --- | --- | --- |
