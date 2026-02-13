@@ -5,6 +5,7 @@ import { formatObjectiveReward, getCurrentObjectiveIds, getObjectiveDefinitions,
 import { GameUI } from './gameUI.js';
 import { Minimap } from './minimap.js';
 import { NotificationCenter } from './notifications.js';
+import { formatRenderStatsLabel } from './renderStatsLabel.js';
 
 export class UIController {
   constructor({
@@ -238,15 +239,7 @@ export class UIController {
     this.el.balanceProfileSelect.value = state.balanceProfileId;
     this.el.rendererModeSelect.value = this.renderer?.getRendererMode?.() ?? 'isometric';
     const renderStats = this.renderer?.getDebugStats?.();
-    if (renderStats) {
-      const fpsLabel = Math.round(renderStats.fps ?? 0);
-      const qualityLabel = typeof renderStats.quality === 'number'
-        ? `${Math.round(renderStats.quality * 100)}%`
-        : '—';
-      this.el.renderStatsLabel.textContent = `${renderStats.mode} · ${fpsLabel}fps · q${qualityLabel}`;
-    } else {
-      this.el.renderStatsLabel.textContent = 'FPS —';
-    }
+    this.el.renderStatsLabel.textContent = formatRenderStatsLabel(renderStats);
 
     if (state.status === 'won') {
       this.showBanner('Victory! Colony Charter Achieved.');
