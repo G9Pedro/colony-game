@@ -5,16 +5,14 @@ import {
   buildScenarioTuningDashboard,
   buildScenarioTuningDashboardMarkdown,
 } from '../src/content/scenarioTuningDashboard.js';
+import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 
 const outputPath = process.env.SIM_SCENARIO_TUNING_DASHBOARD_PATH ?? 'reports/scenario-tuning-dashboard.json';
 const markdownOutputPath =
   process.env.SIM_SCENARIO_TUNING_DASHBOARD_MD_PATH ?? 'reports/scenario-tuning-dashboard.md';
 
 const dashboard = buildScenarioTuningDashboard(SCENARIO_DEFINITIONS);
-const payload = {
-  generatedAt: new Date().toISOString(),
-  ...dashboard,
-};
+const payload = withReportMeta(REPORT_KINDS.scenarioTuningDashboard, dashboard);
 const markdown = buildScenarioTuningDashboardMarkdown(payload);
 
 await mkdir(dirname(outputPath), { recursive: true });

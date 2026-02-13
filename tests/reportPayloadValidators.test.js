@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   isValidBaselineSuggestionPayload,
+  isValidScenarioTuningDashboardPayload,
   isValidScenarioTuningSuggestionPayload,
+  isValidScenarioTuningValidationPayload,
   REPORT_KINDS,
   REPORT_SCHEMA_VERSIONS,
   withReportMeta,
@@ -60,4 +62,33 @@ test('isValidScenarioTuningSuggestionPayload rejects wrong report kind', () => {
     },
   });
   assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
+});
+
+test('isValidScenarioTuningValidationPayload accepts validation report payload', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningValidation, {
+    ok: true,
+    errors: [],
+    warnings: [],
+    issueCount: 0,
+    checkedScenarioCount: 3,
+  });
+  assert.equal(isValidScenarioTuningValidationPayload(payload), true);
+});
+
+test('isValidScenarioTuningDashboardPayload accepts dashboard report payload', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningDashboard, {
+    scenarioCount: 3,
+    activeScenarioCount: 2,
+    scenarios: [],
+    ranking: [],
+    signatureMap: {},
+  });
+  assert.equal(isValidScenarioTuningDashboardPayload(payload), true);
+});
+
+test('withReportMeta throws for unknown report kind', () => {
+  assert.throws(
+    () => withReportMeta('unknown-report-kind', {}),
+    /Unknown report kind/i,
+  );
 });
