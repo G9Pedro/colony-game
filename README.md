@@ -371,6 +371,7 @@ CI now runs:
 - `reports/report-artifacts-validation.json/.md` (uploaded as artifact)
 - `npm run diagnostics:smoke`
 - `reports/report-diagnostics-smoke.json/.md` (local observability contract summary)
+- `npm run diagnostics:smoke:validate`
 - `npm run simulate:baseline:check` (enforced)
 
 One-command local verification:
@@ -393,6 +394,7 @@ npm run verify
 - `npm run simulate:baseline:suggest`
 - `npm run reports:validate`
 - `npm run diagnostics:smoke`
+- `npm run diagnostics:smoke:validate`
 - `npm run simulate:baseline:check`
 
 ### CI/Local Parity Tip
