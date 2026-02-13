@@ -73,3 +73,27 @@ ${buildCounterRows(summaryPayload.diagnosticsByScript)}
 ${buildFailureSections(summaryPayload.scenarios)}
 `;
 }
+
+export function isValidDiagnosticsSmokeMarkdown(markdownText, summaryPayload) {
+  if (typeof markdownText !== 'string' || markdownText.length === 0) {
+    return false;
+  }
+  if (!isValidDiagnosticsSmokeSummaryPayload(summaryPayload)) {
+    return false;
+  }
+
+  const requiredSnippets = [
+    '# Report Diagnostics Smoke Summary',
+    `- run id: ${summaryPayload.runId}`,
+    `- scenarios: ${summaryPayload.scenarioCount}`,
+    `- passed: ${summaryPayload.passedScenarioCount}`,
+    `- failed: ${summaryPayload.failedScenarioCount}`,
+    '## Scenario results',
+    '## Diagnostic counts by code',
+    '## Diagnostic counts by level',
+    '## Diagnostic counts by script',
+    '## Failures',
+  ];
+
+  return requiredSnippets.every((snippet) => markdownText.includes(snippet));
+}

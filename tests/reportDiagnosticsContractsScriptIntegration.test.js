@@ -13,6 +13,7 @@ import {
   buildScenarioTuningIntensityOnlyDriftPayload,
 } from '../scripts/reportDiagnosticsFixtures.js';
 import { buildDiagnosticsSmokeSummary } from '../scripts/reportDiagnosticsSmokeSummary.js';
+import { buildDiagnosticsSmokeMarkdown } from '../scripts/reportDiagnosticsSmokeMarkdown.js';
 import {
   assertReportDiagnosticsContract,
   collectReportDiagnostics,
@@ -196,6 +197,7 @@ test('diagnostics smoke script diagnostics follow contract fixture', async () =>
 test('diagnostics smoke validation script diagnostics follow contract fixture', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-'));
   const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const markdownOutputPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
   const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
 
   try {
@@ -205,6 +207,7 @@ test('diagnostics smoke validation script diagnostics follow contract fixture', 
       scenarioResults: [],
     });
     await writeFile(outputPath, JSON.stringify(summary, null, 2), 'utf-8');
+    await writeFile(markdownOutputPath, buildDiagnosticsSmokeMarkdown(summary), 'utf-8');
 
     const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
       env: {
@@ -212,6 +215,7 @@ test('diagnostics smoke validation script diagnostics follow contract fixture', 
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
+        REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
       },
     });
     assertReportDiagnosticsContract({

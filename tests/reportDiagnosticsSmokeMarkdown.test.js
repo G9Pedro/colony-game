@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildDiagnosticsSmokeSummary } from '../scripts/reportDiagnosticsSmokeSummary.js';
-import { buildDiagnosticsSmokeMarkdown } from '../scripts/reportDiagnosticsSmokeMarkdown.js';
+import {
+  buildDiagnosticsSmokeMarkdown,
+  isValidDiagnosticsSmokeMarkdown,
+} from '../scripts/reportDiagnosticsSmokeMarkdown.js';
 import { buildReportDiagnostic } from '../scripts/reportDiagnostics.js';
 
 function buildSummaryFixture() {
@@ -53,5 +56,18 @@ test('buildDiagnosticsSmokeMarkdown rejects invalid summary payloads', () => {
         type: 'bad',
       }),
     /invalid summary payload/i,
+  );
+});
+
+test('isValidDiagnosticsSmokeMarkdown validates expected markdown sections', () => {
+  const summary = buildSummaryFixture();
+  const markdown = buildDiagnosticsSmokeMarkdown(summary);
+  assert.equal(isValidDiagnosticsSmokeMarkdown(markdown, summary), true);
+  assert.equal(
+    isValidDiagnosticsSmokeMarkdown(
+      markdown.replace('## Diagnostic counts by script', '## Script count section removed'),
+      summary,
+    ),
+    false,
   );
 });

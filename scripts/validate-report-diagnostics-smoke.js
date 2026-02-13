@@ -1,9 +1,14 @@
+import { readFile } from 'node:fs/promises';
 import { isValidDiagnosticsSmokeSummaryPayload } from './reportDiagnosticsSmokeSummary.js';
 import { getReadArtifactDiagnosticCode, readJsonArtifact } from './reportPayloadInput.js';
 import { createScriptDiagnosticEmitter, REPORT_DIAGNOSTIC_CODES } from './reportDiagnostics.js';
+import { isValidDiagnosticsSmokeMarkdown } from './reportDiagnosticsSmokeMarkdown.js';
 
 const outputPath =
   process.env.REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH ?? 'reports/report-diagnostics-smoke.json';
+const markdownPath =
+  process.env.REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH ?? 'reports/report-diagnostics-smoke.md';
+const shouldValidateMarkdown = process.env.REPORT_DIAGNOSTICS_SMOKE_VALIDATE_MARKDOWN !== '0';
 const emitDiagnostic = createScriptDiagnosticEmitter('diagnostics:smoke:validate');
 
 function formatReadFailure(readResult) {
@@ -67,6 +72,51 @@ async function main() {
     process.exit(1);
   }
 
+  if (shouldValidateMarkdown) {
+    let markdownText;
+    try {
+      markdownText = await readFile(markdownPath, 'utf-8');
+    } catch (error) {
+      const diagnosticCode =
+        error?.code === 'ENOENT'
+          ? REPORT_DIAGNOSTIC_CODES.artifactMissing
+          : REPORT_DIAGNOSTIC_CODES.artifactReadError;
+      emitDiagnostic({
+        level: 'error',
+        code: diagnosticCode,
+        message: 'Diagnostics smoke markdown report read failed.',
+        context: {
+          path: markdownPath,
+          errorCode: error?.code ?? null,
+        },
+      });
+      if (error?.code === 'ENOENT') {
+        console.error(`Missing diagnostics smoke markdown report at "${markdownPath}".`);
+      } else {
+        console.error(
+          `Unable to read diagnostics smoke markdown report at "${markdownPath}": ${error?.message ?? 'read error'}`,
+        );
+      }
+      process.exit(1);
+    }
+
+    if (!isValidDiagnosticsSmokeMarkdown(markdownText, readResult.payload)) {
+      emitDiagnostic({
+        level: 'error',
+        code: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
+        message: 'Diagnostics smoke markdown report failed validation.',
+        context: {
+          path: markdownPath,
+          runId: readResult.payload.runId,
+        },
+      });
+      console.error(
+        `Diagnostics smoke markdown report at "${markdownPath}" failed validation against summary payload.`,
+      );
+      process.exit(1);
+    }
+  }
+
   emitDiagnostic({
     level: 'info',
     code: REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary,
@@ -75,6 +125,8 @@ async function main() {
       path: outputPath,
       scenarioCount: readResult.payload.scenarioCount,
       diagnosticsCount: readResult.payload.diagnosticsCount,
+      markdownValidationEnabled: shouldValidateMarkdown,
+      markdownPath: shouldValidateMarkdown ? markdownPath : null,
     },
   });
 
