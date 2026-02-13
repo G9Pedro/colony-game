@@ -1,12 +1,14 @@
 import { REPORT_KINDS, REPORT_SCHEMA_VERSIONS, hasValidMeta } from './reportPayloadMeta.js';
 import { isRecordOfNumbers } from './reportPayloadValidatorUtils.js';
 import {
+  areReportArtifactResultsSortedByPath,
   areRecommendedActionsEqual,
   buildReportArtifactResultStatistics,
   buildRecommendedActionsFromResults,
   doReportArtifactStatusCountsMatch,
   getReportArtifactStatusCountsTotal,
   hasExpectedReportArtifactStatusKeys,
+  hasUniqueReportArtifactResultPaths,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
 } from './reportArtifactValidationPayloadHelpers.js';
@@ -38,10 +40,8 @@ export function isValidReportArtifactsValidationPayload(payload) {
   const hasKnownResultKinds = results.every((result) =>
     Object.prototype.hasOwnProperty.call(REPORT_SCHEMA_VERSIONS, result.kind),
   );
-  const hasUniqueResultPaths = new Set(results.map((result) => result.path)).size === results.length;
-  const hasSortedResultPaths = results.every(
-    (result, index) => index === 0 || results[index - 1].path.localeCompare(result.path) <= 0,
-  );
+  const hasUniqueResultPaths = hasUniqueReportArtifactResultPaths(results);
+  const hasSortedResultPaths = areReportArtifactResultsSortedByPath(results);
 
   const computedSummary = buildReportArtifactResultStatistics(results);
   const reportedStatusTotal = getReportArtifactStatusCountsTotal(payload.statusCounts);

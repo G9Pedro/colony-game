@@ -57,6 +57,24 @@ export function doReportArtifactStatusCountsMatch(left, right) {
   return REPORT_ARTIFACT_STATUS_ORDER.every((status) => left?.[status] === right?.[status]);
 }
 
+export function hasUniqueReportArtifactResultPaths(results = undefined) {
+  const normalizedResults = Array.isArray(results) ? results : [];
+  if (!normalizedResults.every((result) => typeof result?.path === 'string' && result.path.length > 0)) {
+    return false;
+  }
+  return new Set(normalizedResults.map((result) => result?.path)).size === normalizedResults.length;
+}
+
+export function areReportArtifactResultsSortedByPath(results = undefined) {
+  const normalizedResults = Array.isArray(results) ? results : [];
+  if (!normalizedResults.every((result) => typeof result?.path === 'string' && result.path.length > 0)) {
+    return false;
+  }
+  return normalizedResults.every(
+    (result, index) => index === 0 || normalizedResults[index - 1].path.localeCompare(result.path) <= 0,
+  );
+}
+
 export function normalizeReportArtifactStatusCounts(statusCounts = undefined) {
   const normalizedCounts = buildReportArtifactStatusCounts();
   for (const status of REPORT_ARTIFACT_STATUS_ORDER) {

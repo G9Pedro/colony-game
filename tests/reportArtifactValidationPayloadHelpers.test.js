@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  areReportArtifactResultsSortedByPath,
   areRecommendedActionsEqual,
   buildReportArtifactResultStatistics,
   buildReportArtifactStatusCounts,
@@ -10,6 +11,7 @@ import {
   formatReportArtifactStatusCounts,
   getReportArtifactStatusCountsTotal,
   hasExpectedReportArtifactStatusKeys,
+  hasUniqueReportArtifactResultPaths,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
@@ -161,6 +163,42 @@ test('doReportArtifactStatusCountsMatch compares canonical keys', () => {
     }),
     false,
   );
+});
+
+test('hasUniqueReportArtifactResultPaths validates unique non-empty paths', () => {
+  assert.equal(
+    hasUniqueReportArtifactResultPaths([
+      { path: 'reports/a.json' },
+      { path: 'reports/b.json' },
+    ]),
+    true,
+  );
+  assert.equal(
+    hasUniqueReportArtifactResultPaths([
+      { path: 'reports/a.json' },
+      { path: 'reports/a.json' },
+    ]),
+    false,
+  );
+  assert.equal(hasUniqueReportArtifactResultPaths([{ path: '' }]), false);
+});
+
+test('areReportArtifactResultsSortedByPath checks ascending path ordering', () => {
+  assert.equal(
+    areReportArtifactResultsSortedByPath([
+      { path: 'reports/a.json' },
+      { path: 'reports/b.json' },
+    ]),
+    true,
+  );
+  assert.equal(
+    areReportArtifactResultsSortedByPath([
+      { path: 'reports/b.json' },
+      { path: 'reports/a.json' },
+    ]),
+    false,
+  );
+  assert.equal(areReportArtifactResultsSortedByPath([{ path: '' }]), false);
 });
 
 test('isValidRecommendedActions validates command/path entries', () => {
