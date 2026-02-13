@@ -117,6 +117,12 @@ Run balance profile regression checks:
 npm run simulate:balance
 ```
 
+Generate suggested baseline updates from current deterministic behavior:
+
+```bash
+npm run simulate:baseline:suggest
+```
+
 CI now runs:
 - `npm test`
 - `npm run simulate:assert`
