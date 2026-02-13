@@ -121,6 +121,8 @@ const RESOURCE_GLYPHS = {
   medicine: '✚',
   knowledge: '📘',
 };
+const PREWARM_JOB_TYPES = Object.keys(JOB_COLORS);
+const PREWARM_RESOURCE_KEYS = Object.keys(RESOURCE_GLYPHS);
 
 const BUILDING_STYLE_OVERRIDES = {
   hut: { roof: '#8f613b', wall: '#7a4d2d', footprint: 0.82, height: 0.68 },
@@ -312,6 +314,17 @@ export class SpriteFactory {
     }
     this.getTerrainTile('dirt', 0);
     this.getTerrainTile('path', 0);
+
+    PREWARM_JOB_TYPES.forEach((job) => {
+      for (let frame = 0; frame < 3; frame += 1) {
+        this.getColonistSprite(job, frame, { idle: false });
+        this.getColonistSprite(job, frame, { idle: true });
+      }
+    });
+
+    PREWARM_RESOURCE_KEYS.forEach((resource) => {
+      this.getResourceIcon(resource, 20);
+    });
   }
 
   getTerrainTile(kind = 'grass', variant = 0) {
