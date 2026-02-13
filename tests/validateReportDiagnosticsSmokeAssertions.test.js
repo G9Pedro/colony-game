@@ -8,6 +8,7 @@ import {
   assertValidateSmokeRejectsWithDiagnostic,
   assertValidateSmokeRejectsWithReadFailureScenario,
 } from './helpers/validateReportDiagnosticsSmokeAssertions.js';
+import { REPORT_READ_FAILURE_SCENARIOS } from './helpers/reportReadFailureMatrixTestUtils.js';
 import {
   buildMissingArtifactPath,
 } from './helpers/reportReadFailureFixtures.js';
@@ -56,7 +57,7 @@ test('assertValidateSmokeRejectsWithReadFailureScenario validates read-failure s
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       expectedRunId: runId,
       expectedLevel: 'error',
       expectedPath: missingReportPath,

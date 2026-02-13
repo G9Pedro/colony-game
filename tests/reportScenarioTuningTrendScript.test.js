@@ -6,6 +6,7 @@ import path from 'node:path';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import {
+  REPORT_READ_FAILURE_SCENARIOS,
   assertNodeDiagnosticsScriptOutputsReadFailureScenario,
 } from './helpers/reportReadFailureMatrixTestUtils.js';
 import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
@@ -75,7 +76,7 @@ test('trend script emits JSON diagnostics when enabled', async () => {
   try {
     const { diagnostic } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
       scriptPath,
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       expectedScript: 'simulate:report:tuning:trend',
       expectedLevel: 'info',
       expectedPath: missingBaselinePath,
@@ -242,7 +243,7 @@ test('trend script suggests baseline capture command when baseline payload is in
 
     const { diagnostic, stderr } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
       scriptPath,
-      scenario: 'invalidPayload',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidPayload,
       expectedScript: 'simulate:report:tuning:trend',
       expectedLevel: 'warn',
       expectedPath: baselinePath,
@@ -283,7 +284,7 @@ test('trend script warns and falls back when baseline payload is invalid JSON', 
 
     const { diagnostic, stderr } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
       scriptPath,
-      scenario: 'invalidJson',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidJson,
       expectedScript: 'simulate:report:tuning:trend',
       expectedLevel: 'warn',
       expectedPath: baselinePath,
@@ -325,7 +326,7 @@ test('trend script warns and falls back when baseline path is unreadable as file
 
     const { diagnostic, stderr } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
       scriptPath,
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       expectedScript: 'simulate:report:tuning:trend',
       expectedLevel: 'warn',
       expectedPath: unreadableBaselinePath,

@@ -12,7 +12,10 @@ import {
 import {
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
-import { assertNodeDiagnosticsScriptReadFailureScenario } from './helpers/reportReadFailureMatrixTestUtils.js';
+import {
+  REPORT_READ_FAILURE_SCENARIOS,
+  assertNodeDiagnosticsScriptReadFailureScenario,
+} from './helpers/reportReadFailureMatrixTestUtils.js';
 import {
   buildMissingArtifactPath,
   createTextArtifact,
@@ -69,7 +72,7 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
   try {
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
@@ -97,7 +100,7 @@ test('diagnostics smoke validation emits read-error diagnostic for unreadable su
 
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
@@ -128,7 +131,7 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
 
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
@@ -169,7 +172,7 @@ test('diagnostics smoke validation emits invalid-payload diagnostic for invalid 
 
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
-      scenario: 'invalidPayload',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidPayload,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,

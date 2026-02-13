@@ -9,23 +9,30 @@ import {
   runNodeDiagnosticsScript,
 } from './reportDiagnosticsScriptTestUtils.js';
 
+export const REPORT_READ_FAILURE_SCENARIOS = Object.freeze({
+  missing: 'missing',
+  invalidJson: 'invalidJson',
+  invalidPayload: 'invalidPayload',
+  unreadable: 'unreadable',
+});
+
 export const REPORT_READ_FAILURE_SCENARIO_CONTRACTS = Object.freeze({
-  missing: Object.freeze({
+  [REPORT_READ_FAILURE_SCENARIOS.missing]: Object.freeze({
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.missing,
     status: 'missing',
     errorCode: 'ENOENT',
   }),
-  invalidJson: Object.freeze({
+  [REPORT_READ_FAILURE_SCENARIOS.invalidJson]: Object.freeze({
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
     status: 'invalid-json',
     errorCode: null,
   }),
-  invalidPayload: Object.freeze({
+  [REPORT_READ_FAILURE_SCENARIOS.invalidPayload]: Object.freeze({
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
     status: 'invalid',
     errorCode: null,
   }),
-  unreadable: Object.freeze({
+  [REPORT_READ_FAILURE_SCENARIOS.unreadable]: Object.freeze({
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
     status: 'error',
     errorCode: 'EISDIR',

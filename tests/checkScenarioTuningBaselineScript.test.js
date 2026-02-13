@@ -13,7 +13,10 @@ import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
-import { assertNodeDiagnosticsScriptReadFailureScenario } from './helpers/reportReadFailureMatrixTestUtils.js';
+import {
+  REPORT_READ_FAILURE_SCENARIOS,
+  assertNodeDiagnosticsScriptReadFailureScenario,
+} from './helpers/reportReadFailureMatrixTestUtils.js';
 import {
   createJsonArtifact,
   createUnreadableArtifactPath,
@@ -141,7 +144,7 @@ test('check-scenario-tuning-baseline emits read-error diagnostic for unreadable 
 
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       env: {
         SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',

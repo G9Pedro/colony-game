@@ -16,6 +16,7 @@ import {
   buildMissingArtifactPath,
   createTextArtifact,
 } from './helpers/reportReadFailureFixtures.js';
+import { REPORT_READ_FAILURE_SCENARIOS } from './helpers/reportReadFailureMatrixTestUtils.js';
 
 test('validate-report-diagnostics-smoke fails when markdown artifact is missing', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
@@ -74,7 +75,7 @@ test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for mi
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       expectedRunId: runId,
       expectedPath: markdownPath,
     });
@@ -145,7 +146,7 @@ test('validate-report-diagnostics-smoke emits invalid-payload diagnostic for inv
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      scenario: 'invalidPayload',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidPayload,
       expectedRunId: runId,
       expectedPath: markdownPath,
     });

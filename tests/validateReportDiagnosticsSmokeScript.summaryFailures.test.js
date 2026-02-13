@@ -19,6 +19,7 @@ import {
   buildMissingArtifactPath,
   createUnreadableArtifactPath,
 } from './helpers/reportReadFailureFixtures.js';
+import { REPORT_READ_FAILURE_SCENARIOS } from './helpers/reportReadFailureMatrixTestUtils.js';
 
 test('validate-report-diagnostics-smoke fails when report payload is invalid', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
@@ -133,7 +134,7 @@ test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for mi
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       expectedRunId: runId,
       expectedPath: reportPath,
     });
@@ -186,7 +187,7 @@ test('validate-report-diagnostics-smoke emits invalid-json diagnostic for invali
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      scenario: 'invalidJson',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidJson,
       expectedRunId: runId,
       expectedPath: reportPath,
     });
@@ -233,7 +234,7 @@ test('validate-report-diagnostics-smoke emits read-error diagnostic for unreadab
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       expectedRunId: runId,
       expectedPath: reportDirectoryPath,
       expectedStatus: 'error',

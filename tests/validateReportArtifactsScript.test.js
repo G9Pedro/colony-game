@@ -10,7 +10,10 @@ import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
-import { assertNodeDiagnosticsScriptReadFailureScenario } from './helpers/reportReadFailureMatrixTestUtils.js';
+import {
+  REPORT_READ_FAILURE_SCENARIOS,
+  assertNodeDiagnosticsScriptReadFailureScenario,
+} from './helpers/reportReadFailureMatrixTestUtils.js';
 import {
   createInvalidJsonArtifact,
   createUnreadableArtifactPath,
@@ -90,7 +93,7 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
       cwd: tempDirectory,
-      scenario: 'invalidJson',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidJson,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
@@ -122,7 +125,7 @@ test('validate-report-artifacts emits read-error diagnostic for unreadable artif
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
       cwd: tempDirectory,
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { handleJsonCacheLoadFailure } from '../scripts/reportCacheDiagnostics.js';
 import {
+  REPORT_READ_FAILURE_SCENARIOS,
   assertReadFailureDiagnosticMatchesScenario,
 } from './helpers/reportReadFailureMatrixTestUtils.js';
 
@@ -44,7 +45,7 @@ test('handleJsonCacheLoadFailure maps classified read failures to canonical diag
     assert.equal(emitted.length, 1);
     assertReadFailureDiagnosticMatchesScenario({
       diagnostic: emitted[0],
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       expectedLevel: 'error',
       expectedPath: 'reports/baseline-suggestions.json',
     });
@@ -76,7 +77,7 @@ test('handleJsonCacheLoadFailure maps invalid-json cache failures to invalid-jso
     assert.equal(emitted.length, 1);
     assertReadFailureDiagnosticMatchesScenario({
       diagnostic: emitted[0],
-      scenario: 'invalidJson',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidJson,
       expectedLevel: 'error',
       expectedPath: 'reports/scenario-tuning-baseline-suggestions.json',
     });
@@ -112,7 +113,7 @@ test('handleJsonCacheLoadFailure maps invalid payload failures to invalid-payloa
     assert.equal(emitted.length, 1);
     assertReadFailureDiagnosticMatchesScenario({
       diagnostic: emitted[0],
-      scenario: 'invalidPayload',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidPayload,
       expectedLevel: 'error',
       expectedPath: 'reports/scenario-tuning-dashboard.baseline.json',
     });
@@ -151,7 +152,7 @@ test('handleJsonCacheLoadFailure maps classified read errors to artifact-read-er
     assert.equal(emitted.length, 1);
     assertReadFailureDiagnosticMatchesScenario({
       diagnostic: emitted[0],
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       expectedLevel: 'error',
       expectedPath: 'reports/scenario-tuning-dashboard.baseline.json',
       expectedStatus: 'error',

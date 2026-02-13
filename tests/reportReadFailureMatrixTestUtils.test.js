@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { READ_ARTIFACT_DIAGNOSTIC_CODES } from '../scripts/reportPayloadInput.js';
 import {
+  REPORT_READ_FAILURE_SCENARIOS,
   assertOutputHasReadFailureScenarioContract,
   assertReadFailureDiagnosticMatchesScenario,
   assertNodeDiagnosticsScriptOutputsReadFailureScenario,
@@ -15,27 +16,42 @@ import {
 import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
 import { buildMissingArtifactPath } from './helpers/reportReadFailureFixtures.js';
 
+test('REPORT_READ_FAILURE_SCENARIOS exposes stable scenario keys', () => {
+  assert.deepEqual(REPORT_READ_FAILURE_SCENARIOS, {
+    missing: 'missing',
+    invalidJson: 'invalidJson',
+    invalidPayload: 'invalidPayload',
+    unreadable: 'unreadable',
+  });
+});
+
 test('getReportReadFailureScenarioContract returns stable contracts per scenario', () => {
-  assert.deepEqual(getReportReadFailureScenarioContract('missing'), {
+  assert.deepEqual(getReportReadFailureScenarioContract(REPORT_READ_FAILURE_SCENARIOS.missing), {
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.missing,
     status: 'missing',
     errorCode: 'ENOENT',
   });
-  assert.deepEqual(getReportReadFailureScenarioContract('invalidJson'), {
+  assert.deepEqual(getReportReadFailureScenarioContract(REPORT_READ_FAILURE_SCENARIOS.invalidJson), {
     diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
     status: 'invalid-json',
     errorCode: null,
   });
-  assert.deepEqual(getReportReadFailureScenarioContract('invalidPayload'), {
-    diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
-    status: 'invalid',
-    errorCode: null,
-  });
-  assert.deepEqual(getReportReadFailureScenarioContract('unreadable'), {
-    diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
-    status: 'error',
-    errorCode: 'EISDIR',
-  });
+  assert.deepEqual(
+    getReportReadFailureScenarioContract(REPORT_READ_FAILURE_SCENARIOS.invalidPayload),
+    {
+      diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
+      status: 'invalid',
+      errorCode: null,
+    },
+  );
+  assert.deepEqual(
+    getReportReadFailureScenarioContract(REPORT_READ_FAILURE_SCENARIOS.unreadable),
+    {
+      diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
+      status: 'error',
+      errorCode: 'EISDIR',
+    },
+  );
 });
 
 test('getReportReadFailureScenarioContract throws for unknown scenarios', () => {
@@ -48,19 +64,19 @@ test('getReportReadFailureScenarioContract throws for unknown scenarios', () => 
 test('getReportReadFailureScenarioFromDiagnosticCode resolves scenario identifiers', () => {
   assert.equal(
     getReportReadFailureScenarioFromDiagnosticCode(READ_ARTIFACT_DIAGNOSTIC_CODES.missing),
-    'missing',
+    REPORT_READ_FAILURE_SCENARIOS.missing,
   );
   assert.equal(
     getReportReadFailureScenarioFromDiagnosticCode(READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson),
-    'invalidJson',
+    REPORT_READ_FAILURE_SCENARIOS.invalidJson,
   );
   assert.equal(
     getReportReadFailureScenarioFromDiagnosticCode(READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload),
-    'invalidPayload',
+    REPORT_READ_FAILURE_SCENARIOS.invalidPayload,
   );
   assert.equal(
     getReportReadFailureScenarioFromDiagnosticCode(READ_ARTIFACT_DIAGNOSTIC_CODES.readError),
-    'unreadable',
+    REPORT_READ_FAILURE_SCENARIOS.unreadable,
   );
 });
 
@@ -84,7 +100,7 @@ test('assertNodeDiagnosticsScriptReadFailureScenario asserts missing artifact co
   try {
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
@@ -131,7 +147,7 @@ test('assertOutputHasReadFailureScenarioContract validates read-failure output b
         const diagnostic = assertOutputHasReadFailureScenarioContract({
           stdout: error.stdout,
           stderr: error.stderr,
-          scenario: 'missing',
+          scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
           expectedScript: 'diagnostics:smoke:validate',
           expectedRunId: runId,
           expectedPath: missingOutputPath,
@@ -166,7 +182,7 @@ test('assertNodeDiagnosticsScriptOutputsReadFailureScenario validates non-reject
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       expectedScript: 'simulate:report:tuning:trend',
       expectedRunId: runId,
       expectedLevel: 'info',
@@ -194,7 +210,7 @@ test('assertReadFailureDiagnosticMatchesScenario validates direct diagnostic pay
 
   const observed = assertReadFailureDiagnosticMatchesScenario({
     diagnostic,
-    scenario: 'invalidPayload',
+    scenario: REPORT_READ_FAILURE_SCENARIOS.invalidPayload,
     expectedLevel: 'error',
     expectedPath: 'reports/example.json',
   });

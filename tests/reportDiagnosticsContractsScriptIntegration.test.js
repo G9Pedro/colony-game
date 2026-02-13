@@ -18,6 +18,7 @@ import {
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
 import {
+  REPORT_READ_FAILURE_SCENARIOS,
   assertNodeDiagnosticsScriptReadFailureScenario,
   assertNodeDiagnosticsScriptOutputsReadFailureScenario,
 } from './helpers/reportReadFailureMatrixTestUtils.js';
@@ -38,7 +39,7 @@ test('trend script diagnostics follow contract fixture', async () => {
   try {
     const { stdout, stderr } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
       scriptPath,
-      scenario: 'missing',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.missing,
       expectedScript: 'simulate:report:tuning:trend',
       expectedRunId: RUN_ID,
       expectedLevel: 'info',
@@ -71,7 +72,7 @@ test('trend script emits invalid-json diagnostic contract for malformed baseline
     });
     await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
       scriptPath,
-      scenario: 'invalidJson',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidJson,
       expectedScript: 'simulate:report:tuning:trend',
       expectedRunId: RUN_ID,
       expectedPath: baselinePath,
@@ -102,7 +103,7 @@ test('trend script emits read-error diagnostic contract for unreadable baseline 
     });
     await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
       scriptPath,
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       expectedScript: 'simulate:report:tuning:trend',
       expectedRunId: RUN_ID,
       expectedPath: unreadableBaselinePath,
@@ -167,7 +168,7 @@ test('validate-report-artifacts emits read-error diagnostics for unreadable repo
 
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       cwd: tempDirectory,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
@@ -268,7 +269,7 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
 
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       env: {
         SIM_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',
@@ -326,7 +327,7 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
 
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
-      scenario: 'unreadable',
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
       env: {
         SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',
