@@ -173,6 +173,16 @@ Generate scenario tuning baseline suggestions (JSON + Markdown):
 npm run simulate:suggest:tuning-baseline
 ```
 
+### Tuning Report Command Quick Reference
+
+| Command | Purpose | Primary Outputs |
+| --- | --- | --- |
+| `npm run simulate:report:tuning` | Build current tuning dashboard snapshot | `reports/scenario-tuning-dashboard.json/.md` |
+| `npm run simulate:capture:tuning-dashboard-baseline` | Capture dashboard baseline artifact for trend comparisons | `reports/scenario-tuning-dashboard.baseline.json` |
+| `npm run simulate:report:tuning:trend` | Compare current tuning against dashboard/signature+intensity baselines | `reports/scenario-tuning-trend.json/.md` |
+| `npm run simulate:suggest:tuning-baseline` | Suggest baseline updates for signatures and total intensity | `reports/scenario-tuning-baseline-suggestions.json/.md` |
+| `npm run simulate:check:tuning-baseline` | Enforce tuning baseline drift policy | console output + exit status |
+
 This suggestion report now includes copy-ready snippets for both:
 - `EXPECTED_SCENARIO_TUNING_SIGNATURES`
 - `EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA`
