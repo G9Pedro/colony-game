@@ -5,6 +5,7 @@ import {
   isValidReportArtifactsValidationPayload,
   isKnownReportKind,
   isValidScenarioTuningDashboardPayload,
+  isValidScenarioTuningTrendPayload,
   isValidScenarioTuningSuggestionPayload,
   isValidScenarioTuningValidationPayload,
   REPORT_KINDS,
@@ -118,6 +119,34 @@ test('isValidScenarioTuningDashboardPayload accepts dashboard report payload', (
     signatureMap: {},
   });
   assert.equal(isValidScenarioTuningDashboardPayload(payload), true);
+});
+
+test('isValidScenarioTuningTrendPayload accepts trend report payload', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
+    comparisonSource: 'signature-baseline',
+    baselineReference: 'src/content/scenarioTuningBaseline.js',
+    scenarioCount: 3,
+    changedCount: 0,
+    unchangedCount: 3,
+    hasChanges: false,
+    scenarios: [],
+    changedScenarioIds: [],
+  });
+  assert.equal(isValidScenarioTuningTrendPayload(payload), true);
+});
+
+test('isValidScenarioTuningTrendPayload rejects unknown comparison source', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
+    comparisonSource: 'unknown',
+    baselineReference: null,
+    scenarioCount: 1,
+    changedCount: 1,
+    unchangedCount: 0,
+    hasChanges: true,
+    scenarios: [],
+    changedScenarioIds: [],
+  });
+  assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload accepts validation summary payload', () => {

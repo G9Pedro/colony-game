@@ -3,6 +3,7 @@ export const REPORT_KINDS = {
   scenarioTuningBaselineSuggestions: 'scenario-tuning-baseline-suggestions',
   scenarioTuningValidation: 'scenario-tuning-validation',
   scenarioTuningDashboard: 'scenario-tuning-dashboard',
+  scenarioTuningTrend: 'scenario-tuning-trend',
   reportArtifactsValidation: 'report-artifacts-validation',
 };
 
@@ -11,6 +12,7 @@ export const REPORT_SCHEMA_VERSIONS = {
   [REPORT_KINDS.scenarioTuningBaselineSuggestions]: 1,
   [REPORT_KINDS.scenarioTuningValidation]: 1,
   [REPORT_KINDS.scenarioTuningDashboard]: 1,
+  [REPORT_KINDS.scenarioTuningTrend]: 1,
   [REPORT_KINDS.reportArtifactsValidation]: 1,
 };
 
@@ -124,11 +126,30 @@ export function isValidReportArtifactsValidationPayload(payload) {
   );
 }
 
+function isKnownTrendComparisonSource(value) {
+  return value === 'dashboard' || value === 'signature-baseline';
+}
+
+export function isValidScenarioTuningTrendPayload(payload) {
+  return Boolean(
+    hasValidMeta(payload, REPORT_KINDS.scenarioTuningTrend) &&
+      isKnownTrendComparisonSource(payload.comparisonSource) &&
+      (typeof payload.baselineReference === 'string' || payload.baselineReference === null) &&
+      typeof payload.scenarioCount === 'number' &&
+      typeof payload.changedCount === 'number' &&
+      typeof payload.unchangedCount === 'number' &&
+      typeof payload.hasChanges === 'boolean' &&
+      Array.isArray(payload.scenarios) &&
+      Array.isArray(payload.changedScenarioIds),
+  );
+}
+
 export const REPORT_VALIDATORS = {
   [REPORT_KINDS.baselineSuggestions]: isValidBaselineSuggestionPayload,
   [REPORT_KINDS.scenarioTuningBaselineSuggestions]: isValidScenarioTuningSuggestionPayload,
   [REPORT_KINDS.scenarioTuningValidation]: isValidScenarioTuningValidationPayload,
   [REPORT_KINDS.scenarioTuningDashboard]: isValidScenarioTuningDashboardPayload,
+  [REPORT_KINDS.scenarioTuningTrend]: isValidScenarioTuningTrendPayload,
   [REPORT_KINDS.reportArtifactsValidation]: isValidReportArtifactsValidationPayload,
 };
 

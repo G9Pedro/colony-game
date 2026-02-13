@@ -12,6 +12,7 @@ test('REPORT_ARTIFACT_TARGETS includes expected report kinds', () => {
   const kinds = new Set(REPORT_ARTIFACT_TARGETS.map((target) => target.kind));
   assert.equal(kinds.has(REPORT_KINDS.scenarioTuningValidation), true);
   assert.equal(kinds.has(REPORT_KINDS.scenarioTuningDashboard), true);
+  assert.equal(kinds.has(REPORT_KINDS.scenarioTuningTrend), true);
   assert.equal(kinds.has(REPORT_KINDS.scenarioTuningBaselineSuggestions), true);
   assert.equal(kinds.has(REPORT_KINDS.baselineSuggestions), true);
 });
@@ -152,6 +153,10 @@ test('getReportArtifactRegenerationCommand returns specific command when availab
   assert.equal(
     getReportArtifactRegenerationCommand('reports/baseline-suggestions.json'),
     'npm run simulate:baseline:suggest',
+  );
+  assert.equal(
+    getReportArtifactRegenerationCommand('reports/scenario-tuning-trend.json'),
+    'npm run simulate:report:tuning:trend',
   );
   assert.equal(
     getReportArtifactRegenerationCommand('reports/unknown-report.json'),

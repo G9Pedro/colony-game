@@ -14,12 +14,13 @@
     "simulate:balance": "node scripts/simulate-balance.js",
     "simulate:validate:tuning": "node scripts/validate-scenario-tuning.js",
     "simulate:report:tuning": "node scripts/report-scenario-tuning.js",
+    "simulate:report:tuning:trend": "node scripts/report-scenario-tuning-trend.js",
     "simulate:suggest:tuning-baseline": "node scripts/suggest-scenario-tuning-baseline.js",
     "simulate:check:tuning-baseline": "node scripts/check-scenario-tuning-baseline.js",
     "reports:validate": "node scripts/validate-report-artifacts.js",
     "simulate:baseline:suggest": "node scripts/suggest-baselines.js",
     "simulate:baseline:check": "node scripts/suggest-baselines-check.js",
-    "verify": "npm test && npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:suggest:tuning-baseline && npm run simulate:check:tuning-baseline && npm run simulate:assert && npm run simulate:drift && SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot && npm run simulate:balance && npm run simulate:baseline:suggest && npm run reports:validate && npm run simulate:baseline:check"
+    "verify": "npm test && npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:report:tuning:trend && npm run simulate:suggest:tuning-baseline && npm run simulate:check:tuning-baseline && npm run simulate:assert && npm run simulate:drift && SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot && npm run simulate:balance && npm run simulate:baseline:suggest && npm run reports:validate && npm run simulate:baseline:check"
   },
   "keywords": [],
   "author": "",

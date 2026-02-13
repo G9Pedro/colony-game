@@ -50,6 +50,17 @@ jobs:
             reports/scenario-tuning-dashboard.json
             reports/scenario-tuning-dashboard.md
 
+      - name: Generate scenario tuning trend report
+        run: npm run simulate:report:tuning:trend
+
+      - name: Upload scenario tuning trend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-tuning-trend-report
+          path: |
+            reports/scenario-tuning-trend.json
+            reports/scenario-tuning-trend.md
+
       - name: Generate scenario tuning baseline suggestions
         run: npm run simulate:suggest:tuning-baseline
 

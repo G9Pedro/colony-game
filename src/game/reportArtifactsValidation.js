@@ -3,6 +3,7 @@ import { REPORT_KINDS, validateReportPayloadByKind } from './reportPayloadValida
 export const REPORT_ARTIFACT_TARGETS = [
   { path: 'reports/scenario-tuning-validation.json', kind: REPORT_KINDS.scenarioTuningValidation },
   { path: 'reports/scenario-tuning-dashboard.json', kind: REPORT_KINDS.scenarioTuningDashboard },
+  { path: 'reports/scenario-tuning-trend.json', kind: REPORT_KINDS.scenarioTuningTrend },
   {
     path: 'reports/scenario-tuning-baseline-suggestions.json',
     kind: REPORT_KINDS.scenarioTuningBaselineSuggestions,
@@ -13,6 +14,7 @@ export const REPORT_ARTIFACT_TARGETS = [
 const REPORT_ARTIFACT_REGEN_COMMANDS = {
   'reports/scenario-tuning-validation.json': 'npm run simulate:validate:tuning',
   'reports/scenario-tuning-dashboard.json': 'npm run simulate:report:tuning',
+  'reports/scenario-tuning-trend.json': 'npm run simulate:report:tuning:trend',
   'reports/scenario-tuning-baseline-suggestions.json': 'npm run simulate:suggest:tuning-baseline',
   'reports/baseline-suggestions.json': 'npm run simulate:baseline:suggest',
 };
