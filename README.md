@@ -90,9 +90,16 @@ Run deterministic regression assertions (fails on balance regressions):
 npm run simulate:assert
 ```
 
+Generate a machine-readable regression report:
+
+```bash
+npm run simulate:report
+```
+
 CI now runs:
 - `npm test`
 - `npm run simulate:assert`
+- `npm run simulate:report` (uploaded as artifact)
 
 One-command local verification:
 

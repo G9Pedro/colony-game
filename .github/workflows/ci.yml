@@ -29,3 +29,12 @@ jobs:
 
       - name: Run simulation regression assertions
         run: npm run simulate:assert
+
+      - name: Generate simulation regression report
+        run: npm run simulate:report
+
+      - name: Upload simulation regression report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-regression-report
+          path: reports/simulation-regression.json
