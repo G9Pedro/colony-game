@@ -86,8 +86,10 @@ export function isValidScenarioTuningSuggestionPayload(payload) {
   return Boolean(
     hasValidMeta(payload, REPORT_KINDS.scenarioTuningBaselineSuggestions) &&
       Array.isArray(payload.results) &&
+      Array.isArray(payload.intensityResults) &&
       payload.snippets &&
-      typeof payload.snippets.scenarioTuningBaseline === 'string',
+      typeof payload.snippets.scenarioTuningBaseline === 'string' &&
+      typeof payload.snippets.scenarioTuningTotalAbsDeltaBaseline === 'string',
   );
 }
 

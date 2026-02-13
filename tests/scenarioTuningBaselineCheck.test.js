@@ -10,6 +10,7 @@ import {
   buildScenarioTuningBaselineSuggestionPayload,
   buildScenarioTuningBaselineReport,
   formatScenarioTuningBaselineSnippet,
+  formatScenarioTuningTotalAbsDeltaSnippet,
   getScenarioTuningBaselineChangeSummary,
 } from '../src/content/scenarioTuningBaselineCheck.js';
 
@@ -66,13 +67,20 @@ test('buildScenarioTuningBaselineReport flags changed signatures', () => {
     expectedSignatures: {
       frontier: 'deadbeef',
     },
+    expectedTotalAbsDelta: {
+      frontier: 0,
+    },
   });
 
   assert.equal(report.overallPassed, false);
   assert.equal(report.changedCount, 1);
+  assert.equal(report.intensityChangedCount, 1);
   assert.equal(report.results[0].scenarioId, 'frontier');
   assert.equal(report.results[0].changed, true);
   assert.ok(report.snippets.scenarioTuningBaseline.includes('EXPECTED_SCENARIO_TUNING_SIGNATURES'));
+  assert.ok(
+    report.snippets.scenarioTuningTotalAbsDeltaBaseline.includes('EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA'),
+  );
 });
 
 test('buildScenarioTuningBaselineSuggestionPayload mirrors report payload', () => {
@@ -86,10 +94,15 @@ test('buildScenarioTuningBaselineSuggestionPayload mirrors report payload', () =
     expectedSignatures: {
       frontier: 'deadbeef',
     },
+    expectedTotalAbsDelta: {
+      frontier: 1,
+    },
   });
 
   assert.equal(payload.changedCount, 1);
+  assert.equal(payload.intensityChangedCount, 1);
   assert.equal(payload.results[0].changed, true);
+  assert.equal(payload.intensityResults[0].changed, true);
 });
 
 test('formatScenarioTuningBaselineSnippet emits copy-ready export', () => {
@@ -99,6 +112,16 @@ test('formatScenarioTuningBaselineSnippet emits copy-ready export', () => {
 
   assert.ok(snippet.startsWith('export const EXPECTED_SCENARIO_TUNING_SIGNATURES ='));
   assert.ok(snippet.includes('"frontier"'));
+});
+
+test('formatScenarioTuningTotalAbsDeltaSnippet emits copy-ready export', () => {
+  const snippet = formatScenarioTuningTotalAbsDeltaSnippet({
+    frontier: 0,
+    harsh: 122,
+  });
+
+  assert.ok(snippet.startsWith('export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA ='));
+  assert.ok(snippet.includes('"harsh"'));
 });
 
 test('buildScenarioTuningBaselineSuggestionMarkdown renders changed scenarios', () => {
@@ -111,20 +134,34 @@ test('buildScenarioTuningBaselineSuggestionMarkdown renders changed scenarios', 
         changed: true,
       },
     ],
+    intensityResults: [
+      {
+        scenarioId: 'frontier',
+        expectedTotalAbsDeltaPercent: 0,
+        currentTotalAbsDeltaPercent: 12,
+        changed: true,
+      },
+    ],
     snippets: {
       scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};\n',
+      scenarioTuningTotalAbsDeltaBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {};\n',
     },
   });
 
   assert.ok(markdown.includes('# Scenario Tuning Baseline Suggestions'));
   assert.ok(markdown.includes('frontier: aaaa1111 -> bbbb2222'));
   assert.ok(markdown.includes('EXPECTED_SCENARIO_TUNING_SIGNATURES'));
+  assert.ok(markdown.includes('EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA'));
 });
 
 test('getScenarioTuningBaselineChangeSummary counts changes', () => {
   const summary = getScenarioTuningBaselineChangeSummary({
     results: [{ changed: false }, { changed: true }],
+    intensityResults: [{ changed: false }, { changed: true }],
   });
   assert.equal(summary.changedSignatures, 1);
+  assert.equal(summary.changedTotalAbsDelta, 1);
   assert.equal(summary.hasChanges, true);
+  assert.equal(summary.hasAnyChanges, true);
 });

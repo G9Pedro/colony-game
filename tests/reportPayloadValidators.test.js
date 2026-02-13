@@ -82,8 +82,11 @@ test('isValidBaselineSuggestionPayload rejects generatedAt mismatch between root
 test('isValidScenarioTuningSuggestionPayload accepts fully shaped payload', () => {
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
     results: [],
+    intensityResults: [],
     snippets: {
       scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};',
+      scenarioTuningTotalAbsDeltaBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {};',
     },
   });
   assert.equal(isValidScenarioTuningSuggestionPayload(payload), true);
@@ -92,8 +95,11 @@ test('isValidScenarioTuningSuggestionPayload accepts fully shaped payload', () =
 test('isValidScenarioTuningSuggestionPayload rejects wrong report kind', () => {
   const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
     results: [],
+    intensityResults: [],
     snippets: {
       scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};',
+      scenarioTuningTotalAbsDeltaBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {};',
     },
   });
   assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);

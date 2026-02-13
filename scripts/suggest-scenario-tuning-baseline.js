@@ -1,6 +1,9 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { EXPECTED_SCENARIO_TUNING_SIGNATURES } from '../src/content/scenarioTuningBaseline.js';
+import {
+  EXPECTED_SCENARIO_TUNING_SIGNATURES,
+  EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA,
+} from '../src/content/scenarioTuningBaseline.js';
 import {
   buildScenarioTuningBaselineSuggestionMarkdown,
   buildScenarioTuningBaselineSuggestionPayload,
@@ -19,6 +22,7 @@ const markdownOutputPath =
 const suggestionPayload = buildScenarioTuningBaselineSuggestionPayload({
   scenarios: SCENARIO_DEFINITIONS,
   expectedSignatures: EXPECTED_SCENARIO_TUNING_SIGNATURES,
+  expectedTotalAbsDelta: EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA,
 });
 const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, suggestionPayload);
 const summary = getScenarioTuningBaselineChangeSummary(payload);
@@ -35,3 +39,4 @@ await writeFile(markdownOutputPath, markdown, 'utf-8');
 console.log(`Scenario tuning baseline suggestions written to: ${outputPath}`);
 console.log(`Scenario tuning baseline suggestions markdown written to: ${markdownOutputPath}`);
 console.log(`Changed signatures detected: ${summary.changedSignatures}`);
+console.log(`Changed total |delta| baselines detected: ${summary.changedTotalAbsDelta}`);

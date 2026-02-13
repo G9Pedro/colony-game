@@ -13,26 +13,65 @@ function sortObjectKeys(value) {
   return sorted;
 }
 
+function round(value) {
+  return Number(value.toFixed(2));
+}
+
 export function formatScenarioTuningBaselineSnippet(signatures) {
   const sorted = sortObjectKeys(signatures);
   return `export const EXPECTED_SCENARIO_TUNING_SIGNATURES = ${JSON.stringify(sorted, null, 2)};\n`;
 }
 
+export function formatScenarioTuningTotalAbsDeltaSnippet(totalAbsDeltaMap) {
+  const sorted = sortObjectKeys(totalAbsDeltaMap);
+  return `export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = ${JSON.stringify(sorted, null, 2)};\n`;
+}
+
+function buildTotalAbsDeltaMap(scenarios) {
+  return Object.fromEntries(
+    Object.entries(scenarios)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([scenarioId, scenario]) => {
+        const maps = [
+          scenario?.productionMultipliers?.resource ?? {},
+          scenario?.productionMultipliers?.job ?? {},
+          scenario?.jobPriorityMultipliers ?? {},
+        ];
+
+        const totalAbsDeltaPercent = round(
+          maps
+            .flatMap((map) => Object.values(map))
+            .reduce((sum, value) => {
+              if (typeof value !== 'number' || !Number.isFinite(value) || value === 1) {
+                return sum;
+              }
+              return sum + round(Math.abs((value - 1) * 100));
+            }, 0),
+        );
+        return [scenarioId, totalAbsDeltaPercent];
+      }),
+  );
+}
+
 export function buildScenarioTuningBaselineReport({
   scenarios,
   expectedSignatures,
+  expectedTotalAbsDelta,
 }) {
   return buildScenarioTuningBaselineSuggestionPayload({
     scenarios,
     expectedSignatures,
+    expectedTotalAbsDelta,
   });
 }
 
 export function buildScenarioTuningBaselineSuggestionPayload({
   scenarios,
   expectedSignatures,
+  expectedTotalAbsDelta = {},
 }) {
   const currentSignatures = buildScenarioTuningSignatureMap(scenarios);
+  const currentTotalAbsDelta = buildTotalAbsDeltaMap(scenarios);
   const scenarioIds = Array.from(
     new Set([...Object.keys(currentSignatures), ...Object.keys(expectedSignatures ?? {})]),
   ).sort((a, b) => a.localeCompare(b));
@@ -51,25 +90,54 @@ export function buildScenarioTuningBaselineSuggestionPayload({
         : null,
     };
   });
+  const intensityScenarioIds = Array.from(
+    new Set([...Object.keys(currentTotalAbsDelta), ...Object.keys(expectedTotalAbsDelta ?? {})]),
+  ).sort((a, b) => a.localeCompare(b));
+  const intensityResults = intensityScenarioIds.map((scenarioId) => {
+    const currentTotalAbsDeltaPercent = currentTotalAbsDelta[scenarioId] ?? null;
+    const expectedTotalAbsDeltaPercent = expectedTotalAbsDelta?.[scenarioId] ?? null;
+    const changed = currentTotalAbsDeltaPercent !== expectedTotalAbsDeltaPercent;
+    return {
+      scenarioId,
+      currentTotalAbsDeltaPercent,
+      expectedTotalAbsDeltaPercent,
+      changed,
+      message: changed
+        ? `expected ${expectedTotalAbsDeltaPercent ?? 'null'} but got ${currentTotalAbsDeltaPercent ?? 'null'}`
+        : null,
+    };
+  });
+  const changedCount = results.filter((result) => result.changed).length;
+  const intensityChangedCount = intensityResults.filter((result) => result.changed).length;
 
   return {
-    overallPassed: results.every((result) => !result.changed),
-    changedCount: results.filter((result) => result.changed).length,
+    overallPassed:
+      results.every((result) => !result.changed) &&
+      intensityResults.every((result) => !result.changed),
+    changedCount,
+    intensityChangedCount,
     currentSignatures,
     expectedSignatures,
+    currentTotalAbsDelta,
+    expectedTotalAbsDelta,
     results,
+    intensityResults,
     snippets: {
       scenarioTuningBaseline: formatScenarioTuningBaselineSnippet(currentSignatures),
+      scenarioTuningTotalAbsDeltaBaseline:
+        formatScenarioTuningTotalAbsDeltaSnippet(currentTotalAbsDelta),
     },
   };
 }
 
 export function buildScenarioTuningBaselineSuggestionMarkdown(payload) {
   const changed = payload.results.filter((result) => result.changed);
+  const intensityChanged = (payload.intensityResults ?? []).filter((result) => result.changed);
   const lines = [
     '# Scenario Tuning Baseline Suggestions',
     '',
     `- Changed signatures: ${changed.length}`,
+    `- Changed total |delta| baselines: ${intensityChanged.length}`,
     '',
   ];
 
@@ -83,11 +151,31 @@ export function buildScenarioTuningBaselineSuggestionMarkdown(payload) {
     lines.push('');
   }
 
+  if (intensityChanged.length === 0) {
+    lines.push('No total |delta| baseline changes detected.', '');
+  } else {
+    lines.push('## Changed Total |Delta| Baselines', '');
+    intensityChanged.forEach((item) => {
+      lines.push(
+        `- ${item.scenarioId}: ${item.expectedTotalAbsDeltaPercent ?? 'null'} -> ${item.currentTotalAbsDeltaPercent ?? 'null'}`,
+      );
+    });
+    lines.push('');
+  }
+
   lines.push(
-    '## Suggested Baseline Snippet',
+    '## Suggested Signature Baseline Snippet',
     '',
     '```js',
     payload.snippets.scenarioTuningBaseline.trim(),
+    '```',
+    '',
+  );
+  lines.push(
+    '## Suggested Total |Delta| Baseline Snippet',
+    '',
+    '```js',
+    payload.snippets.scenarioTuningTotalAbsDeltaBaseline.trim(),
     '```',
     '',
   );
@@ -96,8 +184,12 @@ export function buildScenarioTuningBaselineSuggestionMarkdown(payload) {
 
 export function getScenarioTuningBaselineChangeSummary(payload) {
   const changedSignatures = (payload.results ?? []).filter((result) => result.changed).length;
+  const changedTotalAbsDelta = (payload.intensityResults ?? []).filter((result) => result.changed)
+    .length;
   return {
     changedSignatures,
+    changedTotalAbsDelta,
     hasChanges: changedSignatures > 0,
+    hasAnyChanges: changedSignatures > 0 || changedTotalAbsDelta > 0,
   };
 }

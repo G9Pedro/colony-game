@@ -139,6 +139,10 @@ Generate scenario tuning baseline suggestions (JSON + Markdown):
 npm run simulate:suggest:tuning-baseline
 ```
 
+This suggestion report now includes copy-ready snippets for both:
+- `EXPECTED_SCENARIO_TUNING_SIGNATURES`
+- `EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA`
+
 Generate a machine-readable regression report:
 
 ```bash
