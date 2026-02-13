@@ -32,6 +32,8 @@ export class LegacyThreeRenderer {
     this.onGroundClick = null;
     this.onPlacementPreview = null;
     this.onEntitySelect = null;
+    this.lastFrameAt = performance.now();
+    this.smoothedFps = 60;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x9ad6f7);
@@ -341,6 +343,16 @@ export class LegacyThreeRenderer {
     };
   }
 
+  getDebugStats() {
+    return {
+      mode: 'three',
+      fps: this.smoothedFps,
+      quality: 1,
+      particles: 0,
+      particleCap: 0,
+    };
+  }
+
   syncBuildings(state) {
     const liveIds = new Set(state.buildings.map((building) => building.id));
 
@@ -393,6 +405,13 @@ export class LegacyThreeRenderer {
   }
 
   render(state) {
+    const now = performance.now();
+    const deltaSeconds = Math.min(0.2, (now - this.lastFrameAt) / 1000);
+    this.lastFrameAt = now;
+    if (deltaSeconds > 0) {
+      const instantFps = 1 / deltaSeconds;
+      this.smoothedFps = this.smoothedFps * 0.9 + instantFps * 0.1;
+    }
     this.syncBuildings(state);
     this.syncColonists(state);
     this.renderer.render(this.scene, this.camera);

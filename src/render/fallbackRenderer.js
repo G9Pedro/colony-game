@@ -42,6 +42,10 @@ export class FallbackRenderer {
     return this.delegate.getCameraState();
   }
 
+  getDebugStats() {
+    return this.delegate.getDebugStats?.() ?? null;
+  }
+
   resize() {
     this.delegate.resize();
   }

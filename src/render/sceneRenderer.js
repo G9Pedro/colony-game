@@ -154,6 +154,10 @@ export class SceneRenderer {
     return this.activeRenderer?.getCameraState?.() ?? null;
   }
 
+  getDebugStats() {
+    return this.activeRenderer?.getDebugStats?.() ?? null;
+  }
+
   render(state) {
     this.lastState = state;
     this.activeRenderer.render(state);

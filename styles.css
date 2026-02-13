@@ -144,6 +144,15 @@ body {
   gap: 0.36rem;
 }
 
+.render-stats {
+  border: 1px solid rgba(245, 223, 183, 0.28);
+  background: rgba(42, 30, 19, 0.75);
+  border-radius: 8px;
+  padding: 0.28rem 0.44rem;
+  font-size: 0.72rem;
+  color: #f5ddad;
+}
+
 .compact-label {
   font-size: 0.72rem;
   color: var(--muted);

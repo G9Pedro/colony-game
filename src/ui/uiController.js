@@ -25,6 +25,7 @@ export class UIController {
       scenarioSelect: document.getElementById('scenario-select'),
       balanceProfileSelect: document.getElementById('balance-profile-select'),
       rendererModeSelect: document.getElementById('renderer-mode-select'),
+      renderStatsLabel: document.getElementById('render-stats'),
       pauseBtn: document.getElementById('pause-btn'),
       speedButtons: [
         document.getElementById('speed-1-btn'),
@@ -236,6 +237,16 @@ export class UIController {
     this.el.scenarioSelect.value = state.scenarioId;
     this.el.balanceProfileSelect.value = state.balanceProfileId;
     this.el.rendererModeSelect.value = this.renderer?.getRendererMode?.() ?? 'isometric';
+    const renderStats = this.renderer?.getDebugStats?.();
+    if (renderStats) {
+      const fpsLabel = Math.round(renderStats.fps ?? 0);
+      const qualityLabel = typeof renderStats.quality === 'number'
+        ? `${Math.round(renderStats.quality * 100)}%`
+        : '—';
+      this.el.renderStatsLabel.textContent = `${renderStats.mode} · ${fpsLabel}fps · q${qualityLabel}`;
+    } else {
+      this.el.renderStatsLabel.textContent = 'FPS —';
+    }
 
     if (state.status === 'won') {
       this.showBanner('Victory! Colony Charter Achieved.');

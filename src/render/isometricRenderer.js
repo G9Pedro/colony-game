@@ -81,6 +81,7 @@ export class IsometricRenderer {
       lastY: 0,
     };
     this.lastFrameAt = performance.now();
+    this.smoothedFps = 60;
     this.devicePixelRatio = 1;
     this.previousResources = null;
     this.resourceSampleCooldown = 0;
@@ -213,6 +214,16 @@ export class IsometricRenderer {
 
   getCameraState() {
     return this.camera.getState();
+  }
+
+  getDebugStats() {
+    return {
+      mode: 'isometric',
+      fps: this.smoothedFps,
+      quality: this.qualityController.getQuality(),
+      particles: this.particles.particles.length,
+      particleCap: this.particles.maxParticles,
+    };
   }
 
   localPointFromEvent(clientX, clientY) {
@@ -835,6 +846,10 @@ export class IsometricRenderer {
     const now = performance.now();
     const deltaSeconds = Math.min(0.12, (now - this.lastFrameAt) / 1000);
     this.lastFrameAt = now;
+    if (deltaSeconds > 0) {
+      const instantFps = 1 / deltaSeconds;
+      this.smoothedFps = this.smoothedFps * 0.9 + instantFps * 0.1;
+    }
     this.qualityController.recordFrame(deltaSeconds);
     this.camera.setWorldRadius(state.maxWorldRadius);
     this.camera.update(deltaSeconds);
