@@ -32,6 +32,26 @@ export function isValidReportArtifactTarget(path, kind) {
   return REPORT_ARTIFACT_TARGET_KIND_BY_PATH.get(path) === kind;
 }
 
+export function hasExactReportArtifactTargets(results = undefined) {
+  if (!Array.isArray(results) || results.length !== REPORT_ARTIFACT_TARGETS.length) {
+    return false;
+  }
+  const seenTargetKeys = new Set();
+  for (const result of results) {
+    if (!isValidReportArtifactTarget(result?.path, result?.kind)) {
+      return false;
+    }
+    const targetKey = `${result.path}::${result.kind}`;
+    if (seenTargetKeys.has(targetKey)) {
+      return false;
+    }
+    seenTargetKeys.add(targetKey);
+  }
+  return REPORT_ARTIFACT_TARGETS.every((target) =>
+    seenTargetKeys.has(`${target.path}::${target.kind}`),
+  );
+}
+
 export function getReportArtifactRegenerationCommand(path) {
   return REPORT_ARTIFACT_REGEN_COMMANDS[path] ?? 'npm run verify';
 }

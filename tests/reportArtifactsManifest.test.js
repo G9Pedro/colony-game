@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { REPORT_KINDS } from '../src/game/reportPayloadMeta.js';
 import {
   getReportArtifactRegenerationCommand,
+  hasExactReportArtifactTargets,
   isKnownReportArtifactTargetKind,
   isValidReportArtifactTarget,
   REPORT_ARTIFACT_TARGETS,
@@ -39,6 +40,18 @@ test('isValidReportArtifactTarget validates path-kind pairs', () => {
     isValidReportArtifactTarget('reports/unknown.json', REPORT_KINDS.scenarioTuningDashboard),
     false,
   );
+});
+
+test('hasExactReportArtifactTargets requires full canonical target set', () => {
+  const completeResults = REPORT_ARTIFACT_TARGETS.map((target) => ({ ...target }));
+  assert.equal(hasExactReportArtifactTargets(completeResults), true);
+
+  const missingOne = completeResults.slice(1);
+  assert.equal(hasExactReportArtifactTargets(missingOne), false);
+
+  const mismatchedKind = completeResults.map((result) => ({ ...result }));
+  mismatchedKind[0].kind = REPORT_KINDS.scenarioTuningTrend;
+  assert.equal(hasExactReportArtifactTargets(mismatchedKind), false);
 });
 
 test('getReportArtifactRegenerationCommand uses target-specific defaults', () => {

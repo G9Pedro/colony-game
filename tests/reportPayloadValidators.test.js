@@ -955,8 +955,8 @@ test('isValidReportArtifactsValidationPayload accepts validation summary payload
   const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
     overallPassed: true,
     failureCount: 0,
-    totalChecked: 2,
-    statusCounts: { ok: 2, error: 0, invalid: 0, 'invalid-json': 0 },
+    totalChecked: 5,
+    statusCounts: { ok: 5, error: 0, invalid: 0, 'invalid-json': 0 },
     recommendedActions: [],
     results: [
       {
@@ -968,8 +968,32 @@ test('isValidReportArtifactsValidationPayload accepts validation summary payload
         recommendedCommand: null,
       },
       {
+        path: 'reports/scenario-tuning-baseline-suggestions.json',
+        kind: REPORT_KINDS.scenarioTuningBaselineSuggestions,
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+      {
         path: 'reports/scenario-tuning-dashboard.json',
         kind: REPORT_KINDS.scenarioTuningDashboard,
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+      {
+        path: 'reports/scenario-tuning-trend.json',
+        kind: REPORT_KINDS.scenarioTuningTrend,
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+      {
+        path: 'reports/scenario-tuning-validation.json',
+        kind: REPORT_KINDS.scenarioTuningValidation,
         status: 'ok',
         ok: true,
         message: null,
