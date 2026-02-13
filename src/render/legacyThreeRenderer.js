@@ -1,5 +1,6 @@
 import * as THREE from '../../node_modules/three/build/three.module.js';
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
+import { createDebugStats } from './debugStats.js';
 
 const BUILDING_Y_BASE = 0.01;
 
@@ -344,13 +345,13 @@ export class LegacyThreeRenderer {
   }
 
   getDebugStats() {
-    return {
+    return createDebugStats({
       mode: 'three',
       fps: this.smoothedFps,
       quality: 1,
       particles: 0,
       particleCap: 0,
-    };
+    });
   }
 
   syncBuildings(state) {

@@ -5,6 +5,7 @@ import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
+import { createDebugStats } from './debugStats.js';
 import { InteractionController } from './interactionController.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
 import { TerrainLayerRenderer } from './terrainLayer.js';
@@ -158,13 +159,13 @@ export class IsometricRenderer {
   }
 
   getDebugStats() {
-    return {
+    return createDebugStats({
       mode: 'isometric',
       fps: this.smoothedFps,
       quality: this.qualityController.getQuality(),
       particles: this.particles.particles.length,
       particleCap: this.particles.maxParticles,
-    };
+    });
   }
 
   updateHoverSelection(localX, localY) {

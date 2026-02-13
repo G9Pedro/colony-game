@@ -1,5 +1,6 @@
 import { IsometricRenderer } from './isometricRenderer.js';
 import { LegacyThreeRenderer } from './legacyThreeRenderer.js';
+import { normalizeDebugStats } from './debugStats.js';
 
 const RENDERER_MODE_STORAGE_KEY = 'colony-frontier-renderer-mode';
 
@@ -155,7 +156,8 @@ export class SceneRenderer {
   }
 
   getDebugStats() {
-    return this.activeRenderer?.getDebugStats?.() ?? null;
+    const rawStats = this.activeRenderer?.getDebugStats?.();
+    return normalizeDebugStats(rawStats, this.mode);
   }
 
   render(state) {
