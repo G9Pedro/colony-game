@@ -167,3 +167,27 @@ test('validate-report-diagnostics-smoke fails on unreadable path errors', async 
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test('validate-report-diagnostics-smoke emits read-error diagnostic for unreadable summary path when diagnostics are enabled', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
+  const reportDirectoryPath = path.join(tempDirectory, 'report-diagnostics-smoke-as-directory');
+  const runId = 'validate-smoke-json-unreadable-summary-run';
+
+  try {
+    await mkdir(reportDirectoryPath, { recursive: true });
+    await assertValidateSmokeRejectsWithDiagnostic({
+      envOverrides: {
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportDirectoryPath,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+      expectedRunId: runId,
+      expectedPath: reportDirectoryPath,
+      expectedStatus: 'error',
+      expectedErrorCode: 'EISDIR',
+    });
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
