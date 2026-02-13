@@ -1,5 +1,4 @@
 import { REPORT_KINDS, REPORT_SCHEMA_VERSIONS, hasValidMeta } from './reportPayloadMeta.js';
-import { isRecordOfNumbers } from './reportPayloadValidatorUtils.js';
 import {
   areReportArtifactResultsSortedByPath,
   areRecommendedActionsEqual,
@@ -7,7 +6,7 @@ import {
   buildRecommendedActionsFromResults,
   doReportArtifactStatusCountsMatch,
   getReportArtifactStatusCountsTotal,
-  hasExpectedReportArtifactStatusKeys,
+  isValidReportArtifactStatusCounts,
   hasUniqueReportArtifactResultPaths,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
@@ -15,7 +14,7 @@ import {
 
 export function isValidReportArtifactsValidationPayload(payload) {
   const results = Array.isArray(payload?.results) ? payload.results : [];
-  const hasValidStatusCounts = isRecordOfNumbers(payload?.statusCounts);
+  const hasValidStatusCounts = isValidReportArtifactStatusCounts(payload?.statusCounts);
   const hasValidActions = isValidRecommendedActions(payload?.recommendedActions);
   if (
     !Boolean(
@@ -45,7 +44,6 @@ export function isValidReportArtifactsValidationPayload(payload) {
 
   const computedSummary = buildReportArtifactResultStatistics(results);
   const reportedStatusTotal = getReportArtifactStatusCountsTotal(payload.statusCounts);
-  const hasExpectedStatusKeys = hasExpectedReportArtifactStatusKeys(payload.statusCounts);
   const statusCountsMatch = doReportArtifactStatusCountsMatch(
     payload.statusCounts,
     computedSummary.statusCounts,
@@ -62,7 +60,6 @@ export function isValidReportArtifactsValidationPayload(payload) {
       payload.overallPassed === computedSummary.overallPassed &&
       reportedStatusTotal === payload.totalChecked &&
       computedSummary.statusTotal === payload.totalChecked &&
-      hasExpectedStatusKeys &&
       statusCountsMatch &&
       hasKnownResultKinds &&
       hasUniqueResultPaths &&

@@ -12,6 +12,7 @@ import {
   getReportArtifactStatusCountsTotal,
   hasExpectedReportArtifactStatusKeys,
   hasUniqueReportArtifactResultPaths,
+  isValidReportArtifactStatusCounts,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
@@ -81,6 +82,45 @@ test('hasExpectedReportArtifactStatusKeys validates exact key sets', () => {
       [REPORT_ARTIFACT_STATUSES.invalid]: 0,
       [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
       extra: 2,
+    }),
+    false,
+  );
+});
+
+test('isValidReportArtifactStatusCounts validates canonical integer count shape', () => {
+  assert.equal(
+    isValidReportArtifactStatusCounts({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 2,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 3,
+    }),
+    true,
+  );
+  assert.equal(
+    isValidReportArtifactStatusCounts({
+      [REPORT_ARTIFACT_STATUSES.ok]: -1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 2,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 3,
+    }),
+    false,
+  );
+  assert.equal(
+    isValidReportArtifactStatusCounts({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 2,
+    }),
+    false,
+  );
+  assert.equal(
+    isValidReportArtifactStatusCounts({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 2,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 3,
+      extra: 4,
     }),
     false,
   );

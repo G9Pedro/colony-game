@@ -38,6 +38,15 @@ export function hasExpectedReportArtifactStatusKeys(statusCounts) {
   );
 }
 
+export function isValidReportArtifactStatusCounts(statusCounts) {
+  return (
+    hasExpectedReportArtifactStatusKeys(statusCounts) &&
+    REPORT_ARTIFACT_STATUS_ORDER.every(
+      (status) => Number.isInteger(statusCounts[status]) && statusCounts[status] >= 0,
+    )
+  );
+}
+
 export function computeReportArtifactStatusCounts(results = []) {
   const counts = buildReportArtifactStatusCounts();
   for (const result of results ?? []) {
