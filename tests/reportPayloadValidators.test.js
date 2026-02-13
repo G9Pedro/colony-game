@@ -125,9 +125,23 @@ test('isValidReportArtifactsValidationPayload accepts validation summary payload
     overallPassed: true,
     failureCount: 0,
     totalChecked: 4,
+    statusCounts: { ok: 4 },
+    recommendedActions: [],
     results: [],
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), true);
+});
+
+test('isValidReportArtifactsValidationPayload rejects malformed action and status counts', () => {
+  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
+    overallPassed: false,
+    failureCount: 1,
+    totalChecked: 4,
+    statusCounts: { ok: '4' },
+    recommendedActions: [{ command: 42, paths: [12] }],
+    results: [],
+  });
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('withReportMeta throws for unknown report kind', () => {

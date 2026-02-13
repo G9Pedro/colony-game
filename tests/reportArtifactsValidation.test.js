@@ -54,6 +54,12 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
     error: 1,
     'invalid-json': 1,
   });
+  assert.deepEqual(report.recommendedActions, [
+    {
+      command: 'npm run verify',
+      paths: ['reports/broken.json', 'reports/missing.json'],
+    },
+  ]);
   assert.equal(report.results[0].status, 'ok');
   assert.equal(report.results[0].recommendedCommand, null);
   assert.equal(report.results[1].status, 'error');
@@ -75,6 +81,32 @@ test('evaluateReportArtifactEntries flags schema-invalid payloads', () => {
   assert.equal(report.failureCount, 1);
   assert.equal(report.results[0].status, 'invalid');
   assert.ok(report.results[0].message?.includes('failed validation'));
+});
+
+test('evaluateReportArtifactEntries groups recommended actions by command', () => {
+  const report = evaluateReportArtifactEntries([
+    {
+      path: 'reports/scenario-tuning-dashboard.json',
+      kind: REPORT_KINDS.scenarioTuningDashboard,
+      errorType: 'error',
+    },
+    {
+      path: 'reports/scenario-tuning-validation.json',
+      kind: REPORT_KINDS.scenarioTuningValidation,
+      errorType: 'error',
+    },
+  ]);
+
+  assert.deepEqual(report.recommendedActions, [
+    {
+      command: 'npm run simulate:report:tuning',
+      paths: ['reports/scenario-tuning-dashboard.json'],
+    },
+    {
+      command: 'npm run simulate:validate:tuning',
+      paths: ['reports/scenario-tuning-validation.json'],
+    },
+  ]);
 });
 
 test('buildReportArtifactsValidationMarkdown renders table rows', () => {
@@ -99,6 +131,8 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
   assert.ok(markdown.includes('Status Counts: ok=1, invalid=1'));
   assert.ok(markdown.includes('| reports/a.json | kind-a | ok |  |'));
   assert.ok(markdown.includes('| reports/b.json | kind-b | invalid | bad payload |'));
+  assert.ok(markdown.includes('## Recommended Commands'));
+  assert.ok(markdown.includes('`npm run custom:regen` (artifacts: reports/b.json)'));
   assert.ok(markdown.includes('## Remediation Hints'));
   assert.ok(markdown.includes('npm run custom:regen'));
 });

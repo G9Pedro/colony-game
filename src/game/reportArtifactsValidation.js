@@ -28,6 +28,27 @@ export function getReportArtifactRegenerationCommand(path) {
   return REPORT_ARTIFACT_REGEN_COMMANDS[path] ?? 'npm run verify';
 }
 
+function buildRecommendedActions(results) {
+  const actionMap = new Map();
+  for (const result of results) {
+    if (result.ok) {
+      continue;
+    }
+    const command = result.recommendedCommand ?? getReportArtifactRegenerationCommand(result.path);
+    if (!actionMap.has(command)) {
+      actionMap.set(command, new Set());
+    }
+    actionMap.get(command).add(result.path);
+  }
+
+  return Array.from(actionMap.entries())
+    .map(([command, paths]) => ({
+      command,
+      paths: Array.from(paths).sort((a, b) => a.localeCompare(b)),
+    }))
+    .sort((a, b) => a.command.localeCompare(b.command));
+}
+
 export function evaluateReportArtifactEntries(entries) {
   const results = entries.map((entry) => {
     const recommendedCommand = getReportArtifactRegenerationCommand(entry.path);
@@ -80,17 +101,20 @@ export function evaluateReportArtifactEntries(entries) {
     acc[result.status] = (acc[result.status] ?? 0) + 1;
     return acc;
   }, {});
+  const recommendedActions = buildRecommendedActions(results);
   return {
     overallPassed: failureCount === 0,
     failureCount,
     totalChecked: results.length,
     statusCounts,
+    recommendedActions,
     results,
   };
 }
 
 export function buildReportArtifactsValidationMarkdown(report) {
   const statusLabel = report.overallPassed ? 'Passed' : 'Failed';
+  const recommendedActions = report.recommendedActions ?? buildRecommendedActions(report.results ?? []);
   const lines = [
     '# Report Artifacts Validation',
     '',
@@ -111,6 +135,15 @@ export function buildReportArtifactsValidationMarkdown(report) {
     lines.push(
       `| ${escapeMarkdownTableValue(result.path)} | ${escapeMarkdownTableValue(result.kind)} | ${escapeMarkdownTableValue(result.status)} | ${escapeMarkdownTableValue(result.message ?? '')} |`,
     );
+  }
+
+  if (recommendedActions.length > 0) {
+    lines.push('', '## Recommended Commands', '');
+    for (const action of recommendedActions) {
+      lines.push(
+        `- \`${action.command}\` (artifacts: ${action.paths.join(', ')})`,
+      );
+    }
   }
 
   const failingResults = (report.results ?? []).filter((result) => !result.ok);

@@ -30,6 +30,27 @@ function hasValidMeta(payload, expectedKind) {
   );
 }
 
+function isRecordOfNumbers(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  return Object.values(value).every((entry) => Number.isFinite(entry));
+}
+
+function isValidRecommendedActions(value) {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+  return value.every(
+    (entry) =>
+      entry &&
+      typeof entry === 'object' &&
+      typeof entry.command === 'string' &&
+      Array.isArray(entry.paths) &&
+      entry.paths.every((path) => typeof path === 'string'),
+  );
+}
+
 export function withReportMeta(kind, payload) {
   if (!(kind in REPORT_SCHEMA_VERSIONS)) {
     throw new Error(`Unknown report kind "${kind}".`);
@@ -97,6 +118,8 @@ export function isValidReportArtifactsValidationPayload(payload) {
       typeof payload.overallPassed === 'boolean' &&
       typeof payload.failureCount === 'number' &&
       typeof payload.totalChecked === 'number' &&
+      isRecordOfNumbers(payload.statusCounts) &&
+      isValidRecommendedActions(payload.recommendedActions) &&
       Array.isArray(payload.results),
   );
 }
