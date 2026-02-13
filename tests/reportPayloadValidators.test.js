@@ -17,7 +17,6 @@ import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPa
 import {
   buildFailingReportArtifactResultOverride,
   buildReportArtifactsValidationPayloadFixture,
-  buildValidReportArtifactsValidationPayload,
 } from './helpers/reportArtifactsValidationFixtures.js';
 
 function buildValidBaselineSuggestionPayload(kind = REPORT_KINDS.baselineSuggestions) {
@@ -958,22 +957,26 @@ test('isValidScenarioTuningTrendPayload rejects unsorted scenario rows', () => {
 });
 
 test('isValidReportArtifactsValidationPayload accepts validation summary payload', () => {
-  const payload = buildValidReportArtifactsValidationPayload();
+  const payload = buildReportArtifactsValidationPayloadFixture();
   assert.equal(isValidReportArtifactsValidationPayload(payload), true);
 });
 
 test('isValidReportArtifactsValidationPayload rejects malformed action and status counts', () => {
-  const payload = buildValidReportArtifactsValidationPayload({
-    statusCounts: { ok: '4', error: 0, invalid: 0, 'invalid-json': 0 },
-    recommendedActions: [{ command: 42, paths: [12] }],
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    payloadOverrides: {
+      statusCounts: { ok: '4', error: 0, invalid: 0, 'invalid-json': 0 },
+      recommendedActions: [{ command: 42, paths: [12] }],
+    },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects inconsistent aggregate counters', () => {
-  const payload = buildValidReportArtifactsValidationPayload({
-    totalChecked: 2,
-    statusCounts: { ok: 1, error: 1, invalid: 0, 'invalid-json': 0 },
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    payloadOverrides: {
+      totalChecked: 2,
+      statusCounts: { ok: 1, error: 1, invalid: 0, 'invalid-json': 0 },
+    },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
