@@ -39,6 +39,17 @@ jobs:
           name: scenario-tuning-validation-report
           path: reports/scenario-tuning-validation.json
 
+      - name: Generate scenario tuning dashboard report
+        run: npm run simulate:report:tuning
+
+      - name: Upload scenario tuning dashboard artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-tuning-dashboard-report
+          path: |
+            reports/scenario-tuning-dashboard.json
+            reports/scenario-tuning-dashboard.md
+
       - name: Generate simulation regression report
         run: npm run simulate:report
 

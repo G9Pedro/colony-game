@@ -103,6 +103,12 @@ Validate scenario tuning maps for invalid keys or unsafe multipliers:
 npm run simulate:validate:tuning
 ```
 
+Generate a compact scenario tuning dashboard (JSON + Markdown):
+
+```bash
+npm run simulate:report:tuning
+```
+
 Generate a machine-readable regression report:
 
 ```bash
@@ -146,6 +152,7 @@ npm run simulate:baseline:check
 CI now runs:
 - `npm test`
 - `npm run simulate:validate:tuning` (uploaded as artifact)
+- `npm run simulate:report:tuning` (uploaded as artifact)
 - `npm run simulate:assert`
 - `npm run simulate:report` (uploaded as artifact)
 - `npm run simulate:drift` (uploaded as artifact)
@@ -163,6 +170,7 @@ npm run verify
 `verify` now runs:
 - `npm test`
 - `npm run simulate:validate:tuning`
+- `npm run simulate:report:tuning`
 - `npm run simulate:assert`
 - `npm run simulate:drift`
 - `SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot`
