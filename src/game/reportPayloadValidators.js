@@ -36,7 +36,7 @@ function isRecordOfNumbers(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
-  return Object.values(value).every((entry) => Number.isFinite(entry));
+  return Object.values(value).every((entry) => Number.isInteger(entry) && entry >= 0);
 }
 
 function isValidRecommendedActions(value) {
@@ -48,8 +48,9 @@ function isValidRecommendedActions(value) {
       entry &&
       typeof entry === 'object' &&
       typeof entry.command === 'string' &&
+      entry.command.length > 0 &&
       Array.isArray(entry.paths) &&
-      entry.paths.every((path) => typeof path === 'string'),
+      entry.paths.every((path) => typeof path === 'string' && path.length > 0),
   );
 }
 
@@ -119,14 +120,60 @@ export function isValidScenarioTuningDashboardPayload(payload) {
 }
 
 export function isValidReportArtifactsValidationPayload(payload) {
+  const results = Array.isArray(payload?.results) ? payload.results : [];
+  const hasValidStatusCounts = isRecordOfNumbers(payload?.statusCounts);
+  const hasValidActions = isValidRecommendedActions(payload?.recommendedActions);
+  if (
+    !Boolean(
+      hasValidMeta(payload, REPORT_KINDS.reportArtifactsValidation) &&
+        typeof payload.overallPassed === 'boolean' &&
+        Number.isInteger(payload.failureCount) &&
+        payload.failureCount >= 0 &&
+        Number.isInteger(payload.totalChecked) &&
+        payload.totalChecked >= 0 &&
+        hasValidStatusCounts &&
+        hasValidActions &&
+        Array.isArray(payload.results),
+    )
+  ) {
+    return false;
+  }
+
+  const validResults = results.every(
+    (result) =>
+      result &&
+      typeof result === 'object' &&
+      typeof result.path === 'string' &&
+      result.path.length > 0 &&
+      typeof result.kind === 'string' &&
+      result.kind.length > 0 &&
+      typeof result.status === 'string' &&
+      typeof result.ok === 'boolean' &&
+      (result.message === null || typeof result.message === 'string') &&
+      (result.recommendedCommand === null || typeof result.recommendedCommand === 'string'),
+  );
+  if (!validResults) {
+    return false;
+  }
+
+  const failureCount = results.filter((result) => !result.ok).length;
+  const computedStatusCounts = results.reduce((acc, result) => {
+    acc[result.status] = (acc[result.status] ?? 0) + 1;
+    return acc;
+  }, {});
+  const computedStatusTotal = Object.values(computedStatusCounts).reduce((sum, value) => sum + value, 0);
+  const reportedStatusTotal = Object.values(payload.statusCounts).reduce((sum, value) => sum + value, 0);
+  const statusCountsMatch = Object.keys(computedStatusCounts).every(
+    (status) => payload.statusCounts[status] === computedStatusCounts[status],
+  );
+
   return Boolean(
-    hasValidMeta(payload, REPORT_KINDS.reportArtifactsValidation) &&
-      typeof payload.overallPassed === 'boolean' &&
-      typeof payload.failureCount === 'number' &&
-      typeof payload.totalChecked === 'number' &&
-      isRecordOfNumbers(payload.statusCounts) &&
-      isValidRecommendedActions(payload.recommendedActions) &&
-      Array.isArray(payload.results),
+    payload.totalChecked === results.length &&
+      payload.failureCount === failureCount &&
+      payload.overallPassed === (failureCount === 0) &&
+      reportedStatusTotal === payload.totalChecked &&
+      computedStatusTotal === payload.totalChecked &&
+      statusCountsMatch,
   );
 }
 

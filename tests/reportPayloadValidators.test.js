@@ -256,10 +256,27 @@ test('isValidReportArtifactsValidationPayload accepts validation summary payload
   const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
     overallPassed: true,
     failureCount: 0,
-    totalChecked: 4,
-    statusCounts: { ok: 4 },
+    totalChecked: 2,
+    statusCounts: { ok: 2 },
     recommendedActions: [],
-    results: [],
+    results: [
+      {
+        path: 'reports/a.json',
+        kind: REPORT_KINDS.baselineSuggestions,
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+      {
+        path: 'reports/b.json',
+        kind: REPORT_KINDS.scenarioTuningDashboard,
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+    ],
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), true);
 });
@@ -271,7 +288,45 @@ test('isValidReportArtifactsValidationPayload rejects malformed action and statu
     totalChecked: 4,
     statusCounts: { ok: '4' },
     recommendedActions: [{ command: 42, paths: [12] }],
-    results: [],
+    results: [
+      {
+        path: 'reports/a.json',
+        kind: REPORT_KINDS.baselineSuggestions,
+        status: 'error',
+        ok: false,
+        message: 'failed',
+        recommendedCommand: 'npm run verify',
+      },
+    ],
+  });
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
+});
+
+test('isValidReportArtifactsValidationPayload rejects inconsistent aggregate counters', () => {
+  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
+    overallPassed: true,
+    failureCount: 0,
+    totalChecked: 2,
+    statusCounts: { ok: 1, error: 1 },
+    recommendedActions: [{ command: 'npm run verify', paths: ['reports/broken.json'] }],
+    results: [
+      {
+        path: 'reports/a.json',
+        kind: REPORT_KINDS.baselineSuggestions,
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+      {
+        path: 'reports/broken.json',
+        kind: REPORT_KINDS.scenarioTuningDashboard,
+        status: 'error',
+        ok: false,
+        message: 'read failure',
+        recommendedCommand: 'npm run verify',
+      },
+    ],
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
