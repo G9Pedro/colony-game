@@ -94,7 +94,7 @@ function applyObjectiveReward(state, objective) {
   }
 }
 
-function describeReward(objective) {
+export function formatObjectiveReward(objective) {
   const resourceParts = Object.entries(objective.reward?.resources ?? {}).map(
     ([resourceKey, amount]) => `${amount} ${resourceKey}`,
   );
@@ -121,7 +121,7 @@ export function runObjectiveSystem(context) {
     applyObjectiveReward(state, objective);
     emit('objective-complete', {
       kind: 'success',
-      message: `Objective complete: ${objective.title}${objective.reward ? ` (Reward: ${describeReward(objective)})` : ''}`,
+      message: `Objective complete: ${objective.title}${objective.reward ? ` (Reward: ${formatObjectiveReward(objective)})` : ''}`,
     });
   }
 }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createInitialState } from '../src/game/state.js';
-import { getCurrentObjectiveIds, runObjectiveSystem } from '../src/systems/objectiveSystem.js';
+import { formatObjectiveReward, getCurrentObjectiveIds, getObjectiveDefinitions, runObjectiveSystem } from '../src/systems/objectiveSystem.js';
 
 test('objective system marks masonry objective complete after research', () => {
   const state = createInitialState({ seed: 'objective-seed' });
@@ -78,4 +78,12 @@ test('objective completion grants configured rewards', () => {
   assert.ok(state.resources.wood >= 25);
   assert.ok(state.resources.stone >= 15);
   assert.ok(state.colonists.every((colonist) => colonist.needs.morale >= 51));
+});
+
+test('formatObjectiveReward returns player-readable text', () => {
+  const objective = getObjectiveDefinitions().find((item) => item.id === 'research-masonry');
+  const description = formatObjectiveReward(objective);
+  assert.ok(description.includes('25 wood'));
+  assert.ok(description.includes('15 stone'));
+  assert.ok(description.includes('+1 morale'));
 });

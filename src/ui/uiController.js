@@ -1,6 +1,6 @@
 import { BUILDING_CATEGORIES } from '../content/buildings.js';
 import { getAvailableResearch, getAverageMorale, getPopulationCapacity, getStorageCapacity, getUsedStorage, isBuildingUnlocked } from '../game/selectors.js';
-import { getCurrentObjectiveIds, getObjectiveDefinitions } from '../systems/objectiveSystem.js';
+import { formatObjectiveReward, getCurrentObjectiveIds, getObjectiveDefinitions } from '../systems/objectiveSystem.js';
 
 function formatCost(cost) {
   return Object.entries(cost)
@@ -235,6 +235,7 @@ export class UIController {
       card.innerHTML = `
         <div class="kv"><strong>${objective.title}</strong><small>${completed ? 'Done' : 'Active'}</small></div>
         <small>${objective.description}</small>
+        <small style="color:#38bdf8;">Reward: ${formatObjectiveReward(objective)}</small>
       `;
       if (completed) {
         card.style.borderColor = 'rgba(34, 197, 94, 0.65)';
