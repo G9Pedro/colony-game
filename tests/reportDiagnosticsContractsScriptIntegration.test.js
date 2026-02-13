@@ -439,3 +439,84 @@ test('diagnostics smoke validation script diagnostics follow contract fixture', 
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test('diagnostics smoke validation emits artifact-missing diagnostic for absent summary', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-missing-'));
+  const missingOutputPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.json');
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+
+  try {
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          env: {
+            ...process.env,
+            REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+            REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: missingOutputPath,
+          },
+        }),
+      (error) => {
+        assertOutputDiagnosticsContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          expectedScript: 'diagnostics:smoke:validate',
+          expectedRunId: RUN_ID,
+          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactMissing],
+        });
+        assertOutputHasReadFailureDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+          expectedScript: 'diagnostics:smoke:validate',
+          expectedPath: missingOutputPath,
+          expectedStatus: 'missing',
+          expectedErrorCode: 'ENOENT',
+        });
+        return true;
+      },
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('diagnostics smoke validation emits read-error diagnostic for unreadable summary path', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-read-error-'));
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+
+  try {
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          env: {
+            ...process.env,
+            REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+            REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: tempDirectory,
+          },
+        }),
+      (error) => {
+        assertOutputDiagnosticsContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          expectedScript: 'diagnostics:smoke:validate',
+          expectedRunId: RUN_ID,
+          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
+        });
+        assertOutputHasReadFailureDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+          expectedScript: 'diagnostics:smoke:validate',
+          expectedPath: tempDirectory,
+          expectedStatus: 'error',
+          expectedErrorCode: 'EISDIR',
+        });
+        return true;
+      },
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
