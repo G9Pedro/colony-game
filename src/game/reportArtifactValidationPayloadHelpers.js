@@ -27,6 +27,36 @@ export function buildReportArtifactStatusCounts() {
   return { ...REPORT_ARTIFACT_STATUS_COUNTS_TEMPLATE };
 }
 
+export function hasExpectedReportArtifactStatusKeys(statusCounts) {
+  return Boolean(
+    statusCounts &&
+      typeof statusCounts === 'object' &&
+      Object.keys(statusCounts).length === REPORT_ARTIFACT_STATUS_ORDER.length &&
+      REPORT_ARTIFACT_STATUS_ORDER.every((status) =>
+        Object.prototype.hasOwnProperty.call(statusCounts, status),
+      ),
+  );
+}
+
+export function computeReportArtifactStatusCounts(results = []) {
+  const counts = buildReportArtifactStatusCounts();
+  for (const result of results ?? []) {
+    if (
+      result &&
+      typeof result === 'object' &&
+      typeof result.status === 'string' &&
+      Object.prototype.hasOwnProperty.call(counts, result.status)
+    ) {
+      counts[result.status] += 1;
+    }
+  }
+  return counts;
+}
+
+export function doReportArtifactStatusCountsMatch(left, right) {
+  return REPORT_ARTIFACT_STATUS_ORDER.every((status) => left?.[status] === right?.[status]);
+}
+
 export function formatReportArtifactStatusCounts(statusCounts = undefined) {
   const normalizedCounts = buildReportArtifactStatusCounts();
   for (const status of REPORT_ARTIFACT_STATUS_ORDER) {

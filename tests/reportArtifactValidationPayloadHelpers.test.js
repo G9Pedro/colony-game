@@ -4,7 +4,10 @@ import {
   areRecommendedActionsEqual,
   buildReportArtifactStatusCounts,
   buildRecommendedActionsFromResults,
+  computeReportArtifactStatusCounts,
+  doReportArtifactStatusCountsMatch,
   formatReportArtifactStatusCounts,
+  hasExpectedReportArtifactStatusKeys,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
@@ -47,6 +50,68 @@ test('formatReportArtifactStatusCounts uses canonical order and defaults', () =>
     [REPORT_ARTIFACT_STATUSES.ok]: 2,
   });
   assert.equal(formatted, 'ok=2, error=0, invalid=4, invalid-json=0');
+});
+
+test('hasExpectedReportArtifactStatusKeys validates exact key sets', () => {
+  assert.equal(
+    hasExpectedReportArtifactStatusKeys({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+    }),
+    true,
+  );
+  assert.equal(
+    hasExpectedReportArtifactStatusKeys({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+    }),
+    false,
+  );
+  assert.equal(
+    hasExpectedReportArtifactStatusKeys({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+      extra: 2,
+    }),
+    false,
+  );
+});
+
+test('computeReportArtifactStatusCounts aggregates known status rows', () => {
+  const counts = computeReportArtifactStatusCounts([
+    { status: REPORT_ARTIFACT_STATUSES.ok },
+    { status: REPORT_ARTIFACT_STATUSES.ok },
+    { status: REPORT_ARTIFACT_STATUSES.error },
+    { status: REPORT_ARTIFACT_STATUSES.invalidJson },
+    { status: REPORT_ARTIFACT_STATUSES.invalid },
+  ]);
+  assert.deepEqual(counts, {
+    [REPORT_ARTIFACT_STATUSES.ok]: 2,
+    [REPORT_ARTIFACT_STATUSES.error]: 1,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 1,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 1,
+  });
+});
+
+test('doReportArtifactStatusCountsMatch compares canonical keys', () => {
+  const left = {
+    [REPORT_ARTIFACT_STATUSES.ok]: 1,
+    [REPORT_ARTIFACT_STATUSES.error]: 2,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 3,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 4,
+  };
+  assert.equal(doReportArtifactStatusCountsMatch(left, { ...left }), true);
+  assert.equal(
+    doReportArtifactStatusCountsMatch(left, {
+      ...left,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 5,
+    }),
+    false,
+  );
 });
 
 test('isValidRecommendedActions validates command/path entries', () => {

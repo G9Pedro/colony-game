@@ -3,11 +3,12 @@ import { isRecordOfNumbers } from './reportPayloadValidatorUtils.js';
 import {
   areRecommendedActionsEqual,
   buildRecommendedActionsFromResults,
-  buildReportArtifactStatusCounts,
+  computeReportArtifactStatusCounts,
+  doReportArtifactStatusCountsMatch,
+  hasExpectedReportArtifactStatusKeys,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
-  REPORT_ARTIFACT_STATUS_ORDER,
 } from './reportArtifactValidationPayloadHelpers.js';
 
 export function isValidReportArtifactsValidationPayload(payload) {
@@ -43,23 +44,11 @@ export function isValidReportArtifactsValidationPayload(payload) {
   );
 
   const failureCount = results.filter((result) => !result.ok).length;
-  const computedStatusCounts = results.reduce(
-    (acc, result) => {
-      acc[result.status] += 1;
-      return acc;
-    },
-    buildReportArtifactStatusCounts(),
-  );
+  const computedStatusCounts = computeReportArtifactStatusCounts(results);
   const computedStatusTotal = Object.values(computedStatusCounts).reduce((sum, value) => sum + value, 0);
   const reportedStatusTotal = Object.values(payload.statusCounts).reduce((sum, value) => sum + value, 0);
-  const hasExpectedStatusKeys =
-    Object.keys(payload.statusCounts).length === REPORT_ARTIFACT_STATUS_ORDER.length &&
-    REPORT_ARTIFACT_STATUS_ORDER.every((status) =>
-      Object.prototype.hasOwnProperty.call(payload.statusCounts, status),
-    );
-  const statusCountsMatch = REPORT_ARTIFACT_STATUS_ORDER.every(
-    (status) => payload.statusCounts[status] === computedStatusCounts[status],
-  );
+  const hasExpectedStatusKeys = hasExpectedReportArtifactStatusKeys(payload.statusCounts);
+  const statusCountsMatch = doReportArtifactStatusCountsMatch(payload.statusCounts, computedStatusCounts);
   const knownStatusKeysOnly = Object.keys(payload.statusCounts).every((status) =>
     KNOWN_REPORT_ARTIFACT_STATUSES.has(status),
   );

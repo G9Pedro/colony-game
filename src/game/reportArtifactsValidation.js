@@ -1,6 +1,6 @@
 import { REPORT_KINDS, validateReportPayloadByKind } from './reportPayloadValidators.js';
 import {
-  buildReportArtifactStatusCounts,
+  computeReportArtifactStatusCounts,
   formatReportArtifactStatusCounts,
   REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
   REPORT_ARTIFACT_STATUSES,
@@ -107,13 +107,7 @@ export function evaluateReportArtifactEntries(entries) {
     .sort((left, right) => left.path.localeCompare(right.path));
 
   const failureCount = results.filter((result) => !result.ok).length;
-  const statusCounts = results.reduce(
-    (acc, result) => {
-      acc[result.status] += 1;
-      return acc;
-    },
-    buildReportArtifactStatusCounts(),
-  );
+  const statusCounts = computeReportArtifactStatusCounts(results);
   const recommendedActions = buildRecommendedActions(results);
   return {
     overallPassed: failureCount === 0,
