@@ -9,6 +9,30 @@ npm install
 npm start
 ```
 
+## New Contributor Quick Start
+
+Use this minimal flow before opening a PR:
+
+1. Run baseline tests:
+
+   ```bash
+   npm test
+   ```
+
+2. If your changes are tuning-only/content-only, run:
+
+   ```bash
+   npm run simulate:tuning:prepr
+   ```
+
+3. If your PR also changes gameplay/simulation/runtime code, additionally run:
+
+   ```bash
+   npm run verify
+   ```
+
+4. Open `.github/pull_request_template.md` and complete the checklist using the command outputs/artifacts.
+
 ## Validation Commands
 
 - `npm test` — required baseline test suite.

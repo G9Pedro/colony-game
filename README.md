@@ -4,6 +4,7 @@ Colony Frontier is a complete, browser-playable colony management game built wit
 You build structures, manage colonists and resources, research technologies, and push your settlement to victory.
 
 Contributor workflow and PR checklist mapping are documented in `CONTRIBUTING.md`.
+Start with the **New Contributor Quick Start** subsection there for the shortest command path.
 Opening your first tuning PR? Review `.github/pull_request_template.md` and follow the tuning checklist items before requesting review.
 
 ## Features
