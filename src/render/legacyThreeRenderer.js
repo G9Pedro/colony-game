@@ -170,6 +170,32 @@ export class LegacyThreeRenderer {
     return intersects[0].point;
   }
 
+  screenToEntity(clientX, clientY) {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const targets = [
+      ...this.buildingMeshes.values(),
+      ...this.colonistMeshes.values(),
+    ];
+    const intersects = this.raycaster.intersectObjects(targets, false);
+    if (intersects.length === 0) {
+      return null;
+    }
+    const top = intersects[0].object;
+    if (!top?.userData?.entityId || !top?.userData?.entityType) {
+      return null;
+    }
+    return {
+      type: top.userData.entityType,
+      id: top.userData.entityId,
+      [top.userData.entityType === 'building' ? 'buildingId' : 'colonistId']: top.userData.entityId,
+      x: top.position.x,
+      z: top.position.z,
+    };
+  }
+
   handlePointerDown(event) {
     this.dragState.active = true;
     this.dragState.moved = false;
@@ -207,6 +233,12 @@ export class LegacyThreeRenderer {
     this.dragState.active = false;
 
     if (this.dragState.moved) {
+      return;
+    }
+
+    const selectedEntity = this.screenToEntity(event.clientX, event.clientY);
+    if (selectedEntity && this.onEntitySelect) {
+      this.onEntitySelect(selectedEntity);
       return;
     }
 
