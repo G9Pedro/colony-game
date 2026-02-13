@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
@@ -19,6 +19,7 @@ import {
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
 import {
+  createJsonArtifact,
   createInvalidJsonArtifact,
   createUnreadableArtifactPath,
 } from './helpers/reportReadFailureFixtures.js';
@@ -209,11 +210,11 @@ test('scenario tuning baseline check diagnostics follow contract fixture', async
   const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
 
   try {
-    await writeFile(
-      payloadPath,
-      JSON.stringify(buildScenarioTuningIntensityOnlyDriftPayload(), null, 2),
-      'utf-8',
-    );
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-baseline-suggestions.json',
+      payload: buildScenarioTuningIntensityOnlyDriftPayload(),
+    });
     const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
         SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: payloadPath,
@@ -244,11 +245,11 @@ test('baseline suggestion check diagnostics follow contract fixture', async () =
   const scriptPath = path.resolve('scripts/suggest-baselines-check.js');
 
   try {
-    await writeFile(
-      payloadPath,
-      JSON.stringify(buildBaselineSuggestionPayload({ changed: true }), null, 2),
-      'utf-8',
-    );
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'baseline-suggestions.json',
+      payload: buildBaselineSuggestionPayload({ changed: true }),
+    });
 
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
