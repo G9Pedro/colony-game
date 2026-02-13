@@ -75,6 +75,7 @@ export class IsometricRenderer {
       lastY: 0,
     };
     this.lastFrameAt = performance.now();
+    this.devicePixelRatio = 1;
     this.previousResources = null;
     this.resourceSampleCooldown = 0;
     this.lastState = null;
@@ -98,6 +99,7 @@ export class IsometricRenderer {
       buildingSignature: '',
       width: 0,
       height: 0,
+      dpr: 1,
     };
 
     this.boundHandlers = {
@@ -130,13 +132,16 @@ export class IsometricRenderer {
     const width = Math.max(1, this.rootElement.clientWidth);
     const height = Math.max(1, this.rootElement.clientHeight);
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.devicePixelRatio = dpr;
     this.canvas.width = Math.floor(width * dpr);
     this.canvas.height = Math.floor(height * dpr);
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(dpr, dpr);
     this.camera.setViewport(width, height);
-    this.terrainLayerCanvas.width = width;
-    this.terrainLayerCanvas.height = height;
+    this.terrainLayerCanvas.width = Math.floor(width * dpr);
+    this.terrainLayerCanvas.height = Math.floor(height * dpr);
+    this.terrainLayerCtx.setTransform(1, 0, 0, 1, 0, 0);
+    this.terrainLayerCtx.scale(dpr, dpr);
     this.terrainLayerCache.valid = false;
   }
 
@@ -275,6 +280,7 @@ export class IsometricRenderer {
   handleTouchStart(event) {
     if (event.touches.length === 2) {
       this.touchState.pinching = true;
+      this.camera.endDrag();
       this.camera.beginPinch(event.touches[0], event.touches[1]);
       return;
     }
@@ -311,6 +317,7 @@ export class IsometricRenderer {
     if (this.touchState.pinching) {
       this.touchState.pinching = false;
       this.camera.endPinch();
+      return;
     }
     const result = this.camera.endDrag();
     if (!result.wasClick) {
@@ -487,7 +494,17 @@ export class IsometricRenderer {
     if (shouldRefresh) {
       this.rebuildTerrainLayer(state, bounds);
     }
-    this.ctx.drawImage(this.terrainLayerCanvas, 0, 0);
+    this.ctx.drawImage(
+      this.terrainLayerCanvas,
+      0,
+      0,
+      this.terrainLayerCanvas.width,
+      this.terrainLayerCanvas.height,
+      0,
+      0,
+      this.camera.viewportWidth,
+      this.camera.viewportHeight,
+    );
   }
 
   getTerrainBounds() {
@@ -520,6 +537,9 @@ export class IsometricRenderer {
     if (this.terrainLayerCache.width !== this.camera.viewportWidth || this.terrainLayerCache.height !== this.camera.viewportHeight) {
       return true;
     }
+    if (this.terrainLayerCache.dpr !== this.devicePixelRatio) {
+      return true;
+    }
 
     const centerDelta = Math.hypot(
       this.terrainLayerCache.centerX - this.camera.centerX,
@@ -539,7 +559,7 @@ export class IsometricRenderer {
 
   rebuildTerrainLayer(state, bounds) {
     const { minX, maxX, minZ, maxZ } = bounds;
-    this.terrainLayerCtx.clearRect(0, 0, this.terrainLayerCanvas.width, this.terrainLayerCanvas.height);
+    this.terrainLayerCtx.clearRect(0, 0, this.camera.viewportWidth, this.camera.viewportHeight);
 
     const buildingTileSet = new Set();
     state.buildings.forEach((building) => {
@@ -574,6 +594,7 @@ export class IsometricRenderer {
       buildingSignature: this.buildTerrainSignature(state),
       width: this.camera.viewportWidth,
       height: this.camera.viewportHeight,
+      dpr: this.devicePixelRatio,
     };
   }
 
@@ -687,6 +708,7 @@ export class IsometricRenderer {
       renderables.push({
         depth: item.x + item.z + 0.04,
         draw: (ctx) => {
+          ctx.save();
           ctx.globalAlpha = 0.95;
           ctx.drawImage(sprite.canvas, drawX, drawY, drawW, drawH);
 
@@ -707,6 +729,7 @@ export class IsometricRenderer {
           createRoundedRectPath(ctx, barX, barY, barW * progress, barH, 3);
           ctx.fillStyle = 'rgba(89, 183, 120, 0.95)';
           ctx.fill();
+          ctx.restore();
         },
       });
     });

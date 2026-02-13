@@ -10,13 +10,31 @@ function normalizeMode(mode) {
 export class SceneRenderer {
   constructor(rootElement) {
     this.rootElement = rootElement;
-    this.onGroundClick = null;
-    this.onPlacementPreview = null;
-    this.onEntitySelect = null;
+    this._onGroundClick = null;
+    this._onPlacementPreview = null;
+    this._onEntitySelect = null;
     this.preview = null;
     this.mode = normalizeMode(window.localStorage.getItem(RENDERER_MODE_STORAGE_KEY) ?? 'isometric');
     this.activeRenderer = null;
     this.lastState = null;
+    Object.defineProperty(this, 'onGroundClick', {
+      configurable: true,
+      enumerable: true,
+      get: () => this._onGroundClick,
+      set: (handler) => this.setGroundClickHandler(handler),
+    });
+    Object.defineProperty(this, 'onPlacementPreview', {
+      configurable: true,
+      enumerable: true,
+      get: () => this._onPlacementPreview,
+      set: (handler) => this.setPlacementPreviewHandler(handler),
+    });
+    Object.defineProperty(this, 'onEntitySelect', {
+      configurable: true,
+      enumerable: true,
+      get: () => this._onEntitySelect,
+      set: (handler) => this.setEntitySelectHandler(handler),
+    });
 
     this.initializeRenderer(this.mode);
   }
@@ -41,9 +59,9 @@ export class SceneRenderer {
     }
 
     window.localStorage.setItem(RENDERER_MODE_STORAGE_KEY, this.mode);
-    this.activeRenderer.setGroundClickHandler(this.onGroundClick);
-    this.activeRenderer.setPlacementPreviewHandler(this.onPlacementPreview);
-    this.activeRenderer.setEntitySelectHandler(this.onEntitySelect);
+    this.activeRenderer.setGroundClickHandler(this._onGroundClick);
+    this.activeRenderer.setPlacementPreviewHandler(this._onPlacementPreview);
+    this.activeRenderer.setEntitySelectHandler(this._onEntitySelect);
     if (this.preview) {
       this.activeRenderer.updatePlacementMarker(this.preview.position, this.preview.valid);
     } else {
@@ -72,17 +90,17 @@ export class SceneRenderer {
   }
 
   setGroundClickHandler(handler) {
-    this.onGroundClick = handler;
+    this._onGroundClick = handler;
     this.activeRenderer?.setGroundClickHandler(handler);
   }
 
   setPlacementPreviewHandler(handler) {
-    this.onPlacementPreview = handler;
+    this._onPlacementPreview = handler;
     this.activeRenderer?.setPlacementPreviewHandler(handler);
   }
 
   setEntitySelectHandler(handler) {
-    this.onEntitySelect = handler;
+    this._onEntitySelect = handler;
     this.activeRenderer?.setEntitySelectHandler(handler);
   }
 
