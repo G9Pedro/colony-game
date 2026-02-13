@@ -27,7 +27,15 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
   expectedErrorCode = undefined,
 }) {
   if (expectedPath !== undefined) {
-    const readFailureScenario = getReportReadFailureScenarioFromDiagnosticCode(diagnosticCode);
+    let readFailureScenario;
+    try {
+      readFailureScenario = getReportReadFailureScenarioFromDiagnosticCode(diagnosticCode);
+    } catch (error) {
+      throw new Error(
+        `Read-failure assertion path "${expectedPath}" is only valid for read-failure diagnostic codes. Received "${diagnosticCode}".`,
+        { cause: error },
+      );
+    }
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
       env: envOverrides,

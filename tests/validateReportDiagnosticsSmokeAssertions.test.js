@@ -1,4 +1,5 @@
 import test from 'node:test';
+import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -64,4 +65,20 @@ test('assertValidateSmokeRejectsWithDiagnostic validates non-read diagnostic lev
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
+});
+
+test('assertValidateSmokeRejectsWithDiagnostic throws when expectedPath is provided for non-read diagnostic code', async () => {
+  await assert.rejects(
+    () =>
+      assertValidateSmokeRejectsWithDiagnostic({
+        envOverrides: {
+          REPORT_DIAGNOSTICS_JSON: '1',
+          REPORT_DIAGNOSTICS_RUN_ID: 'validate-smoke-assertions-invalid-read-contract-run',
+        },
+        diagnosticCode: REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeFailedScenarios,
+        expectedRunId: 'validate-smoke-assertions-invalid-read-contract-run',
+        expectedPath: 'reports/report-diagnostics-smoke.json',
+      }),
+    /Read-failure assertion path "reports\/report-diagnostics-smoke\.json" is only valid for read-failure diagnostic codes\./,
+  );
 });
