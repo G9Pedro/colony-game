@@ -6,15 +6,10 @@ import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
-import { buildPathTileSet, buildStructureTileSet, buildTerrainSignature, getTerrainBoundsFromCorners } from './terrainUtils.js';
+import { TerrainLayerRenderer } from './terrainLayer.js';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
-}
-
-function hash2d(x, z, salt = 0) {
-  const value = Math.sin((x + 3.31 + salt) * 127.1 + (z + 7.17 - salt) * 311.7) * 43758.5453123;
-  return value - Math.floor(value);
 }
 
 export class IsometricRenderer {
@@ -80,22 +75,7 @@ export class IsometricRenderer {
     this.knownBuildingIds = new Set();
     this.knownConstructionIds = new Set();
     this.interactiveEntities = [];
-    this.terrainLayerCanvas = document.createElement('canvas');
-    this.terrainLayerCtx = this.terrainLayerCanvas.getContext('2d', { alpha: true });
-    this.terrainLayerCache = {
-      valid: false,
-      centerX: 0,
-      centerZ: 0,
-      zoom: 0,
-      minX: 0,
-      maxX: 0,
-      minZ: 0,
-      maxZ: 0,
-      buildingSignature: '',
-      width: 0,
-      height: 0,
-      dpr: 1,
-    };
+    this.terrainLayer = new TerrainLayerRenderer(this.spriteFactory);
 
     this.boundHandlers = {
       resize: () => this.resize(),
@@ -133,11 +113,7 @@ export class IsometricRenderer {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(dpr, dpr);
     this.camera.setViewport(width, height);
-    this.terrainLayerCanvas.width = Math.floor(width * dpr);
-    this.terrainLayerCanvas.height = Math.floor(height * dpr);
-    this.terrainLayerCtx.setTransform(1, 0, 0, 1, 0, 0);
-    this.terrainLayerCtx.scale(dpr, dpr);
-    this.terrainLayerCache.valid = false;
+    this.terrainLayer.resize(width, height, dpr);
   }
 
   dispose() {
@@ -153,8 +129,7 @@ export class IsometricRenderer {
     this.canvas.removeEventListener('touchend', this.boundHandlers.touchEnd);
     this.canvas.remove();
     this.interactiveEntities = [];
-    this.terrainLayerCanvas = null;
-    this.terrainLayerCtx = null;
+    this.terrainLayer = null;
   }
 
   setGroundClickHandler(handler) {
@@ -480,99 +455,7 @@ export class IsometricRenderer {
   }
 
   drawTerrain(state) {
-    const bounds = this.getTerrainBounds();
-    const shouldRefresh = this.shouldRefreshTerrainLayer(state, bounds);
-    if (shouldRefresh) {
-      this.rebuildTerrainLayer(state, bounds);
-    }
-    this.ctx.drawImage(
-      this.terrainLayerCanvas,
-      0,
-      0,
-      this.terrainLayerCanvas.width,
-      this.terrainLayerCanvas.height,
-      0,
-      0,
-      this.camera.viewportWidth,
-      this.camera.viewportHeight,
-    );
-  }
-
-  getTerrainBounds() {
-    const corners = [
-      this.camera.screenToWorld(0, 0),
-      this.camera.screenToWorld(this.camera.viewportWidth, 0),
-      this.camera.screenToWorld(0, this.camera.viewportHeight),
-      this.camera.screenToWorld(this.camera.viewportWidth, this.camera.viewportHeight),
-    ];
-    return getTerrainBoundsFromCorners(corners, 3);
-  }
-
-  shouldRefreshTerrainLayer(state, bounds) {
-    if (!this.terrainLayerCache.valid) {
-      return true;
-    }
-    if (this.terrainLayerCache.width !== this.camera.viewportWidth || this.terrainLayerCache.height !== this.camera.viewportHeight) {
-      return true;
-    }
-    if (this.terrainLayerCache.dpr !== this.devicePixelRatio) {
-      return true;
-    }
-
-    const centerDelta = Math.hypot(
-      this.terrainLayerCache.centerX - this.camera.centerX,
-      this.terrainLayerCache.centerZ - this.camera.centerZ,
-    );
-    const zoomDelta = Math.abs(this.terrainLayerCache.zoom - this.camera.zoom);
-    const boundsChanged = this.terrainLayerCache.minX !== bounds.minX
-      || this.terrainLayerCache.maxX !== bounds.maxX
-      || this.terrainLayerCache.minZ !== bounds.minZ
-      || this.terrainLayerCache.maxZ !== bounds.maxZ;
-    if (centerDelta > 0.45 || zoomDelta > 0.04 || boundsChanged) {
-      return true;
-    }
-    const buildingSignature = buildTerrainSignature(state);
-    return buildingSignature !== this.terrainLayerCache.buildingSignature;
-  }
-
-  rebuildTerrainLayer(state, bounds) {
-    const { minX, maxX, minZ, maxZ } = bounds;
-    this.terrainLayerCtx.clearRect(0, 0, this.camera.viewportWidth, this.camera.viewportHeight);
-
-    const buildingTileSet = buildStructureTileSet(state);
-    const pathTileSet = buildPathTileSet(state);
-
-    for (let z = minZ; z <= maxZ; z += 1) {
-      for (let x = minX; x <= maxX; x += 1) {
-        if (Math.hypot(x, z) > state.maxWorldRadius + 3) {
-          continue;
-        }
-
-        const key = `${x}:${z}`;
-        const onPath = pathTileSet.has(key);
-        const nearBuilding = buildingTileSet.has(key);
-        const variant = Math.floor(hash2d(x, z) * 4);
-        const kind = onPath ? 'path' : nearBuilding ? 'dirt' : 'grass';
-        const tile = this.spriteFactory.getTerrainTile(kind, variant);
-        const screen = this.camera.worldToScreen(x, z);
-        this.terrainLayerCtx.drawImage(tile, screen.x - tile.width * 0.5, screen.y - tile.height * 0.5);
-      }
-    }
-
-    this.terrainLayerCache = {
-      valid: true,
-      centerX: this.camera.centerX,
-      centerZ: this.camera.centerZ,
-      zoom: this.camera.zoom,
-      minX,
-      maxX,
-      minZ,
-      maxZ,
-      buildingSignature: buildTerrainSignature(state),
-      width: this.camera.viewportWidth,
-      height: this.camera.viewportHeight,
-      dpr: this.devicePixelRatio,
-    };
+    this.terrainLayer.draw(this.ctx, state, this.camera, this.devicePixelRatio);
   }
 
   drawPreview() {
