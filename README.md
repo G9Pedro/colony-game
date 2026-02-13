@@ -42,6 +42,18 @@ You build structures, manage colonists and resources, research technologies, and
   - local: `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline`
   - CI opt-in via repository variable: `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1`
 
+### Tuning Report Pipeline Flow
+
+```txt
+SCENARIO_DEFINITIONS
+  ├─> simulate:report:tuning ---------------------> scenario-tuning-dashboard.{json,md}
+  ├─> simulate:capture:tuning-dashboard-baseline -> scenario-tuning-dashboard.baseline.json
+  ├─> simulate:report:tuning:trend --------------> scenario-tuning-trend.{json,md}
+  └─> simulate:suggest:tuning-baseline ----------> scenario-tuning-baseline-suggestions.{json,md}
+                                                   └─> simulate:check:tuning-baseline
+                                                        (optional strict: SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1)
+```
+
 ## Tech Stack
 
 - Vanilla HTML/CSS/JavaScript (ES modules)
