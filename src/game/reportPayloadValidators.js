@@ -134,6 +134,13 @@ function isKnownTrendComparisonSource(value) {
   return value === 'dashboard' || value === 'signature-baseline';
 }
 
+function isValidTrendStatusCounts(value) {
+  if (!isRecordOfNumbers(value)) {
+    return false;
+  }
+  return ['added', 'changed', 'removed', 'unchanged'].every((key) => typeof value[key] === 'number');
+}
+
 export function isValidScenarioTuningTrendPayload(payload) {
   return Boolean(
     hasValidMeta(payload, REPORT_KINDS.scenarioTuningTrend) &&
@@ -145,6 +152,7 @@ export function isValidScenarioTuningTrendPayload(payload) {
       typeof payload.changedCount === 'number' &&
       typeof payload.unchangedCount === 'number' &&
       typeof payload.hasChanges === 'boolean' &&
+      isValidTrendStatusCounts(payload.statusCounts) &&
       Array.isArray(payload.scenarios) &&
       Array.isArray(payload.changedScenarioIds),
   );

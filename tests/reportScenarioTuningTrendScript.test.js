@@ -40,6 +40,14 @@ test('trend script falls back to signature baseline when dashboard baseline is m
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.equal(payload.hasBaselineDashboard, false);
     assert.equal(payload.baselineScenarioCount, 0);
+    assert.equal(typeof payload.statusCounts, 'object');
+    assert.equal(
+      payload.statusCounts.added +
+        payload.statusCounts.changed +
+        payload.statusCounts.removed +
+        payload.statusCounts.unchanged,
+      payload.scenarioCount,
+    );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -74,6 +82,14 @@ test('trend script uses dashboard comparison when baseline dashboard payload exi
     assert.equal(payload.comparisonSource, 'dashboard');
     assert.equal(payload.hasBaselineDashboard, true);
     assert.equal(payload.baselineScenarioCount, 1);
+    assert.equal(typeof payload.statusCounts, 'object');
+    assert.equal(
+      payload.statusCounts.added +
+        payload.statusCounts.changed +
+        payload.statusCounts.removed +
+        payload.statusCounts.unchanged,
+      payload.scenarioCount,
+    );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

@@ -2,6 +2,8 @@ function round(value) {
   return Number(value.toFixed(2));
 }
 
+const TREND_STATUS_ORDER = ['added', 'changed', 'removed', 'unchanged'];
+
 function asFiniteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
@@ -35,6 +37,29 @@ function resolveStatus({ hasCurrent, hasBaseline, signatureChanged, intensityCha
     return 'added';
   }
   return 'removed';
+}
+
+function buildStatusCounts(scenarios) {
+  const counts = Object.fromEntries(TREND_STATUS_ORDER.map((status) => [status, 0]));
+  for (const scenario of scenarios ?? []) {
+    if (scenario?.status in counts) {
+      counts[scenario.status] += 1;
+    }
+  }
+  return counts;
+}
+
+function resolveStatusCounts(report) {
+  const computed = buildStatusCounts(report?.scenarios ?? []);
+  if (!report?.statusCounts || typeof report.statusCounts !== 'object') {
+    return computed;
+  }
+  return Object.fromEntries(
+    TREND_STATUS_ORDER.map((status) => {
+      const value = report.statusCounts[status];
+      return [status, Number.isFinite(value) ? value : computed[status]];
+    }),
+  );
 }
 
 export function buildScenarioTuningTrendReport({
@@ -84,6 +109,7 @@ export function buildScenarioTuningTrendReport({
     };
   });
 
+  const statusCounts = buildStatusCounts(scenarios);
   const changedScenarios = scenarios.filter((scenario) => scenario.changed);
   return {
     comparisonSource,
@@ -94,6 +120,7 @@ export function buildScenarioTuningTrendReport({
     changedCount: changedScenarios.length,
     unchangedCount: scenarios.length - changedScenarios.length,
     hasChanges: changedScenarios.length > 0,
+    statusCounts,
     scenarios,
     changedScenarioIds: changedScenarios.map((scenario) => scenario.scenarioId),
   };
@@ -108,6 +135,7 @@ function formatSignedDelta(value) {
 }
 
 export function buildScenarioTuningTrendMarkdown(report) {
+  const statusCounts = resolveStatusCounts(report);
   const lines = [
     '# Scenario Tuning Trend',
     '',
@@ -118,6 +146,7 @@ export function buildScenarioTuningTrendMarkdown(report) {
     `- Scenarios Compared: ${report.scenarioCount}`,
     `- Changed: ${report.changedCount}`,
     `- Unchanged: ${report.unchangedCount}`,
+    `- Status Counts: added=${statusCounts.added}, changed=${statusCounts.changed}, removed=${statusCounts.removed}, unchanged=${statusCounts.unchanged}`,
     '',
     '## Changed Scenarios',
     '',

@@ -156,6 +156,12 @@ test('isValidScenarioTuningTrendPayload accepts trend report payload', () => {
     changedCount: 0,
     unchangedCount: 3,
     hasChanges: false,
+    statusCounts: {
+      added: 0,
+      changed: 0,
+      removed: 0,
+      unchanged: 3,
+    },
     scenarios: [],
     changedScenarioIds: [],
   });
@@ -172,6 +178,12 @@ test('isValidScenarioTuningTrendPayload rejects unknown comparison source', () =
     changedCount: 1,
     unchangedCount: 0,
     hasChanges: true,
+    statusCounts: {
+      added: 1,
+      changed: 0,
+      removed: 0,
+      unchanged: 0,
+    },
     scenarios: [],
     changedScenarioIds: [],
   });
@@ -186,6 +198,32 @@ test('isValidScenarioTuningTrendPayload rejects missing baseline dashboard metad
     changedCount: 0,
     unchangedCount: 1,
     hasChanges: false,
+    statusCounts: {
+      added: 0,
+      changed: 0,
+      removed: 0,
+      unchanged: 1,
+    },
+    scenarios: [],
+    changedScenarioIds: [],
+  });
+  assert.equal(isValidScenarioTuningTrendPayload(payload), false);
+});
+
+test('isValidScenarioTuningTrendPayload rejects invalid status counts', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
+    comparisonSource: 'signature-baseline',
+    baselineReference: null,
+    hasBaselineDashboard: false,
+    baselineScenarioCount: 0,
+    scenarioCount: 2,
+    changedCount: 1,
+    unchangedCount: 1,
+    hasChanges: true,
+    statusCounts: {
+      changed: 1,
+      unchanged: 1,
+    },
     scenarios: [],
     changedScenarioIds: [],
   });
