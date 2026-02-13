@@ -7,6 +7,8 @@ test('validateScenarioTuningDefinitions accepts current scenario catalog', () =>
   assert.equal(result.ok, true);
   assert.equal(result.errors.length, 0);
   assert.equal(result.warnings.length, 0);
+  assert.equal(result.issueCount, 0);
+  assert.equal(result.checkedScenarioCount > 0, true);
 });
 
 test('validateScenarioTuningDefinitions reports unknown keys as errors', () => {
@@ -63,4 +65,7 @@ test('validateScenarioTuningDefinitions reports extreme values as warnings/error
         error.message.includes('hard limits'),
     ),
   );
+  assert.equal(result.issueCount, result.errors.length + result.warnings.length);
+  assert.equal(result.errors.every((issue) => issue.severity === 'error'), true);
+  assert.equal(result.warnings.every((issue) => issue.severity === 'warn'), true);
 });

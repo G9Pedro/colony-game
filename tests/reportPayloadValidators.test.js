@@ -224,13 +224,63 @@ test('isValidScenarioTuningSuggestionPayload rejects inconsistent changed counte
 
 test('isValidScenarioTuningValidationPayload accepts validation report payload', () => {
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningValidation, {
-    ok: true,
-    errors: [],
-    warnings: [],
-    issueCount: 0,
+    ok: false,
+    errors: [
+      {
+        severity: 'error',
+        scenarioId: 'frontier',
+        path: 'productionMultipliers.job.farmer',
+        message: 'Multiplier is outside hard limits.',
+      },
+    ],
+    warnings: [
+      {
+        severity: 'warn',
+        scenarioId: 'frontier',
+        path: 'jobPriorityMultipliers.scholar',
+        message: 'Multiplier is outside recommended range.',
+      },
+    ],
+    issueCount: 2,
     checkedScenarioCount: 3,
   });
   assert.equal(isValidScenarioTuningValidationPayload(payload), true);
+});
+
+test('isValidScenarioTuningValidationPayload rejects malformed issue entries', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningValidation, {
+    ok: false,
+    errors: [
+      {
+        severity: 'warn',
+        scenarioId: 'frontier',
+        path: 'productionMultipliers.job.farmer',
+        message: 'wrong severity',
+      },
+    ],
+    warnings: [],
+    issueCount: 1,
+    checkedScenarioCount: 1,
+  });
+  assert.equal(isValidScenarioTuningValidationPayload(payload), false);
+});
+
+test('isValidScenarioTuningValidationPayload rejects inconsistent counts and ok flag', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningValidation, {
+    ok: true,
+    errors: [
+      {
+        severity: 'error',
+        scenarioId: 'frontier',
+        path: 'productionMultipliers.job.farmer',
+        message: 'hard limit',
+      },
+    ],
+    warnings: [],
+    issueCount: 0,
+    checkedScenarioCount: 1,
+  });
+  assert.equal(isValidScenarioTuningValidationPayload(payload), false);
 });
 
 test('isValidScenarioTuningDashboardPayload accepts dashboard report payload', () => {

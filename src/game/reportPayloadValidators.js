@@ -390,6 +390,20 @@ function isValidScenarioTuningIntensityResultEntry(entry) {
   );
 }
 
+function isValidScenarioTuningValidationIssue(entry, severity) {
+  return Boolean(
+    entry &&
+      typeof entry === 'object' &&
+      entry.severity === severity &&
+      typeof entry.scenarioId === 'string' &&
+      entry.scenarioId.length > 0 &&
+      typeof entry.path === 'string' &&
+      entry.path.length > 0 &&
+      typeof entry.message === 'string' &&
+      entry.message.length > 0,
+  );
+}
+
 export function isValidScenarioTuningSuggestionPayload(payload) {
   if (
     !Boolean(
@@ -432,13 +446,32 @@ export function isValidScenarioTuningSuggestionPayload(payload) {
 }
 
 export function isValidScenarioTuningValidationPayload(payload) {
+  if (
+    !Boolean(
+      hasValidMeta(payload, REPORT_KINDS.scenarioTuningValidation) &&
+        typeof payload.ok === 'boolean' &&
+        Array.isArray(payload.errors) &&
+        Array.isArray(payload.warnings) &&
+        isNonNegativeInteger(payload.issueCount) &&
+        isNonNegativeInteger(payload.checkedScenarioCount),
+    )
+  ) {
+    return false;
+  }
+
+  const errorsValid = payload.errors.every((entry) =>
+    isValidScenarioTuningValidationIssue(entry, 'error'),
+  );
+  const warningsValid = payload.warnings.every((entry) =>
+    isValidScenarioTuningValidationIssue(entry, 'warn'),
+  );
+  if (!errorsValid || !warningsValid) {
+    return false;
+  }
+
   return Boolean(
-    hasValidMeta(payload, REPORT_KINDS.scenarioTuningValidation) &&
-      typeof payload.ok === 'boolean' &&
-      Array.isArray(payload.errors) &&
-      Array.isArray(payload.warnings) &&
-      typeof payload.issueCount === 'number' &&
-      typeof payload.checkedScenarioCount === 'number',
+    payload.issueCount === payload.errors.length + payload.warnings.length &&
+      payload.ok === (payload.errors.length === 0),
   );
 }
 
