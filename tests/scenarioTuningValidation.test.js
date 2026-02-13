@@ -69,3 +69,28 @@ test('validateScenarioTuningDefinitions reports extreme values as warnings/error
   assert.equal(result.errors.every((issue) => issue.severity === 'error'), true);
   assert.equal(result.warnings.every((issue) => issue.severity === 'warn'), true);
 });
+
+test('validateScenarioTuningDefinitions returns issues sorted by scenario/path/message', () => {
+  const result = validateScenarioTuningDefinitions({
+    zeta: {
+      productionMultipliers: {
+        resource: { algae: 1.1 },
+        job: {},
+      },
+      jobPriorityMultipliers: {},
+    },
+    alpha: {
+      productionMultipliers: {
+        resource: { algae: 1.2 },
+        job: {},
+      },
+      jobPriorityMultipliers: {},
+    },
+  });
+
+  assert.equal(result.errors.length, 2);
+  assert.deepEqual(
+    result.errors.map((issue) => issue.scenarioId),
+    ['alpha', 'zeta'],
+  );
+});

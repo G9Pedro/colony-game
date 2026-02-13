@@ -238,3 +238,28 @@ test('scenario tuning module suggestion validator rejects unsorted rows', () => 
 
   assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
 });
+
+test('scenario tuning module validation validator rejects unsorted issues', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningValidation, {
+    ok: false,
+    checkedScenarioCount: 2,
+    issueCount: 2,
+    errors: [
+      {
+        severity: 'error',
+        scenarioId: 'zeta',
+        path: 'productionMultipliers.job.builder',
+        message: 'z issue',
+      },
+      {
+        severity: 'error',
+        scenarioId: 'alpha',
+        path: 'productionMultipliers.job.builder',
+        message: 'a issue',
+      },
+    ],
+    warnings: [],
+  });
+
+  assert.equal(isValidScenarioTuningValidationPayload(payload), false);
+});

@@ -187,6 +187,30 @@ function isValidScenarioTuningValidationIssue(entry, severity) {
   );
 }
 
+function isSortedScenarioTuningIssues(entries) {
+  for (let index = 1; index < entries.length; index += 1) {
+    const previous = entries[index - 1];
+    const current = entries[index];
+    if (previous.scenarioId.localeCompare(current.scenarioId) > 0) {
+      return false;
+    }
+    if (
+      previous.scenarioId === current.scenarioId &&
+      previous.path.localeCompare(current.path) > 0
+    ) {
+      return false;
+    }
+    if (
+      previous.scenarioId === current.scenarioId &&
+      previous.path === current.path &&
+      previous.message.localeCompare(current.message) > 0
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function isValidScenarioTuningValidationPayload(payload) {
   if (
     !Boolean(
@@ -207,7 +231,12 @@ export function isValidScenarioTuningValidationPayload(payload) {
   const warningsValid = payload.warnings.every((entry) =>
     isValidScenarioTuningValidationIssue(entry, 'warn'),
   );
-  if (!errorsValid || !warningsValid) {
+  if (
+    !errorsValid ||
+    !warningsValid ||
+    !isSortedScenarioTuningIssues(payload.errors) ||
+    !isSortedScenarioTuningIssues(payload.warnings)
+  ) {
     return false;
   }
 

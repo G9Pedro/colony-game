@@ -562,6 +562,43 @@ test('isValidScenarioTuningValidationPayload rejects malformed issue entries', (
   assert.equal(isValidScenarioTuningValidationPayload(payload), false);
 });
 
+test('isValidScenarioTuningValidationPayload rejects unsorted issue arrays', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningValidation, {
+    ok: false,
+    errors: [
+      {
+        severity: 'error',
+        scenarioId: 'zeta',
+        path: 'productionMultipliers.job.builder',
+        message: 'z issue',
+      },
+      {
+        severity: 'error',
+        scenarioId: 'alpha',
+        path: 'productionMultipliers.job.builder',
+        message: 'a issue',
+      },
+    ],
+    warnings: [
+      {
+        severity: 'warn',
+        scenarioId: 'zeta',
+        path: 'jobPriorityMultipliers.scholar',
+        message: 'z warning',
+      },
+      {
+        severity: 'warn',
+        scenarioId: 'alpha',
+        path: 'jobPriorityMultipliers.scholar',
+        message: 'a warning',
+      },
+    ],
+    issueCount: 4,
+    checkedScenarioCount: 2,
+  });
+  assert.equal(isValidScenarioTuningValidationPayload(payload), false);
+});
+
 test('isValidScenarioTuningValidationPayload rejects inconsistent counts and ok flag', () => {
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningValidation, {
     ok: true,

@@ -33,6 +33,14 @@ function createIssue({ severity, scenarioId, path, message }) {
   };
 }
 
+function compareIssueEntries(left, right) {
+  return (
+    left.scenarioId.localeCompare(right.scenarioId) ||
+    left.path.localeCompare(right.path) ||
+    left.message.localeCompare(right.message)
+  );
+}
+
 function validateNumericMultiplier({
   value,
   scenarioId,
@@ -158,8 +166,8 @@ export function validateScenarioTuningDefinitions(scenarios = SCENARIO_DEFINITIO
 
   return {
     ok: errors.length === 0,
-    errors,
-    warnings,
+    errors: [...errors].sort(compareIssueEntries),
+    warnings: [...warnings].sort(compareIssueEntries),
     issueCount: issues.length,
     checkedScenarioCount: Object.keys(scenarios).length,
   };
