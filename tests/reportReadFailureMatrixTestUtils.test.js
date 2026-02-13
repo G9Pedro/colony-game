@@ -7,10 +7,12 @@ import {
   REPORT_DIAGNOSTIC_CODES,
 } from '../scripts/reportDiagnostics.js';
 import {
+  assertOutputHasReadFailureScenarioContract,
   assertNodeDiagnosticsScriptReadFailureScenario,
   getReportReadFailureScenarioFromDiagnosticCode,
   getReportReadFailureScenarioContract,
 } from './helpers/reportReadFailureMatrixTestUtils.js';
+import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
 import { buildMissingArtifactPath } from './helpers/reportReadFailureFixtures.js';
 
 test('getReportReadFailureScenarioContract returns stable contracts per scenario', () => {
@@ -101,6 +103,43 @@ test('assertNodeDiagnosticsScriptReadFailureScenario asserts missing artifact co
       status: 'missing',
       errorCode: 'ENOENT',
     });
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('assertOutputHasReadFailureScenarioContract validates read-failure output by scenario', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'read-failure-matrix-output-'));
+  const runId = 'read-failure-matrix-output-run';
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+  const missingOutputPath = buildMissingArtifactPath({
+    rootDirectory: tempDirectory,
+    relativePath: 'missing-report-diagnostics-smoke.json',
+  });
+
+  try {
+    await assert.rejects(
+      () =>
+        runNodeDiagnosticsScript(scriptPath, {
+          env: {
+            REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: runId,
+            REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: missingOutputPath,
+          },
+        }),
+      (error) => {
+        const diagnostic = assertOutputHasReadFailureScenarioContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          scenario: 'missing',
+          expectedScript: 'diagnostics:smoke:validate',
+          expectedRunId: runId,
+          expectedPath: missingOutputPath,
+        });
+        assert.equal(diagnostic.code, REPORT_DIAGNOSTIC_CODES.artifactMissing);
+        return true;
+      },
+    );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

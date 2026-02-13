@@ -95,3 +95,31 @@ export async function assertNodeDiagnosticsScriptReadFailureScenario({
     },
   });
 }
+
+export function assertOutputHasReadFailureScenarioContract({
+  stdout = '',
+  stderr = '',
+  scenario,
+  expectedScript,
+  expectedRunId = undefined,
+  expectedLevel = undefined,
+  expectedPath,
+  expectedStatus = undefined,
+  expectedErrorCode = undefined,
+  expectedCodes = undefined,
+}) {
+  const scenarioContract = getReportReadFailureScenarioContract(scenario);
+  const diagnosticCode = scenarioContract.diagnosticCode;
+  return assertOutputHasReadFailureDiagnosticContract({
+    stdout,
+    stderr,
+    expectedCodes: expectedCodes ?? [diagnosticCode],
+    diagnosticCode,
+    expectedScript,
+    expectedRunId,
+    expectedLevel,
+    expectedPath,
+    expectedStatus: expectedStatus ?? scenarioContract.status,
+    expectedErrorCode: expectedErrorCode ?? scenarioContract.errorCode,
+  });
+}

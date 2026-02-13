@@ -11,14 +11,16 @@ import {
   buildScenarioTuningIntensityOnlyDriftPayload,
 } from '../scripts/reportDiagnosticsFixtures.js';
 import {
-  assertOutputHasReadFailureDiagnosticContract,
   assertOutputDiagnosticsContract,
 } from './helpers/reportDiagnosticsTestUtils.js';
 import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
-import { assertNodeDiagnosticsScriptReadFailureScenario } from './helpers/reportReadFailureMatrixTestUtils.js';
+import {
+  assertNodeDiagnosticsScriptReadFailureScenario,
+  assertOutputHasReadFailureScenarioContract,
+} from './helpers/reportReadFailureMatrixTestUtils.js';
 import {
   createJsonArtifact,
   createInvalidJsonArtifact,
@@ -78,16 +80,13 @@ test('trend script emits invalid-json diagnostic contract for malformed baseline
       },
     });
 
-    assertOutputHasReadFailureDiagnosticContract({
+    assertOutputHasReadFailureScenarioContract({
       stdout,
       stderr,
-      expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactInvalidJson],
-      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
+      scenario: 'invalidJson',
       expectedScript: 'simulate:report:tuning:trend',
       expectedRunId: RUN_ID,
       expectedPath: baselinePath,
-      expectedStatus: 'invalid-json',
-      expectedErrorCode: null,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -116,16 +115,13 @@ test('trend script emits read-error diagnostic contract for unreadable baseline 
       },
     });
 
-    assertOutputHasReadFailureDiagnosticContract({
+    assertOutputHasReadFailureScenarioContract({
       stdout,
       stderr,
-      expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+      scenario: 'unreadable',
       expectedScript: 'simulate:report:tuning:trend',
       expectedRunId: RUN_ID,
       expectedPath: unreadableBaselinePath,
-      expectedStatus: 'error',
-      expectedErrorCode: 'EISDIR',
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

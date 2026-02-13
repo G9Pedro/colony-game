@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import {
-  assertOutputHasReadFailureDiagnostic,
-} from './helpers/reportDiagnosticsTestUtils.js';
+  assertOutputHasReadFailureScenarioContract,
+} from './helpers/reportReadFailureMatrixTestUtils.js';
 import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
 import {
   createInvalidJsonArtifact,
@@ -78,13 +78,11 @@ test('trend script emits JSON diagnostics when enabled', async () => {
     });
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
-    const diagnostic = assertOutputHasReadFailureDiagnostic({
+    const diagnostic = assertOutputHasReadFailureScenarioContract({
       stdout,
-      diagnosticCode: 'artifact-missing',
+      scenario: 'missing',
       expectedScript: 'simulate:report:tuning:trend',
       expectedPath: missingBaselinePath,
-      expectedStatus: 'missing',
-      expectedErrorCode: 'ENOENT',
     });
     assert.equal(diagnostic.level, 'info');
     assert.equal(diagnostic.context?.baselinePath, missingBaselinePath);
@@ -245,13 +243,11 @@ test('trend script suggests baseline capture command when baseline payload is in
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
     assert.match(stderr, /code=artifact-invalid-payload/);
-    const diagnostic = assertOutputHasReadFailureDiagnostic({
+    const diagnostic = assertOutputHasReadFailureScenarioContract({
       stderr,
-      diagnosticCode: 'artifact-invalid-payload',
+      scenario: 'invalidPayload',
       expectedScript: 'simulate:report:tuning:trend',
       expectedPath: baselinePath,
-      expectedStatus: 'invalid',
-      expectedErrorCode: null,
     });
     assert.equal(diagnostic.level, 'warn');
     assert.equal(diagnostic.context?.baselinePath, baselinePath);
@@ -282,13 +278,11 @@ test('trend script warns and falls back when baseline payload is invalid JSON', 
     assert.match(stderr, /invalid JSON/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
     assert.match(stderr, /code=artifact-invalid-json/);
-    const diagnostic = assertOutputHasReadFailureDiagnostic({
+    const diagnostic = assertOutputHasReadFailureScenarioContract({
       stderr,
-      diagnosticCode: 'artifact-invalid-json',
+      scenario: 'invalidJson',
       expectedScript: 'simulate:report:tuning:trend',
       expectedPath: baselinePath,
-      expectedStatus: 'invalid-json',
-      expectedErrorCode: null,
     });
     assert.equal(diagnostic.level, 'warn');
     assert.equal(diagnostic.context?.baselinePath, baselinePath);
@@ -322,13 +316,11 @@ test('trend script warns and falls back when baseline path is unreadable as file
     assert.match(stderr, /falling back to signature baseline/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
     assert.match(stderr, /code=artifact-read-error/);
-    const diagnostic = assertOutputHasReadFailureDiagnostic({
+    const diagnostic = assertOutputHasReadFailureScenarioContract({
       stderr,
-      diagnosticCode: 'artifact-read-error',
+      scenario: 'unreadable',
       expectedScript: 'simulate:report:tuning:trend',
       expectedPath: unreadableBaselinePath,
-      expectedStatus: 'error',
-      expectedErrorCode: 'EISDIR',
     });
     assert.equal(diagnostic.level, 'warn');
     assert.equal(diagnostic.context?.baselinePath, unreadableBaselinePath);
