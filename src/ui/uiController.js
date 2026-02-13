@@ -233,7 +233,7 @@ export class UIController {
     this.gameUI.renderRunStats(state);
     this.gameUI.renderSelection(this.selectedEntity, state);
 
-    this.minimap.render(state, this.renderer?.getCameraState?.());
+    this.minimap.render(state, this.renderer?.getCameraState?.(), this.selectedEntity);
     this.el.scenarioSelect.value = state.scenarioId;
     this.el.balanceProfileSelect.value = state.balanceProfileId;
     this.el.rendererModeSelect.value = this.renderer?.getRendererMode?.() ?? 'isometric';

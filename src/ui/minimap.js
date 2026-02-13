@@ -93,7 +93,7 @@ export class Minimap {
     this.ctx.restore();
   }
 
-  render(state, cameraState) {
+  render(state, cameraState, selectedEntity = null) {
     this.worldRadius = state.maxWorldRadius ?? 30;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -113,6 +113,12 @@ export class Minimap {
       this.ctx.fillStyle = '#e6ccb2';
       this.ctx.fillRect(x - 1.8, y - 1.8, 3.6, 3.6);
     });
+    state.constructionQueue.forEach((item) => {
+      const x = this.toMinimapX(clamp(item.x, -this.worldRadius, this.worldRadius));
+      const y = this.toMinimapY(clamp(item.z, -this.worldRadius, this.worldRadius));
+      this.ctx.fillStyle = '#d8a65f';
+      this.ctx.fillRect(x - 1.8, y - 1.8, 3.6, 3.6);
+    });
 
     state.colonists.forEach((colonist) => {
       if (!colonist.alive) {
@@ -125,6 +131,16 @@ export class Minimap {
       this.ctx.arc(x, y, 1.2, 0, Math.PI * 2);
       this.ctx.fill();
     });
+
+    if (selectedEntity) {
+      const x = this.toMinimapX(clamp(selectedEntity.x ?? 0, -this.worldRadius, this.worldRadius));
+      const y = this.toMinimapY(clamp(selectedEntity.z ?? 0, -this.worldRadius, this.worldRadius));
+      this.ctx.strokeStyle = 'rgba(255, 243, 188, 0.92)';
+      this.ctx.lineWidth = 1.3;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, 4.2, 0, Math.PI * 2);
+      this.ctx.stroke();
+    }
 
     this.drawViewport(cameraState);
   }
