@@ -53,6 +53,86 @@ test('trend script diagnostics follow contract fixture', async () => {
   }
 });
 
+test('trend script emits invalid-json diagnostic contract for malformed baseline dashboard', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-trend-invalid-json-'));
+  const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
+  const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
+  const baselinePath = path.join(tempDirectory, 'scenario-tuning-dashboard.baseline.json');
+  const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
+
+  try {
+    await writeFile(baselinePath, '{"broken": ', 'utf-8');
+    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+      env: {
+        ...process.env,
+        SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
+        SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
+        SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: baselinePath,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+      },
+    });
+
+    assertOutputDiagnosticsContract({
+      stdout,
+      stderr,
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedRunId: RUN_ID,
+      expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactInvalidJson],
+    });
+    assertOutputHasReadFailureDiagnostic({
+      stdout,
+      stderr,
+      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedPath: baselinePath,
+      expectedStatus: 'invalid-json',
+      expectedErrorCode: null,
+    });
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('trend script emits read-error diagnostic contract for unreadable baseline path', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-trend-read-error-'));
+  const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
+  const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
+  const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
+
+  try {
+    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+      env: {
+        ...process.env,
+        SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
+        SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
+        SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: tempDirectory,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+      },
+    });
+
+    assertOutputDiagnosticsContract({
+      stdout,
+      stderr,
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedRunId: RUN_ID,
+      expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
+    });
+    assertOutputHasReadFailureDiagnostic({
+      stdout,
+      stderr,
+      diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedPath: tempDirectory,
+      expectedStatus: 'error',
+      expectedErrorCode: 'EISDIR',
+    });
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test('validate-report-artifacts diagnostics follow contract fixture', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-artifacts-'));
   const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
