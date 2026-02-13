@@ -14,6 +14,7 @@
     "simulate:balance": "node scripts/simulate-balance.js",
     "simulate:validate:tuning": "node scripts/validate-scenario-tuning.js",
     "simulate:report:tuning": "node scripts/report-scenario-tuning.js",
+    "simulate:capture:tuning-dashboard-baseline": "node scripts/capture-scenario-tuning-dashboard-baseline.js",
     "simulate:report:tuning:trend": "node scripts/report-scenario-tuning-trend.js",
     "simulate:suggest:tuning-baseline": "node scripts/suggest-scenario-tuning-baseline.js",
     "simulate:check:tuning-baseline": "node scripts/check-scenario-tuning-baseline.js",

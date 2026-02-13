@@ -109,11 +109,21 @@ Generate a compact scenario tuning dashboard (JSON + Markdown):
 npm run simulate:report:tuning
 ```
 
+Capture the current scenario tuning dashboard as a reusable trend baseline artifact:
+
+```bash
+npm run simulate:capture:tuning-dashboard-baseline
+```
+
 Generate a scenario tuning trend report against baseline signatures (or a baseline dashboard file when available):
 
 ```bash
 npm run simulate:report:tuning:trend
 ```
+
+Trend baseline path can be overridden with:
+- `SIM_SCENARIO_TUNING_TREND_BASELINE_PATH` (read path used by trend report)
+- `SIM_SCENARIO_TUNING_DASHBOARD_BASELINE_PATH` (write path used by baseline capture)
 
 Enforce scenario tuning signature baseline consistency:
 

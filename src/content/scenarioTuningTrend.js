@@ -85,6 +85,8 @@ export function buildScenarioTuningTrendReport({
   return {
     comparisonSource,
     baselineReference,
+    hasBaselineDashboard: baselineScenarios.size > 0,
+    baselineScenarioCount: baselineScenarios.size,
     scenarioCount: scenarios.length,
     changedCount: changedScenarios.length,
     unchangedCount: scenarios.length - changedScenarios.length,
@@ -108,6 +110,7 @@ export function buildScenarioTuningTrendMarkdown(report) {
     '',
     `- Comparison Source: ${report.comparisonSource}`,
     `- Baseline Reference: ${report.baselineReference ?? 'none'}`,
+    `- Baseline Dashboard Available: ${report.hasBaselineDashboard ? 'yes' : 'no'}`,
     `- Scenarios Compared: ${report.scenarioCount}`,
     `- Changed: ${report.changedCount}`,
     `- Unchanged: ${report.unchangedCount}`,

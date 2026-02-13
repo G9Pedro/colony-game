@@ -135,6 +135,8 @@ export function isValidScenarioTuningTrendPayload(payload) {
     hasValidMeta(payload, REPORT_KINDS.scenarioTuningTrend) &&
       isKnownTrendComparisonSource(payload.comparisonSource) &&
       (typeof payload.baselineReference === 'string' || payload.baselineReference === null) &&
+      typeof payload.hasBaselineDashboard === 'boolean' &&
+      typeof payload.baselineScenarioCount === 'number' &&
       typeof payload.scenarioCount === 'number' &&
       typeof payload.changedCount === 'number' &&
       typeof payload.unchangedCount === 'number' &&

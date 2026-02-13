@@ -26,6 +26,8 @@ test('buildScenarioTuningTrendReport compares current dashboard with baseline da
   });
 
   assert.equal(report.scenarioCount, 4);
+  assert.equal(report.hasBaselineDashboard, true);
+  assert.equal(report.baselineScenarioCount, 3);
   assert.equal(report.changedCount, 3);
   assert.equal(report.hasChanges, true);
   assert.deepEqual(report.changedScenarioIds, ['new-scenario', 'prosperous', 'removed-scenario']);
@@ -50,6 +52,8 @@ test('buildScenarioTuningTrendReport falls back to signature baselines', () => {
   });
 
   assert.equal(report.changedCount, 1);
+  assert.equal(report.hasBaselineDashboard, false);
+  assert.equal(report.baselineScenarioCount, 0);
   assert.deepEqual(report.changedScenarioIds, ['harsh']);
   const frontier = report.scenarios.find((scenario) => scenario.scenarioId === 'frontier');
   assert.equal(frontier.status, 'unchanged');
@@ -60,6 +64,8 @@ test('buildScenarioTuningTrendMarkdown renders changed table and no-change summa
   const changedMarkdown = buildScenarioTuningTrendMarkdown({
     comparisonSource: 'dashboard',
     baselineReference: 'baseline-file',
+    hasBaselineDashboard: true,
+    baselineScenarioCount: 2,
     scenarioCount: 2,
     changedCount: 1,
     unchangedCount: 1,
@@ -81,11 +87,14 @@ test('buildScenarioTuningTrendMarkdown renders changed table and no-change summa
   });
 
   assert.ok(changedMarkdown.includes('# Scenario Tuning Trend'));
+  assert.ok(changedMarkdown.includes('Baseline Dashboard Available: yes'));
   assert.ok(changedMarkdown.includes('| prosperous | changed | aaaa1111 → bbbb2222 | +4.50% |'));
 
   const noChangeMarkdown = buildScenarioTuningTrendMarkdown({
     comparisonSource: 'signature-baseline',
     baselineReference: 'baseline',
+    hasBaselineDashboard: false,
+    baselineScenarioCount: 0,
     scenarioCount: 1,
     changedCount: 0,
     unchangedCount: 1,
