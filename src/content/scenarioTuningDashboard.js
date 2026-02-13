@@ -1,4 +1,5 @@
 import { SCENARIO_DEFINITIONS } from './scenarios.js';
+import { buildScenarioTuningSignature } from './scenarioTuningSignature.js';
 
 function round(value) {
   return Number(value.toFixed(2));
@@ -62,6 +63,7 @@ export function buildScenarioTuningDashboard(scenarios = SCENARIO_DEFINITIONS) {
       id: scenario.id,
       name: scenario.name,
       description: scenario.description,
+      signature: buildScenarioTuningSignature(scenario),
       resourceOutputDeltas,
       jobOutputDeltas,
       jobPriorityDeltas,
@@ -85,6 +87,11 @@ export function buildScenarioTuningDashboard(scenarios = SCENARIO_DEFINITIONS) {
     scenarioCount: scenarioCards.length,
     activeScenarioCount: scenarioCards.filter((scenario) => !scenario.isNeutral).length,
     scenarios: scenarioCards,
+    signatureMap: Object.fromEntries(
+      scenarioCards
+        .map((scenario) => [scenario.id, scenario.signature])
+        .sort(([a], [b]) => a.localeCompare(b)),
+    ),
     ranking,
   };
 }

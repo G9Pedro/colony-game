@@ -14,9 +14,10 @@
     "simulate:balance": "node scripts/simulate-balance.js",
     "simulate:validate:tuning": "node scripts/validate-scenario-tuning.js",
     "simulate:report:tuning": "node scripts/report-scenario-tuning.js",
+    "simulate:check:tuning-baseline": "node scripts/check-scenario-tuning-baseline.js",
     "simulate:baseline:suggest": "node scripts/suggest-baselines.js",
     "simulate:baseline:check": "node scripts/suggest-baselines-check.js",
-    "verify": "npm test && npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:assert && npm run simulate:drift && SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot && npm run simulate:balance && npm run simulate:baseline:suggest && npm run simulate:baseline:check"
+    "verify": "npm test && npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:check:tuning-baseline && npm run simulate:assert && npm run simulate:drift && SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot && npm run simulate:balance && npm run simulate:baseline:suggest && npm run simulate:baseline:check"
   },
   "keywords": [],
   "author": "",

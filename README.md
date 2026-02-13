@@ -109,6 +109,12 @@ Generate a compact scenario tuning dashboard (JSON + Markdown):
 npm run simulate:report:tuning
 ```
 
+Enforce scenario tuning signature baseline consistency:
+
+```bash
+npm run simulate:check:tuning-baseline
+```
+
 Generate a machine-readable regression report:
 
 ```bash
@@ -153,6 +159,7 @@ CI now runs:
 - `npm test`
 - `npm run simulate:validate:tuning` (uploaded as artifact)
 - `npm run simulate:report:tuning` (uploaded as artifact)
+- `npm run simulate:check:tuning-baseline` (uploaded as artifact, enforced)
 - `npm run simulate:assert`
 - `npm run simulate:report` (uploaded as artifact)
 - `npm run simulate:drift` (uploaded as artifact)
@@ -171,6 +178,7 @@ npm run verify
 - `npm test`
 - `npm run simulate:validate:tuning`
 - `npm run simulate:report:tuning`
+- `npm run simulate:check:tuning-baseline`
 - `npm run simulate:assert`
 - `npm run simulate:drift`
 - `SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot`
