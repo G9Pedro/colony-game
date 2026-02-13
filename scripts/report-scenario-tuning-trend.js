@@ -13,8 +13,8 @@ import {
 import {
   REPORT_KINDS,
   validateReportPayloadByKind,
-  withReportMeta,
 } from '../src/game/reportPayloadValidators.js';
+import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 
 const outputPath = process.env.SIM_SCENARIO_TUNING_TREND_PATH ?? 'reports/scenario-tuning-trend.json';
 const markdownOutputPath =
@@ -66,7 +66,11 @@ const report = buildScenarioTuningTrendReport({
   comparisonSource,
   baselineReference,
 });
-const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, report);
+const payload = buildValidatedReportPayload(
+  REPORT_KINDS.scenarioTuningTrend,
+  report,
+  'scenario tuning trend',
+);
 const markdown = buildScenarioTuningTrendMarkdown(payload);
 
 await mkdir(dirname(outputPath), { recursive: true });

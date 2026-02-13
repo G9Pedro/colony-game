@@ -5,23 +5,19 @@ import {
   buildScenarioTuningDashboard,
   buildScenarioTuningDashboardMarkdown,
 } from '../src/content/scenarioTuningDashboard.js';
-import {
-  REPORT_KINDS,
-  validateReportPayloadByKind,
-  withReportMeta,
-} from '../src/game/reportPayloadValidators.js';
+import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
+import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 
 const outputPath = process.env.SIM_SCENARIO_TUNING_DASHBOARD_PATH ?? 'reports/scenario-tuning-dashboard.json';
 const markdownOutputPath =
   process.env.SIM_SCENARIO_TUNING_DASHBOARD_MD_PATH ?? 'reports/scenario-tuning-dashboard.md';
 
 const dashboard = buildScenarioTuningDashboard(SCENARIO_DEFINITIONS);
-const payload = withReportMeta(REPORT_KINDS.scenarioTuningDashboard, dashboard);
-const payloadValidation = validateReportPayloadByKind(REPORT_KINDS.scenarioTuningDashboard, payload);
-if (!payloadValidation.ok) {
-  console.error(`Unable to build valid scenario tuning dashboard payload: ${payloadValidation.reason}`);
-  process.exit(1);
-}
+const payload = buildValidatedReportPayload(
+  REPORT_KINDS.scenarioTuningDashboard,
+  dashboard,
+  'scenario tuning dashboard',
+);
 const markdown = buildScenarioTuningDashboardMarkdown(payload);
 
 await mkdir(dirname(outputPath), { recursive: true });

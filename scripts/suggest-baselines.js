@@ -3,12 +3,9 @@ import { dirname } from 'node:path';
 import {
   buildBaselineSuggestionMarkdown,
 } from '../src/game/baselineSuggestion.js';
-import {
-  REPORT_KINDS,
-  validateReportPayloadByKind,
-  withReportMeta,
-} from '../src/game/reportPayloadValidators.js';
+import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { buildBaselineSuggestionPayloadFromSimulations } from './baselineSuggestionRuntime.js';
+import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 
 const outputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-suggestions.json';
 const markdownOutputPath = process.env.SIM_BASELINE_SUGGEST_MD_PATH ?? 'reports/baseline-suggestions.md';
@@ -19,12 +16,11 @@ const baselinePayload = buildBaselineSuggestionPayloadFromSimulations({
   driftRuns,
   strategyProfileId,
 });
-const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, baselinePayload);
-const payloadValidation = validateReportPayloadByKind(REPORT_KINDS.baselineSuggestions, payload);
-if (!payloadValidation.ok) {
-  console.error(`Unable to build valid baseline suggestion payload: ${payloadValidation.reason}`);
-  process.exit(1);
-}
+const payload = buildValidatedReportPayload(
+  REPORT_KINDS.baselineSuggestions,
+  baselinePayload,
+  'baseline suggestion',
+);
 
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, JSON.stringify(payload, null, 2), 'utf-8');

@@ -5,11 +5,8 @@ import {
   evaluateReportArtifactEntries,
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
-import {
-  REPORT_KINDS,
-  validateReportPayloadByKind,
-  withReportMeta,
-} from '../src/game/reportPayloadValidators.js';
+import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
+import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 
 const outputPath =
   process.env.REPORTS_VALIDATE_OUTPUT_PATH ?? 'reports/report-artifacts-validation.json';
@@ -36,12 +33,11 @@ for (const target of REPORT_ARTIFACT_TARGETS) {
 }
 
 const baseReport = evaluateReportArtifactEntries(entries);
-const report = withReportMeta(REPORT_KINDS.reportArtifactsValidation, baseReport);
-const metaValidation = validateReportPayloadByKind(REPORT_KINDS.reportArtifactsValidation, report);
-if (!metaValidation.ok) {
-  console.error(`Unable to build valid report artifact payload: ${metaValidation.reason}`);
-  process.exit(1);
-}
+const report = buildValidatedReportPayload(
+  REPORT_KINDS.reportArtifactsValidation,
+  baseReport,
+  'report artifact validation',
+);
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, JSON.stringify(report, null, 2), 'utf-8');
 const markdown = buildReportArtifactsValidationMarkdown(report);
