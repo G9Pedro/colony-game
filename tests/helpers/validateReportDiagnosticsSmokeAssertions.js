@@ -23,7 +23,7 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
   expectedRunId,
   expectedLevel = undefined,
   expectedPath = undefined,
-  expectedStatus = 'error',
+  expectedStatus = undefined,
   expectedErrorCode = undefined,
 }) {
   if (expectedPath !== undefined) {

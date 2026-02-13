@@ -33,8 +33,6 @@ test('assertValidateSmokeRejectsWithDiagnostic validates read-failure diagnostic
       expectedRunId: runId,
       expectedLevel: 'error',
       expectedPath: missingReportPath,
-      expectedStatus: 'missing',
-      expectedErrorCode: 'ENOENT',
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

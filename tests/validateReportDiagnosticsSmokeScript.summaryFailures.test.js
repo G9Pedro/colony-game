@@ -134,6 +134,7 @@ test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for mi
       },
       diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
       expectedRunId: runId,
+      expectedPath: reportPath,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -186,6 +187,7 @@ test('validate-report-diagnostics-smoke emits invalid-json diagnostic for invali
       },
       diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
       expectedRunId: runId,
+      expectedPath: reportPath,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
