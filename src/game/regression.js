@@ -135,3 +135,53 @@ export function buildAggregateRegressionReport({
     scenarioResults,
   };
 }
+
+export function buildSummarySignature(summary) {
+  const normalized = {
+    scenarioId: summary.scenarioId,
+    balanceProfileId: summary.balanceProfileId ?? 'standard',
+    seed: summary.seed,
+    status: summary.status,
+    day: summary.day,
+    alivePopulation: summary.alivePopulation,
+    buildings: summary.buildings,
+    queueLength: summary.queueLength,
+    resources: Object.fromEntries(
+      Object.entries(summary.resources ?? {}).sort(([a], [b]) => a.localeCompare(b)),
+    ),
+    completedResearch: [...(summary.completedResearch ?? [])].sort(),
+  };
+  const text = JSON.stringify(normalized);
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+export function buildSnapshotRegressionReport({
+  summaries,
+  expectedSignatures,
+}) {
+  const results = summaries.map((summary) => {
+    const key = `${summary.scenarioId}:${summary.balanceProfileId ?? 'standard'}`;
+    const signature = buildSummarySignature(summary);
+    const expectedSignature = expectedSignatures[key];
+    const passed = signature === expectedSignature;
+    return {
+      key,
+      summary,
+      signature,
+      expectedSignature,
+      passed,
+      failure: passed ? null : `expected ${expectedSignature}, got ${signature}`,
+    };
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    overallPassed: results.every((result) => result.passed),
+    results,
+  };
+}

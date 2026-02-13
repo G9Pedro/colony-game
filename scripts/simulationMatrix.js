@@ -13,7 +13,8 @@ const DEFAULT_BUILD_PLAN = [
 ];
 
 export function runStrategy(scenarioId, seed, options = {}) {
-  const engine = new GameEngine({ scenarioId, seed });
+  const balanceProfileId = options.balanceProfileId ?? 'standard';
+  const engine = new GameEngine({ scenarioId, seed, balanceProfileId });
   const buildPlan = options.buildPlan ?? DEFAULT_BUILD_PLAN;
   const stepCount = options.steps ?? 900;
 
@@ -42,6 +43,10 @@ export function runStrategy(scenarioId, seed, options = {}) {
   return getSimulationSummary(engine.state);
 }
 
-export function runScenarioMatrix(scenarios, seedPrefix = 'simulation') {
-  return scenarios.map((scenarioId) => runStrategy(scenarioId, `${seedPrefix}-${scenarioId}`));
+export function runScenarioMatrix(scenarios, seedPrefix = 'simulation', options = {}) {
+  return scenarios.map((scenarioId) =>
+    runStrategy(scenarioId, `${seedPrefix}-${scenarioId}`, {
+      ...options,
+    }),
+  );
 }

@@ -105,11 +105,18 @@ Run multi-seed drift checks against baseline bounds:
 npm run simulate:drift
 ```
 
+Run deterministic snapshot signature checks:
+
+```bash
+npm run simulate:snapshot
+```
+
 CI now runs:
 - `npm test`
 - `npm run simulate:assert`
 - `npm run simulate:report` (uploaded as artifact)
 - `npm run simulate:drift` (uploaded as artifact)
+- `npm run simulate:snapshot` (uploaded as artifact, enforced)
 
 One-command local verification:
 

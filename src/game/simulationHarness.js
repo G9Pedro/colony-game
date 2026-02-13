@@ -19,6 +19,7 @@ export function getSimulationSummary(state) {
   const alivePopulation = state.colonists.filter((colonist) => colonist.alive).length;
   return {
     scenarioId: state.scenarioId,
+    balanceProfileId: state.balanceProfileId,
     seed: state.rngSeed,
     status: state.status,
     day: state.day,

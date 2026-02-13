@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   buildAggregateRegressionReport,
   buildRegressionReport,
+  buildSnapshotRegressionReport,
+  buildSummarySignature,
   evaluateSimulationSummary,
 } from '../src/game/regression.js';
 
@@ -119,4 +121,53 @@ test('buildAggregateRegressionReport computes aggregate scenario pass/fail', () 
   assert.equal(harsh.passed, false);
   assert.equal(report.overallPassed, false);
   assert.ok(harsh.failures.length > 0);
+});
+
+test('buildSummarySignature is deterministic for same summary', () => {
+  const summary = {
+    scenarioId: 'frontier',
+    balanceProfileId: 'standard',
+    seed: 'assert-frontier',
+    status: 'playing',
+    day: 8,
+    alivePopulation: 8,
+    buildings: 9,
+    queueLength: 0,
+    resources: { food: 120, wood: 100 },
+    completedResearch: [],
+  };
+
+  const first = buildSummarySignature(summary);
+  const second = buildSummarySignature(summary);
+  assert.equal(first, second);
+});
+
+test('buildSnapshotRegressionReport compares signatures', () => {
+  const summary = {
+    scenarioId: 'frontier',
+    balanceProfileId: 'standard',
+    seed: 'assert-frontier',
+    status: 'playing',
+    day: 8,
+    alivePopulation: 8,
+    buildings: 9,
+    queueLength: 0,
+    resources: { food: 120, wood: 100 },
+    completedResearch: [],
+  };
+  const signature = buildSummarySignature(summary);
+
+  const passReport = buildSnapshotRegressionReport({
+    summaries: [summary],
+    expectedSignatures: { 'frontier:standard': signature },
+  });
+  assert.equal(passReport.overallPassed, true);
+  assert.equal(passReport.results[0].passed, true);
+
+  const failReport = buildSnapshotRegressionReport({
+    summaries: [summary],
+    expectedSignatures: { 'frontier:standard': 'deadbeef' },
+  });
+  assert.equal(failReport.overallPassed, false);
+  assert.equal(failReport.results[0].passed, false);
 });

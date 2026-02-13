@@ -47,3 +47,12 @@ jobs:
         with:
           name: simulation-drift-report
           path: reports/simulation-drift.json
+
+      - name: Run deterministic snapshot check
+        run: SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot
+
+      - name: Upload simulation snapshot report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-snapshot-report
+          path: reports/simulation-snapshot.json
