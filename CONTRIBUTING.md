@@ -45,6 +45,7 @@ Template path: `.github/pull_request_template.md`.
 This guide and the PR template are intentionally synchronized process references.
 When checklist commands change, update both files in the same PR and do a quick consistency pass.
 If npm scripts are renamed, also update command references in `README.md` in that same PR.
+After script renames, confirm CI `npm run ...` commands in `.github/workflows/ci.yml` still match `package.json` scripts.
 
 | PR Template Item | Command | What to Review |
 | --- | --- | --- |
