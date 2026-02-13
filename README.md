@@ -185,8 +185,9 @@ Optional machine-readable diagnostics mode:
   - `npm run simulate:check:tuning-baseline`
   - `npm run simulate:baseline:check`
   - `npm run diagnostics:smoke`
-- `npm run diagnostics:smoke` executes a lightweight end-to-end diagnostics contract check, then writes a consolidated report (`reports/report-diagnostics-smoke.json` by default) with counts by script/level/code plus per-scenario pass/fail details.
+- `npm run diagnostics:smoke` executes a lightweight end-to-end diagnostics contract check, then writes consolidated JSON + Markdown reports (`reports/report-diagnostics-smoke.json/.md` by default) with counts by script/level/code plus per-scenario pass/fail details.
 - optional: set `REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH=<path>` to control where the consolidated smoke report is written.
+- optional: set `REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH=<path>` to control where the markdown smoke report is written.
 - smoke summary payloads are versioned and tagged for automation:
   - `type: "report-diagnostics-smoke-summary"`
   - `schemaVersion: 1`
@@ -259,7 +260,7 @@ npm run simulate:suggest:tuning-baseline
 | `npm run simulate:tuning:session` | Run the recommended manual tuning command sequence | all tuning reports + baseline check output |
 | `npm run simulate:tuning:session:strict` | Run the same tuning sequence but fail on intensity drift | all tuning reports + strict baseline check output |
 | `npm run simulate:tuning:prepr` | Run strict tuning session plus report artifact schema checks | strict session output + report validation summary |
-| `npm run diagnostics:smoke` | Execute diagnostics contract smoke checks across report scripts | `reports/report-diagnostics-smoke.json` |
+| `npm run diagnostics:smoke` | Execute diagnostics contract smoke checks across report scripts | `reports/report-diagnostics-smoke.json/.md` |
 
 ### Recommended Manual Tuning Session Order
 
@@ -367,7 +368,7 @@ CI now runs:
 - `npm run reports:validate`
 - `reports/report-artifacts-validation.json/.md` (uploaded as artifact)
 - `npm run diagnostics:smoke`
-- `reports/report-diagnostics-smoke.json` (local observability contract summary)
+- `reports/report-diagnostics-smoke.json/.md` (local observability contract summary)
 - `npm run simulate:baseline:check` (enforced)
 
 One-command local verification:

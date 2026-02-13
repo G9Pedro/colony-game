@@ -15,6 +15,7 @@ const execFileAsync = promisify(execFile);
 test('report diagnostics smoke script emits passing diagnostics summary report', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'report-diagnostics-smoke-'));
   const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const markdownOutputPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
   const runId = 'smoke-script-test-run';
   const scriptPath = path.resolve('scripts/report-diagnostics-smoke.js');
 
@@ -23,6 +24,7 @@ test('report diagnostics smoke script emits passing diagnostics summary report',
       env: {
         ...process.env,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
+        REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
     });
@@ -44,6 +46,12 @@ test('report diagnostics smoke script emits passing diagnostics summary report',
     });
     assert.ok(summary.diagnosticsByCode['artifact-missing'] >= 1);
     assert.ok(summary.diagnosticsByCode['baseline-signature-drift'] >= 1);
+
+    const markdown = await readFile(markdownOutputPath, 'utf-8');
+    assert.match(markdown, /^# Report Diagnostics Smoke Summary/m);
+    assert.match(markdown, /## Scenario results/);
+    assert.match(markdown, /\| trend-missing-baseline \| simulate:report:tuning:trend \|/);
+    assert.match(markdown, /## Failures\s+All diagnostics smoke scenarios passed\./s);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

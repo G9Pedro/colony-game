@@ -7,7 +7,7 @@ import {
   isValidReportDiagnosticPayload,
   parseReportDiagnosticsFromText,
 } from './reportDiagnostics.js';
-import { writeJsonArtifact } from './reportPayloadOutput.js';
+import { writeJsonArtifact, writeTextArtifact } from './reportPayloadOutput.js';
 import {
   buildDiagnosticsSmokeSummary,
   isValidDiagnosticsSmokeSummaryPayload,
@@ -16,11 +16,14 @@ import {
   buildDiagnosticsSmokeScenarios,
   setupDiagnosticsSmokeFixtureWorkspace,
 } from './reportDiagnosticsSmokeScenarios.js';
+import { buildDiagnosticsSmokeMarkdown } from './reportDiagnosticsSmokeMarkdown.js';
 
 const execFileAsync = promisify(execFile);
 
 const outputPath =
   process.env.REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH ?? 'reports/report-diagnostics-smoke.json';
+const markdownOutputPath =
+  process.env.REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH ?? 'reports/report-diagnostics-smoke.md';
 const runId = process.env.REPORT_DIAGNOSTICS_RUN_ID ?? `report-diagnostics-smoke-${Date.now()}`;
 
 function collectDiagnostics(stdout = '', stderr = '') {
@@ -138,11 +141,13 @@ async function main() {
     }
 
     await writeJsonArtifact(outputPath, summary);
+    await writeTextArtifact(markdownOutputPath, buildDiagnosticsSmokeMarkdown(summary));
 
     console.log(
       `Diagnostics smoke summary: scenarios=${summary.scenarioCount}, failed=${summary.failedScenarioCount}, diagnostics=${summary.diagnosticsCount}`,
     );
     console.log(`Diagnostics smoke report written to: ${outputPath}`);
+    console.log(`Diagnostics smoke markdown report written to: ${markdownOutputPath}`);
 
     if (failedScenarios.length > 0) {
       failedScenarios.forEach((scenario) => {
