@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
@@ -18,6 +18,10 @@ import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
+import {
+  createInvalidJsonArtifact,
+  createUnreadableArtifactPath,
+} from './helpers/reportReadFailureFixtures.js';
 const RUN_ID = 'diagnostic-contract-fixture-run';
 
 test('trend script diagnostics follow contract fixture', async () => {
@@ -58,7 +62,10 @@ test('trend script emits invalid-json diagnostic contract for malformed baseline
   const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
   try {
-    await writeFile(baselinePath, '{"broken": ', 'utf-8');
+    await createInvalidJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-dashboard.baseline.json',
+    });
     const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
         SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
@@ -89,14 +96,19 @@ test('trend script emits read-error diagnostic contract for unreadable baseline 
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-trend-read-error-'));
   const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
   const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
+  const unreadableBaselinePath = path.join(tempDirectory, 'scenario-tuning-dashboard.baseline.unreadable.json');
   const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
   try {
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-dashboard.baseline.unreadable.json',
+    });
     const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
         SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
         SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
-        SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: tempDirectory,
+        SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: unreadableBaselinePath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
@@ -109,7 +121,7 @@ test('trend script emits read-error diagnostic contract for unreadable baseline 
       diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
       expectedScript: 'simulate:report:tuning:trend',
       expectedRunId: RUN_ID,
-      expectedPath: tempDirectory,
+      expectedPath: unreadableBaselinePath,
       expectedStatus: 'error',
       expectedErrorCode: 'EISDIR',
     });
@@ -123,12 +135,10 @@ test('validate-report-artifacts diagnostics follow contract fixture', async () =
   const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
 
   try {
-    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
-    await writeFile(
-      path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'),
-      '{"broken": ',
-      'utf-8',
-    );
+    await createInvalidJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'reports/scenario-tuning-dashboard.json',
+    });
 
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
@@ -161,9 +171,9 @@ test('validate-report-artifacts emits read-error diagnostics for unreadable repo
   const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
 
   try {
-    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
-    await mkdir(path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'), {
-      recursive: true,
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'reports/scenario-tuning-dashboard.json',
     });
 
     await assertNodeDiagnosticsScriptRejects({

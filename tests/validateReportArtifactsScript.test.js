@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
@@ -9,6 +9,10 @@ import { assertOutputHasReadFailureDiagnosticContract } from './helpers/reportDi
 import {
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
+import {
+  createInvalidJsonArtifact,
+  createUnreadableArtifactPath,
+} from './helpers/reportReadFailureFixtures.js';
 
 test('validate-report-artifacts script emits validation report for invalid/missing artifacts', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
@@ -17,12 +21,10 @@ test('validate-report-artifacts script emits validation report for invalid/missi
   const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
 
   try {
-    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
-    await writeFile(
-      path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'),
-      '{"broken": ',
-      'utf-8',
-    );
+    await createInvalidJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'reports/scenario-tuning-dashboard.json',
+    });
 
     await assert.rejects(
       () =>
@@ -74,12 +76,10 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
   const runId = 'validate-report-artifacts-invalid-json-run';
 
   try {
-    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
-    await writeFile(
-      path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'),
-      '{"broken": ',
-      'utf-8',
-    );
+    await createInvalidJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'reports/scenario-tuning-dashboard.json',
+    });
 
     await assert.rejects(
       () =>
@@ -118,9 +118,9 @@ test('validate-report-artifacts emits read-error diagnostic for unreadable artif
   const runId = 'validate-report-artifacts-read-error-run';
 
   try {
-    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
-    await mkdir(path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'), {
-      recursive: true,
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'reports/scenario-tuning-dashboard.json',
     });
 
     await assert.rejects(
