@@ -6,8 +6,7 @@ import {
   assertReadFailureDiagnosticMatchesScenario,
 } from './helpers/reportReadFailureMatrixTestUtils.js';
 
-test('handleJsonCacheLoadFailure maps classified read failures to canonical diagnostics', () => {
-  const emitted = [];
+function captureConsoleErrorLines(runAssertion) {
   const originalConsoleError = console.error;
   const errorLines = [];
   console.error = (line) => {
@@ -15,6 +14,15 @@ test('handleJsonCacheLoadFailure maps classified read failures to canonical diag
   };
 
   try {
+    runAssertion(errorLines);
+  } finally {
+    console.error = originalConsoleError;
+  }
+}
+
+test('handleJsonCacheLoadFailure maps classified read failures to canonical diagnostics', () => {
+  const emitted = [];
+  captureConsoleErrorLines((errorLines) => {
     const handled = handleJsonCacheLoadFailure({
       error: {
         cacheReadFailure: {
@@ -41,20 +49,12 @@ test('handleJsonCacheLoadFailure maps classified read failures to canonical diag
       expectedPath: 'reports/baseline-suggestions.json',
     });
     assert.match(errorLines.join('\n'), /Missing baseline suggestion cache payload at/);
-  } finally {
-    console.error = originalConsoleError;
-  }
+  });
 });
 
 test('handleJsonCacheLoadFailure maps invalid-json cache failures to invalid-json diagnostic code', () => {
   const emitted = [];
-  const originalConsoleError = console.error;
-  const errorLines = [];
-  console.error = (line) => {
-    errorLines.push(String(line));
-  };
-
-  try {
+  captureConsoleErrorLines((errorLines) => {
     const handled = handleJsonCacheLoadFailure({
       error: {
         cacheReadFailure: {
@@ -85,20 +85,12 @@ test('handleJsonCacheLoadFailure maps invalid-json cache failures to invalid-jso
       errorLines.join('\n'),
       /scenario tuning baseline cache payload at "reports\/scenario-tuning-baseline-suggestions\.json" is not valid JSON/,
     );
-  } finally {
-    console.error = originalConsoleError;
-  }
+  });
 });
 
 test('handleJsonCacheLoadFailure maps invalid payload failures to invalid-payload diagnostic code', () => {
   const emitted = [];
-  const originalConsoleError = console.error;
-  const errorLines = [];
-  console.error = (line) => {
-    errorLines.push(String(line));
-  };
-
-  try {
+  captureConsoleErrorLines((errorLines) => {
     const handled = handleJsonCacheLoadFailure({
       error: {
         cacheReadFailure: {
@@ -132,20 +124,50 @@ test('handleJsonCacheLoadFailure maps invalid payload failures to invalid-payloa
       errorLines.join('\n'),
       /scenario tuning dashboard baseline payload at "reports\/scenario-tuning-dashboard\.baseline\.json" failed validation\./,
     );
-  } finally {
-    console.error = originalConsoleError;
-  }
+  });
+});
+
+test('handleJsonCacheLoadFailure maps classified read errors to artifact-read-error diagnostics', () => {
+  const emitted = [];
+  captureConsoleErrorLines((errorLines) => {
+    const handled = handleJsonCacheLoadFailure({
+      error: {
+        cacheReadFailure: {
+          ok: false,
+          path: 'reports/scenario-tuning-dashboard.baseline.json',
+          status: 'error',
+          message: 'EISDIR: illegal operation on a directory, read',
+          errorCode: 'EISDIR',
+        },
+      },
+      emitDiagnostic: (diagnostic) => emitted.push(diagnostic),
+      inputPath: 'reports/scenario-tuning-dashboard.baseline.json',
+      cacheArtifactLabel: 'scenario tuning dashboard baseline payload',
+      cacheReadFailureMessage: 'Scenario tuning dashboard baseline payload read failed.',
+      genericFailureMessage: 'Scenario tuning trend baseline read failed.',
+    });
+
+    assert.equal(handled, true);
+    assert.equal(emitted.length, 1);
+    assertReadFailureDiagnosticMatchesScenario({
+      diagnostic: emitted[0],
+      scenario: 'unreadable',
+      expectedLevel: 'error',
+      expectedPath: 'reports/scenario-tuning-dashboard.baseline.json',
+      expectedStatus: 'error',
+      expectedErrorCode: 'EISDIR',
+    });
+    assert.equal(emitted[0].context.reason, 'EISDIR: illegal operation on a directory, read');
+    assert.match(
+      errorLines.join('\n'),
+      /Unable to read scenario tuning dashboard baseline payload at "reports\/scenario-tuning-dashboard\.baseline\.json"/,
+    );
+  });
 });
 
 test('handleJsonCacheLoadFailure emits fallback artifact-read-error for unexpected failures', () => {
   const emitted = [];
-  const originalConsoleError = console.error;
-  const errorLines = [];
-  console.error = (line) => {
-    errorLines.push(String(line));
-  };
-
-  try {
+  captureConsoleErrorLines((errorLines) => {
     const handled = handleJsonCacheLoadFailure({
       error: Object.assign(new Error('boom'), { code: 'EFAIL' }),
       emitDiagnostic: (diagnostic) => emitted.push(diagnostic),
@@ -165,7 +187,5 @@ test('handleJsonCacheLoadFailure emits fallback artifact-read-error for unexpect
     assert.equal(emitted[0].context.reason, 'boom');
     assert.equal(emitted[0].context.errorCode, 'EFAIL');
     assert.match(errorLines.join('\n'), /Unable to prepare scenario tuning baseline cache payload/);
-  } finally {
-    console.error = originalConsoleError;
-  }
+  });
 });
