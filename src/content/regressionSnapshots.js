@@ -6,6 +6,6 @@ export const SNAPSHOT_CASES = [
 
 export const EXPECTED_SUMMARY_SIGNATURES = {
   'frontier:standard': '0c5e476b',
-  'prosperous:standard': '21c5ca9f',
-  'harsh:standard': '39a679ff',
+  'prosperous:standard': '1d798c44',
+  'harsh:standard': 'f97f0c0d',
 };

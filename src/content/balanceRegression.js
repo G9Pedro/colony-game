@@ -19,5 +19,5 @@ export const BALANCE_REGRESSION_EXPECTATIONS = {
   'prosperous:brutal': { requiredStatus: 'lost', minAlivePopulation: 0, requiredResearch: ['masonry'] },
   'harsh:standard': { requiredStatus: 'playing', minAlivePopulation: 7, requiredResearch: [] },
   'harsh:forgiving': { requiredStatus: 'playing', minAlivePopulation: 7, requiredResearch: [] },
-  'harsh:brutal': { requiredStatus: 'lost', minAlivePopulation: 0, requiredResearch: [] },
+  'harsh:brutal': { requiredStatus: 'playing', minAlivePopulation: 7, requiredResearch: [] },
 };

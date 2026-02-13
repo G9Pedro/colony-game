@@ -16,7 +16,7 @@ You build structures, manage colonists and resources, research technologies, and
 - **Run analytics**: track peak population, completions, deaths, run outcomes, and balance profile context.
 - **Runtime state invariants** to detect and pause on simulation corruption.
 - Invariant violations are logged in run stats for debugging and postmortems.
-- **Scenario presets**: Frontier, Prosperous, and Harsh start conditions.
+- **Scenario presets**: Frontier, Prosperous, and Harsh with distinct start conditions and ongoing production/workforce tuning.
 - **Balance profiles**: Standard, Forgiving, and Brutal simulation tuning.
 - **Deterministic seeded simulation** support for reproducible runs.
 - **Save/Load/Reset** controls backed by `localStorage`.
