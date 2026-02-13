@@ -1,17 +1,27 @@
 import path from 'node:path';
-import { writeFile } from 'node:fs/promises';
 import { buildDiagnosticsSmokeSummary } from '../../scripts/reportDiagnosticsSmokeSummary.js';
 import { buildDiagnosticsSmokeMarkdown } from '../../scripts/reportDiagnosticsSmokeMarkdown.js';
-import { buildReportDiagnostic } from '../../scripts/reportDiagnostics.js';
+import {
+  buildReportDiagnostic,
+  REPORT_DIAGNOSTIC_CODES,
+} from '../../scripts/reportDiagnostics.js';
+import {
+  buildArtifactPath,
+  createJsonArtifact,
+  createTextArtifact,
+} from './reportReadFailureFixtures.js';
 
 export const VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH = path.resolve(
   'scripts/validate-report-diagnostics-smoke.js',
 );
 
-export function createPassingSummary() {
+export function createPassingSummary({
+  runId = 'validate-smoke-script-run',
+  generatedAt = '2026-02-13T12:00:00.000Z',
+} = {}) {
   return buildDiagnosticsSmokeSummary({
-    runId: 'validate-smoke-script-run',
-    generatedAt: '2026-02-13T12:00:00.000Z',
+    runId,
+    generatedAt,
     scenarioResults: [],
   });
 }
@@ -24,7 +34,7 @@ export function createFailingSummary() {
     script: 'simulate:baseline:check',
     runId,
     level: 'error',
-    code: 'baseline-signature-drift',
+    code: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
     message: 'Baseline drift detected.',
     context: { changedSnapshotCount: 1 },
   });
@@ -39,7 +49,7 @@ export function createFailingSummary() {
         expectedExitCode: 1,
         actualExitCode: 1,
         diagnostics: [diagnostic],
-        observedCodes: ['baseline-signature-drift'],
+        observedCodes: [REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift],
         ok: false,
         errors: ['Missing expected baseline summary diagnostic.'],
       },
@@ -47,9 +57,55 @@ export function createFailingSummary() {
   });
 }
 
-export async function writeValidSmokeArtifacts({ reportPath, markdownPath }) {
-  const summary = createPassingSummary();
-  await writeFile(reportPath, JSON.stringify(summary, null, 2), 'utf-8');
-  await writeFile(markdownPath, buildDiagnosticsSmokeMarkdown(summary), 'utf-8');
-  return summary;
+export async function writeSmokeSummaryArtifact({
+  rootDirectory,
+  summary,
+  reportFilename = 'report-diagnostics-smoke.json',
+}) {
+  return createJsonArtifact({
+    rootDirectory,
+    relativePath: reportFilename,
+    payload: summary,
+  });
+}
+
+export async function writeSmokeSummaryTextArtifact({
+  rootDirectory,
+  contents,
+  reportFilename = 'report-diagnostics-smoke.json',
+}) {
+  return createTextArtifact({
+    rootDirectory,
+    relativePath: reportFilename,
+    contents,
+  });
+}
+
+export function buildSmokeArtifactPath({
+  rootDirectory,
+  filename,
+}) {
+  return buildArtifactPath({
+    rootDirectory,
+    relativePath: filename,
+  });
+}
+
+export async function writeValidSmokeArtifacts({
+  rootDirectory,
+  summary = createPassingSummary(),
+  reportFilename = 'report-diagnostics-smoke.json',
+  markdownFilename = 'report-diagnostics-smoke.md',
+}) {
+  const reportPath = await createJsonArtifact({
+    rootDirectory,
+    relativePath: reportFilename,
+    payload: summary,
+  });
+  const markdownPath = await createTextArtifact({
+    rootDirectory,
+    relativePath: markdownFilename,
+    contents: buildDiagnosticsSmokeMarkdown(summary),
+  });
+  return { summary, reportPath, markdownPath };
 }

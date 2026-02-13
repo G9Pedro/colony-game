@@ -1,20 +1,43 @@
-import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import {
-  assertOutputHasReadFailureDiagnostic,
-  findDiagnosticByCodeFromOutput,
+  assertOutputHasDiagnostic,
 } from './reportDiagnosticsTestUtils.js';
+import {
+  assertNodeDiagnosticsScriptRejects,
+  runNodeDiagnosticsScript,
+} from './reportDiagnosticsScriptTestUtils.js';
+import {
+  assertNodeDiagnosticsScriptReadFailureScenario,
+  getReportReadFailureScenarioFromDiagnosticCode,
+} from './reportReadFailureMatrixTestUtils.js';
 import { VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH } from './validateReportDiagnosticsSmokeTestUtils.js';
 
-const execFileAsync = promisify(execFile);
-
 export function runValidateReportDiagnosticsSmoke(envOverrides = {}) {
-  return execFileAsync(process.execPath, [VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH], {
-    env: {
-      ...process.env,
-      ...envOverrides,
-    },
+  return runNodeDiagnosticsScript(VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH, {
+    env: envOverrides,
+  });
+}
+
+export async function assertValidateSmokeRejectsWithReadFailureScenario({
+  envOverrides,
+  scenario,
+  expectedRunId,
+  expectedLevel = undefined,
+  expectedPath,
+  expectedStatus = undefined,
+  expectedErrorCode = undefined,
+  expectedDiagnosticCode = undefined,
+}) {
+  await assertNodeDiagnosticsScriptReadFailureScenario({
+    scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
+    env: envOverrides,
+    scenario,
+    expectedScript: 'diagnostics:smoke:validate',
+    expectedRunId,
+    expectedLevel,
+    expectedPath,
+    expectedStatus,
+    expectedErrorCode,
+    expectedCodes: expectedDiagnosticCode === undefined ? undefined : [expectedDiagnosticCode],
   });
 }
 
@@ -22,33 +45,47 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
   envOverrides,
   diagnosticCode,
   expectedRunId,
+  expectedLevel = undefined,
   expectedPath = undefined,
-  expectedStatus = 'error',
+  expectedStatus = undefined,
   expectedErrorCode = undefined,
 }) {
-  await assert.rejects(
-    () => runValidateReportDiagnosticsSmoke(envOverrides),
-    (error) => {
-      const diagnostic = findDiagnosticByCodeFromOutput(
-        { stdout: error.stdout, stderr: error.stderr },
-        diagnosticCode,
+  if (expectedPath !== undefined) {
+    let readFailureScenario;
+    try {
+      readFailureScenario = getReportReadFailureScenarioFromDiagnosticCode(diagnosticCode);
+    } catch (error) {
+      throw new Error(
+        `Read-failure assertion path "${expectedPath}" is only valid for read-failure diagnostic codes. Received "${diagnosticCode}".`,
+        { cause: error },
       );
-      assert.equal(diagnostic.script, 'diagnostics:smoke:validate');
-      if (expectedRunId !== undefined) {
-        assert.equal(diagnostic.runId, expectedRunId);
-      }
-      if (expectedPath !== undefined) {
-        assertOutputHasReadFailureDiagnostic({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          diagnosticCode,
-          expectedScript: 'diagnostics:smoke:validate',
-          expectedPath,
-          expectedStatus,
-          expectedErrorCode,
-        });
-      }
+    }
+    await assertValidateSmokeRejectsWithReadFailureScenario({
+      envOverrides,
+      scenario: readFailureScenario,
+      expectedRunId,
+      expectedLevel,
+      expectedPath,
+      expectedStatus,
+      expectedErrorCode,
+      expectedDiagnosticCode: diagnosticCode,
+    });
+    return;
+  }
+
+  await assertNodeDiagnosticsScriptRejects({
+    scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
+    env: envOverrides,
+    assertion: (error) => {
+      assertOutputHasDiagnostic({
+        stdout: error.stdout,
+        stderr: error.stderr,
+        diagnosticCode,
+        expectedScript: 'diagnostics:smoke:validate',
+        expectedRunId,
+        expectedLevel,
+      });
       return true;
     },
-  );
+  });
 }

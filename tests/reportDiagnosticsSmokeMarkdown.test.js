@@ -5,7 +5,10 @@ import {
   buildDiagnosticsSmokeMarkdown,
   isValidDiagnosticsSmokeMarkdown,
 } from '../scripts/reportDiagnosticsSmokeMarkdown.js';
-import { buildReportDiagnostic } from '../scripts/reportDiagnostics.js';
+import {
+  buildReportDiagnostic,
+  REPORT_DIAGNOSTIC_CODES,
+} from '../scripts/reportDiagnostics.js';
 
 function buildSummaryFixture() {
   const runId = 'smoke-markdown-test-run';
@@ -15,7 +18,7 @@ function buildSummaryFixture() {
     script: 'reports:validate',
     runId,
     level: 'error',
-    code: 'artifact-invalid-json',
+    code: REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
     message: 'Invalid JSON payload.',
     context: { artifactPath: 'reports/scenario-tuning-dashboard.json' },
   });
@@ -30,9 +33,11 @@ function buildSummaryFixture() {
         expectedExitCode: 1,
         actualExitCode: 1,
         diagnostics: [reportDiagnostic],
-        observedCodes: ['artifact-invalid-json'],
+        observedCodes: [REPORT_DIAGNOSTIC_CODES.artifactInvalidJson],
         ok: false,
-        errors: ['Missing expected diagnostic code "artifact-read-error".'],
+        errors: [
+          `Missing expected diagnostic code "${REPORT_DIAGNOSTIC_CODES.artifactReadError}".`,
+        ],
       },
     ],
   });
@@ -44,9 +49,14 @@ test('buildDiagnosticsSmokeMarkdown renders summary counters and scenario table'
   assert.match(markdown, /- run id: smoke-markdown-test-run/);
   assert.match(markdown, /\| validate-report-artifacts-failure \| reports:validate \| 1 \| 1 \| 1 \| fail \|/);
   assert.match(markdown, /## Diagnostic counts by code/);
-  assert.match(markdown, /\| artifact-invalid-json \| 1 \|/);
+  assert.match(markdown, new RegExp(`\\| ${REPORT_DIAGNOSTIC_CODES.artifactInvalidJson} \\| 1 \\|`));
   assert.match(markdown, /## Failures/);
-  assert.match(markdown, /Missing expected diagnostic code "artifact-read-error"\./);
+  assert.match(
+    markdown,
+    new RegExp(
+      `Missing expected diagnostic code "${REPORT_DIAGNOSTIC_CODES.artifactReadError}"\\.`,
+    ),
+  );
 });
 
 test('buildDiagnosticsSmokeMarkdown rejects invalid summary payloads', () => {

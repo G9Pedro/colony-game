@@ -1,19 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { buildScenarioTuningIntensityOnlyDriftPayload } from '../scripts/reportDiagnosticsFixtures.js';
 import {
   assertOutputDiagnosticsContract,
   assertOutputHasDiagnostic,
-  assertOutputHasReadFailureDiagnostic,
 } from './helpers/reportDiagnosticsTestUtils.js';
-
-const execFileAsync = promisify(execFile);
+import {
+  assertNodeDiagnosticsScriptRejects,
+  runNodeDiagnosticsScript,
+} from './helpers/reportDiagnosticsScriptTestUtils.js';
+import {
+  REPORT_READ_FAILURE_SCENARIOS,
+  assertNodeDiagnosticsScriptReadFailureScenario,
+} from './helpers/reportReadFailureMatrixTestUtils.js';
+import {
+  createJsonArtifact,
+  createUnreadableArtifactPath,
+} from './helpers/reportReadFailureFixtures.js';
 
 test('check-scenario-tuning-baseline allows intensity drift when strict mode is off', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'check-tuning-baseline-'));
@@ -22,14 +29,13 @@ test('check-scenario-tuning-baseline allows intensity drift when strict mode is 
   const runId = 'tuning-baseline-check-intensity-warn-run';
 
   try {
-    await writeFile(
-      payloadPath,
-      JSON.stringify(buildScenarioTuningIntensityOnlyDriftPayload(), null, 2),
-      'utf-8',
-    );
-    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-baseline-suggestions.json',
+      payload: buildScenarioTuningIntensityOnlyDriftPayload(),
+    });
+    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: payloadPath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
@@ -79,24 +85,21 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
   const runId = 'tuning-baseline-check-intensity-strict-run';
 
   try {
-    await writeFile(
-      payloadPath,
-      JSON.stringify(buildScenarioTuningIntensityOnlyDriftPayload(), null, 2),
-      'utf-8',
-    );
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-baseline-suggestions.json',
+      payload: buildScenarioTuningIntensityOnlyDriftPayload(),
+    });
 
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          env: {
-            ...process.env,
-            SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: payloadPath,
-            SIM_SCENARIO_TUNING_ENFORCE_INTENSITY: '1',
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: runId,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: payloadPath,
+        SIM_SCENARIO_TUNING_ENFORCE_INTENSITY: '1',
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+      assertion: (error) => {
         assert.equal(error.code, 1);
         assert.ok(error.stderr.includes('strict enforcement enabled'));
         assertOutputDiagnosticsContract({
@@ -121,7 +124,7 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
         assert.equal(strictDiagnostic.context?.changedTotalAbsDelta, 1);
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -129,33 +132,32 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
 
 test('check-scenario-tuning-baseline emits read-error diagnostic for unreadable cache path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'check-tuning-baseline-'));
+  const unreadableCachePath = path.join(tempDirectory, 'scenario-tuning-baseline.unreadable.json');
   const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
+  const runId = 'tuning-baseline-check-read-error-run';
 
   try {
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          env: {
-            ...process.env,
-            SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: tempDirectory,
-            REPORT_DIAGNOSTICS_JSON: '1',
-          },
-        }),
-      (error) => {
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'scenario-tuning-baseline.unreadable.json',
+    });
+
+    await assertNodeDiagnosticsScriptReadFailureScenario({
+      scriptPath,
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
+      env: {
+        SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: unreadableCachePath,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+      expectedScript: 'simulate:check:tuning-baseline',
+      expectedRunId: runId,
+      expectedPath: unreadableCachePath,
+      assertDiagnostic: ({ error }) => {
         assert.equal(error.code, 1);
         assert.ok(error.stderr.includes('Unable to read scenario tuning baseline cache payload'));
-        assertOutputHasReadFailureDiagnostic({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-          expectedScript: 'simulate:check:tuning-baseline',
-          expectedPath: tempDirectory,
-          expectedStatus: 'error',
-          expectedErrorCode: 'EISDIR',
-        });
-        return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

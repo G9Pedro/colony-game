@@ -1,19 +1,244 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  areReportArtifactResultsSortedByPath,
   areRecommendedActionsEqual,
+  buildReportArtifactResultStatistics,
+  buildReportArtifactStatusCounts,
   buildRecommendedActionsFromResults,
+  computeReportArtifactStatusCounts,
+  doReportArtifactStatusCountsMatch,
+  formatReportArtifactStatusCounts,
+  getReportArtifactStatusCountsTotal,
+  hasExpectedReportArtifactStatusKeys,
+  hasUniqueReportArtifactResultPaths,
+  isValidReportArtifactStatusCounts,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
+  normalizeReportArtifactStatusCounts,
+  REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
+  REPORT_ARTIFACT_STATUSES,
   normalizeRecommendedActions,
 } from '../src/game/reportArtifactValidationPayloadHelpers.js';
 
 test('KNOWN_REPORT_ARTIFACT_STATUSES contains expected statuses', () => {
   assert.deepEqual(
     Array.from(KNOWN_REPORT_ARTIFACT_STATUSES).sort((a, b) => a.localeCompare(b)),
-    ['error', 'invalid', 'invalid-json', 'ok'],
+    Object.values(REPORT_ARTIFACT_STATUSES).sort((a, b) => a.localeCompare(b)),
   );
+});
+
+test('REPORT_ARTIFACT_ENTRY_ERROR_TYPES exposes stable values', () => {
+  assert.deepEqual(REPORT_ARTIFACT_ENTRY_ERROR_TYPES, {
+    invalidJson: 'invalid-json',
+    readError: 'error',
+  });
+});
+
+test('buildReportArtifactStatusCounts creates fresh zeroed status maps', () => {
+  const first = buildReportArtifactStatusCounts();
+  const second = buildReportArtifactStatusCounts();
+
+  assert.deepEqual(first, {
+    [REPORT_ARTIFACT_STATUSES.ok]: 0,
+    [REPORT_ARTIFACT_STATUSES.error]: 0,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 0,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+  });
+  assert.deepEqual(second, first);
+  assert.notEqual(first, second);
+});
+
+test('formatReportArtifactStatusCounts uses canonical order and defaults', () => {
+  const formatted = formatReportArtifactStatusCounts({
+    [REPORT_ARTIFACT_STATUSES.invalid]: 4,
+    [REPORT_ARTIFACT_STATUSES.ok]: 2,
+  });
+  assert.equal(formatted, 'ok=2, error=0, invalid=4, invalid-json=0');
+});
+
+test('hasExpectedReportArtifactStatusKeys validates exact key sets', () => {
+  assert.equal(
+    hasExpectedReportArtifactStatusKeys({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+    }),
+    true,
+  );
+  assert.equal(
+    hasExpectedReportArtifactStatusKeys({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+    }),
+    false,
+  );
+  assert.equal(
+    hasExpectedReportArtifactStatusKeys({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+      extra: 2,
+    }),
+    false,
+  );
+});
+
+test('isValidReportArtifactStatusCounts validates canonical integer count shape', () => {
+  assert.equal(
+    isValidReportArtifactStatusCounts({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 2,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 3,
+    }),
+    true,
+  );
+  assert.equal(
+    isValidReportArtifactStatusCounts({
+      [REPORT_ARTIFACT_STATUSES.ok]: -1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 2,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 3,
+    }),
+    false,
+  );
+  assert.equal(
+    isValidReportArtifactStatusCounts({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 2,
+    }),
+    false,
+  );
+  assert.equal(
+    isValidReportArtifactStatusCounts({
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 2,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 3,
+      extra: 4,
+    }),
+    false,
+  );
+});
+
+test('computeReportArtifactStatusCounts aggregates known status rows', () => {
+  const counts = computeReportArtifactStatusCounts([
+    { status: REPORT_ARTIFACT_STATUSES.ok },
+    { status: REPORT_ARTIFACT_STATUSES.ok },
+    { status: REPORT_ARTIFACT_STATUSES.error },
+    { status: REPORT_ARTIFACT_STATUSES.invalidJson },
+    { status: REPORT_ARTIFACT_STATUSES.invalid },
+  ]);
+  assert.deepEqual(counts, {
+    [REPORT_ARTIFACT_STATUSES.ok]: 2,
+    [REPORT_ARTIFACT_STATUSES.error]: 1,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 1,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 1,
+  });
+});
+
+test('normalizeReportArtifactStatusCounts canonicalizes sparse inputs', () => {
+  const normalized = normalizeReportArtifactStatusCounts({
+    [REPORT_ARTIFACT_STATUSES.invalid]: 3,
+    [REPORT_ARTIFACT_STATUSES.ok]: 1,
+  });
+  assert.deepEqual(normalized, {
+    [REPORT_ARTIFACT_STATUSES.ok]: 1,
+    [REPORT_ARTIFACT_STATUSES.error]: 0,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 3,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+  });
+});
+
+test('getReportArtifactStatusCountsTotal sums canonical status counts', () => {
+  assert.equal(
+    getReportArtifactStatusCountsTotal({
+      [REPORT_ARTIFACT_STATUSES.ok]: 2,
+      [REPORT_ARTIFACT_STATUSES.error]: 1,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 3,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 4,
+      ignored: 99,
+    }),
+    10,
+  );
+});
+
+test('buildReportArtifactResultStatistics summarizes counts and pass/fail totals', () => {
+  const summary = buildReportArtifactResultStatistics([
+    { ok: true, status: REPORT_ARTIFACT_STATUSES.ok },
+    { ok: false, status: REPORT_ARTIFACT_STATUSES.error },
+    { ok: false, status: REPORT_ARTIFACT_STATUSES.invalid },
+  ]);
+  assert.deepEqual(summary, {
+    totalChecked: 3,
+    failureCount: 2,
+    overallPassed: false,
+    statusCounts: {
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 1,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 1,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+    },
+    statusTotal: 3,
+  });
+});
+
+test('doReportArtifactStatusCountsMatch compares canonical keys', () => {
+  const left = {
+    [REPORT_ARTIFACT_STATUSES.ok]: 1,
+    [REPORT_ARTIFACT_STATUSES.error]: 2,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 3,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 4,
+  };
+  assert.equal(doReportArtifactStatusCountsMatch(left, { ...left }), true);
+  assert.equal(
+    doReportArtifactStatusCountsMatch(left, {
+      ...left,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 5,
+    }),
+    false,
+  );
+});
+
+test('hasUniqueReportArtifactResultPaths validates unique non-empty paths', () => {
+  assert.equal(
+    hasUniqueReportArtifactResultPaths([
+      { path: 'reports/a.json' },
+      { path: 'reports/b.json' },
+    ]),
+    true,
+  );
+  assert.equal(
+    hasUniqueReportArtifactResultPaths([
+      { path: 'reports/a.json' },
+      { path: 'reports/a.json' },
+    ]),
+    false,
+  );
+  assert.equal(hasUniqueReportArtifactResultPaths([{ path: '' }]), false);
+});
+
+test('areReportArtifactResultsSortedByPath checks ascending path ordering', () => {
+  assert.equal(
+    areReportArtifactResultsSortedByPath([
+      { path: 'reports/a.json' },
+      { path: 'reports/b.json' },
+    ]),
+    true,
+  );
+  assert.equal(
+    areReportArtifactResultsSortedByPath([
+      { path: 'reports/b.json' },
+      { path: 'reports/a.json' },
+    ]),
+    false,
+  );
+  assert.equal(areReportArtifactResultsSortedByPath([{ path: '' }]), false);
 });
 
 test('isValidRecommendedActions validates command/path entries', () => {
@@ -30,7 +255,7 @@ test('isValidReportArtifactResultEntry enforces ok/failure semantics', () => {
     isValidReportArtifactResultEntry({
       path: 'reports/a.json',
       kind: 'baseline-suggestions',
-      status: 'ok',
+      status: REPORT_ARTIFACT_STATUSES.ok,
       ok: true,
       message: null,
       recommendedCommand: null,
@@ -42,7 +267,7 @@ test('isValidReportArtifactResultEntry enforces ok/failure semantics', () => {
     isValidReportArtifactResultEntry({
       path: 'reports/b.json',
       kind: 'scenario-tuning-dashboard',
-      status: 'error',
+      status: REPORT_ARTIFACT_STATUSES.error,
       ok: false,
       message: 'read failure',
       recommendedCommand: 'npm run verify',
@@ -54,7 +279,7 @@ test('isValidReportArtifactResultEntry enforces ok/failure semantics', () => {
     isValidReportArtifactResultEntry({
       path: 'reports/c.json',
       kind: 'scenario-tuning-dashboard',
-      status: 'error',
+      status: REPORT_ARTIFACT_STATUSES.error,
       ok: true,
       message: null,
       recommendedCommand: null,
@@ -95,6 +320,35 @@ test('buildRecommendedActionsFromResults groups by command and sorts paths', () 
     {
       command: 'npm run verify',
       paths: ['reports/b.json', 'reports/c.json'],
+    },
+  ]);
+});
+
+test('buildRecommendedActionsFromResults supports fallback command resolver', () => {
+  const actions = buildRecommendedActionsFromResults(
+    [
+      { ok: false, path: 'reports/a.json', recommendedCommand: null },
+      { ok: false, path: 'reports/b.json', recommendedCommand: '' },
+      { ok: false, path: 'reports/c.json', recommendedCommand: 'npm run explicit' },
+    ],
+    {
+      resolveCommand: (result) =>
+        result.recommendedCommand || `npm run regenerate -- ${result.path}`,
+    },
+  );
+
+  assert.deepEqual(actions, [
+    {
+      command: 'npm run explicit',
+      paths: ['reports/c.json'],
+    },
+    {
+      command: 'npm run regenerate -- reports/a.json',
+      paths: ['reports/a.json'],
+    },
+    {
+      command: 'npm run regenerate -- reports/b.json',
+      paths: ['reports/b.json'],
     },
   ]);
 });

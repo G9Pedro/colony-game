@@ -1,25 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { promisify } from 'node:util';
+import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { REPORT_ARTIFACT_TARGETS } from '../src/game/reportArtifactsValidation.js';
-import { assertOutputHasReadFailureDiagnostic } from './helpers/reportDiagnosticsTestUtils.js';
-
-const execFileAsync = promisify(execFile);
-
-async function runNodeScript(scriptPath, { cwd, env = {} }) {
-  return execFileAsync(process.execPath, [scriptPath], {
-    cwd,
-    env: {
-      ...process.env,
-      ...env,
-    },
-  });
-}
+import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
+import {
+  assertNodeDiagnosticsScriptRejects,
+  runNodeDiagnosticsScript,
+} from './helpers/reportDiagnosticsScriptTestUtils.js';
+import {
+  REPORT_READ_FAILURE_SCENARIOS,
+  assertNodeDiagnosticsScriptReadFailureScenario,
+} from './helpers/reportReadFailureMatrixTestUtils.js';
+import {
+  createInvalidJsonArtifact,
+  createUnreadableArtifactPath,
+} from './helpers/reportReadFailureFixtures.js';
 
 test('validate-report-artifacts script emits validation report for invalid/missing artifacts', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
@@ -28,35 +27,36 @@ test('validate-report-artifacts script emits validation report for invalid/missi
   const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
 
   try {
-    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
-    await writeFile(
-      path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'),
-      '{"broken": ',
-      'utf-8',
-    );
+    await createInvalidJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'reports/scenario-tuning-dashboard.json',
+    });
 
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          cwd: tempDirectory,
-          env: {
-            ...process.env,
-            REPORTS_VALIDATE_OUTPUT_PATH: outputPath,
-            REPORTS_VALIDATE_OUTPUT_MD_PATH: markdownOutputPath,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      cwd: tempDirectory,
+      env: {
+        REPORTS_VALIDATE_OUTPUT_PATH: outputPath,
+        REPORTS_VALIDATE_OUTPUT_MD_PATH: markdownOutputPath,
+      },
+      assertion: (error) => {
         assert.equal(error.code, 1);
         assert.match(error.stderr, /\[invalid-json\] reports\/scenario-tuning-dashboard\.json/i);
         assert.match(
           error.stderr,
           /report artifact at "reports\/scenario-tuning-dashboard\.json" is not valid JSON/i,
         );
-        assert.match(error.stderr, /code=artifact-invalid-json/i);
-        assert.match(error.stderr, /code=artifact-read-error/i);
+        assert.match(
+          error.stderr,
+          new RegExp(`code=${REPORT_DIAGNOSTIC_CODES.artifactInvalidJson}`, 'i'),
+        );
+        assert.match(
+          error.stderr,
+          new RegExp(`code=${REPORT_DIAGNOSTIC_CODES.artifactReadError}`, 'i'),
+        );
         return true;
       },
-    );
+    });
 
     const summary = JSON.parse(
       await readFile(path.join(tempDirectory, outputPath), 'utf-8'),
@@ -64,13 +64,13 @@ test('validate-report-artifacts script emits validation report for invalid/missi
     assert.equal(summary.meta.kind, REPORT_KINDS.reportArtifactsValidation);
     assert.equal(summary.totalChecked, REPORT_ARTIFACT_TARGETS.length);
     assert.equal(summary.overallPassed, false);
-    assert.equal(summary.statusCounts['invalid-json'], 1);
+    assert.equal(summary.statusCounts[REPORT_ARTIFACT_STATUSES.invalidJson], 1);
     assert.ok(summary.failureCount >= 1);
 
     const dashboardRow = summary.results.find(
       (row) => row.path === 'reports/scenario-tuning-dashboard.json',
     );
-    assert.equal(dashboardRow.status, 'invalid-json');
+    assert.equal(dashboardRow.status, REPORT_ARTIFACT_STATUSES.invalidJson);
     assert.equal(
       dashboardRow.message,
       'report artifact at "reports/scenario-tuning-dashboard.json" is not valid JSON.',
@@ -83,39 +83,30 @@ test('validate-report-artifacts script emits validation report for invalid/missi
 test('validate-report-artifacts emits JSON diagnostics when enabled', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
   const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
+  const runId = 'validate-report-artifacts-invalid-json-run';
 
   try {
-    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
-    await writeFile(
-      path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'),
-      '{"broken": ',
-      'utf-8',
-    );
+    await createInvalidJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'reports/scenario-tuning-dashboard.json',
+    });
 
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          cwd: tempDirectory,
-          env: {
-            ...process.env,
-            REPORT_DIAGNOSTICS_JSON: '1',
-          },
-        }),
-      (error) => {
-        const invalidJsonDiagnostic = assertOutputHasReadFailureDiagnostic({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          diagnosticCode: 'artifact-invalid-json',
-          expectedScript: 'reports:validate',
-          expectedPath: 'reports/scenario-tuning-dashboard.json',
-          expectedStatus: 'invalid-json',
-          expectedErrorCode: null,
-        });
+    await assertNodeDiagnosticsScriptReadFailureScenario({
+      scriptPath,
+      cwd: tempDirectory,
+      scenario: REPORT_READ_FAILURE_SCENARIOS.invalidJson,
+      env: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+      expectedScript: 'reports:validate',
+      expectedRunId: runId,
+      expectedPath: 'reports/scenario-tuning-dashboard.json',
+      assertDiagnostic: ({ diagnostic: invalidJsonDiagnostic }) => {
         assert.equal(invalidJsonDiagnostic.level, 'error');
         assert.equal(typeof invalidJsonDiagnostic.context?.reason, 'string');
-        return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -124,40 +115,33 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
 test('validate-report-artifacts emits read-error diagnostic for unreadable artifact path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
   const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
+  const runId = 'validate-report-artifacts-read-error-run';
 
   try {
-    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
-    await mkdir(path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'), {
-      recursive: true,
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'reports/scenario-tuning-dashboard.json',
     });
 
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          cwd: tempDirectory,
-          env: {
-            ...process.env,
-            REPORT_DIAGNOSTICS_JSON: '1',
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptReadFailureScenario({
+      scriptPath,
+      cwd: tempDirectory,
+      scenario: REPORT_READ_FAILURE_SCENARIOS.unreadable,
+      env: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+      expectedScript: 'reports:validate',
+      expectedRunId: runId,
+      expectedPath: 'reports/scenario-tuning-dashboard.json',
+      assertDiagnostic: ({ error }) => {
         assert.equal(error.code, 1);
         assert.match(
           error.stderr,
           /Unable to read report artifact at "reports\/scenario-tuning-dashboard\.json"/i,
         );
-        assertOutputHasReadFailureDiagnostic({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          diagnosticCode: 'artifact-read-error',
-          expectedScript: 'reports:validate',
-          expectedPath: 'reports/scenario-tuning-dashboard.json',
-          expectedStatus: 'error',
-          expectedErrorCode: 'EISDIR',
-        });
-        return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -173,18 +157,18 @@ test('validate-report-artifacts script passes after generating all target artifa
   const suggestBaselineScriptPath = path.resolve('scripts/suggest-baselines.js');
 
   try {
-    await runNodeScript(validateTuningScriptPath, { cwd: tempDirectory });
-    await runNodeScript(reportTuningScriptPath, { cwd: tempDirectory });
-    await runNodeScript(reportTrendScriptPath, { cwd: tempDirectory });
-    await runNodeScript(suggestTuningBaselineScriptPath, { cwd: tempDirectory });
-    await runNodeScript(suggestBaselineScriptPath, {
+    await runNodeDiagnosticsScript(validateTuningScriptPath, { cwd: tempDirectory });
+    await runNodeDiagnosticsScript(reportTuningScriptPath, { cwd: tempDirectory });
+    await runNodeDiagnosticsScript(reportTrendScriptPath, { cwd: tempDirectory });
+    await runNodeDiagnosticsScript(suggestTuningBaselineScriptPath, { cwd: tempDirectory });
+    await runNodeDiagnosticsScript(suggestBaselineScriptPath, {
       cwd: tempDirectory,
       env: {
         SIM_BASELINE_SUGGEST_RUNS: '2',
       },
     });
 
-    const { stdout } = await runNodeScript(validateArtifactsScriptPath, {
+    const { stdout } = await runNodeDiagnosticsScript(validateArtifactsScriptPath, {
       cwd: tempDirectory,
     });
     assert.match(stdout, /failed=0/i);

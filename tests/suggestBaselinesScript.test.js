@@ -3,12 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { isValidBaselineSuggestionPayload } from '../src/game/reportPayloadValidatorsBaseline.js';
-
-const execFileAsync = promisify(execFile);
+import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
 
 test('suggest baselines script writes schema-valid baseline suggestion payload', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'baseline-suggest-script-'));
@@ -17,9 +14,8 @@ test('suggest baselines script writes schema-valid baseline suggestion payload',
   const scriptPath = path.resolve('scripts/suggest-baselines.js');
 
   try {
-    const { stdout } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         SIM_BASELINE_SUGGEST_PATH: outputPath,
         SIM_BASELINE_SUGGEST_MD_PATH: markdownPath,
         SIM_BASELINE_SUGGEST_RUNS: '2',

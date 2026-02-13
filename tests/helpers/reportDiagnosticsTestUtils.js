@@ -91,6 +91,8 @@ export function assertOutputHasReadFailureDiagnostic({
   stderr = '',
   diagnosticCode,
   expectedScript = undefined,
+  expectedRunId = undefined,
+  expectedLevel = undefined,
   expectedPath,
   expectedStatus = 'error',
   expectedErrorCode = undefined,
@@ -105,6 +107,12 @@ export function assertOutputHasReadFailureDiagnostic({
   if (expectedScript !== undefined) {
     assert.equal(diagnostic.script, expectedScript);
   }
+  if (expectedRunId !== undefined) {
+    assert.equal(diagnostic.runId, expectedRunId);
+  }
+  if (expectedLevel !== undefined) {
+    assert.equal(diagnostic.level, expectedLevel);
+  }
   assertReadFailureDiagnosticContext({
     diagnostic,
     expectedPath,
@@ -112,6 +120,38 @@ export function assertOutputHasReadFailureDiagnostic({
     expectedErrorCode,
   });
   return diagnostic;
+}
+
+export function assertOutputHasReadFailureDiagnosticContract({
+  stdout = '',
+  stderr = '',
+  expectedCodes = undefined,
+  diagnosticCode,
+  expectedScript = undefined,
+  expectedRunId = undefined,
+  expectedLevel = undefined,
+  expectedPath,
+  expectedStatus = 'error',
+  expectedErrorCode = undefined,
+}) {
+  assertOutputDiagnosticsContract({
+    stdout,
+    stderr,
+    expectedCodes: expectedCodes ?? [diagnosticCode],
+    expectedScript,
+    expectedRunId,
+  });
+  return assertOutputHasReadFailureDiagnostic({
+    stdout,
+    stderr,
+    diagnosticCode,
+    expectedScript,
+    expectedRunId,
+    expectedLevel,
+    expectedPath,
+    expectedStatus,
+    expectedErrorCode,
+  });
 }
 
 export function assertOutputHasDiagnostic({

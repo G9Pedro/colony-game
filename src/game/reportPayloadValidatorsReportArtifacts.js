@@ -1,17 +1,21 @@
-import { REPORT_KINDS, REPORT_SCHEMA_VERSIONS, hasValidMeta } from './reportPayloadMeta.js';
-import { isRecordOfNumbers } from './reportPayloadValidatorUtils.js';
+import { REPORT_KINDS, hasValidMeta } from './reportPayloadMeta.js';
 import {
   areRecommendedActionsEqual,
+  buildReportArtifactResultStatistics,
   buildRecommendedActionsFromResults,
+  doReportArtifactStatusCountsMatch,
+  getReportArtifactStatusCountsTotal,
+  isValidReportArtifactStatusCounts,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
-  KNOWN_REPORT_ARTIFACT_STATUSES,
-  REPORT_ARTIFACT_STATUS_ORDER,
 } from './reportArtifactValidationPayloadHelpers.js';
+import {
+  hasExactReportArtifactTargets,
+} from './reportArtifactsManifest.js';
 
 export function isValidReportArtifactsValidationPayload(payload) {
   const results = Array.isArray(payload?.results) ? payload.results : [];
-  const hasValidStatusCounts = isRecordOfNumbers(payload?.statusCounts);
+  const hasValidStatusCounts = isValidReportArtifactStatusCounts(payload?.statusCounts);
   const hasValidActions = isValidRecommendedActions(payload?.recommendedActions);
   if (
     !Boolean(
@@ -33,34 +37,13 @@ export function isValidReportArtifactsValidationPayload(payload) {
   if (!validResults) {
     return false;
   }
-  const hasKnownResultKinds = results.every((result) =>
-    Object.prototype.hasOwnProperty.call(REPORT_SCHEMA_VERSIONS, result.kind),
-  );
-  const hasUniqueResultPaths = new Set(results.map((result) => result.path)).size === results.length;
-  const hasSortedResultPaths = results.every(
-    (result, index) => index === 0 || results[index - 1].path.localeCompare(result.path) <= 0,
-  );
+  const hasExactTargets = hasExactReportArtifactTargets(results);
 
-  const failureCount = results.filter((result) => !result.ok).length;
-  const computedStatusCounts = results.reduce(
-    (acc, result) => {
-      acc[result.status] += 1;
-      return acc;
-    },
-    Object.fromEntries(REPORT_ARTIFACT_STATUS_ORDER.map((status) => [status, 0])),
-  );
-  const computedStatusTotal = Object.values(computedStatusCounts).reduce((sum, value) => sum + value, 0);
-  const reportedStatusTotal = Object.values(payload.statusCounts).reduce((sum, value) => sum + value, 0);
-  const hasExpectedStatusKeys =
-    Object.keys(payload.statusCounts).length === REPORT_ARTIFACT_STATUS_ORDER.length &&
-    REPORT_ARTIFACT_STATUS_ORDER.every((status) =>
-      Object.prototype.hasOwnProperty.call(payload.statusCounts, status),
-    );
-  const statusCountsMatch = REPORT_ARTIFACT_STATUS_ORDER.every(
-    (status) => payload.statusCounts[status] === computedStatusCounts[status],
-  );
-  const knownStatusKeysOnly = Object.keys(payload.statusCounts).every((status) =>
-    KNOWN_REPORT_ARTIFACT_STATUSES.has(status),
+  const computedSummary = buildReportArtifactResultStatistics(results);
+  const reportedStatusTotal = getReportArtifactStatusCountsTotal(payload.statusCounts);
+  const statusCountsMatch = doReportArtifactStatusCountsMatch(
+    payload.statusCounts,
+    computedSummary.statusCounts,
   );
   const expectedRecommendedActions = buildRecommendedActionsFromResults(results);
   const recommendedActionsMatch = areRecommendedActionsEqual(
@@ -69,17 +52,13 @@ export function isValidReportArtifactsValidationPayload(payload) {
   );
 
   return Boolean(
-    payload.totalChecked === results.length &&
-      payload.failureCount === failureCount &&
-      payload.overallPassed === (failureCount === 0) &&
+    payload.totalChecked === computedSummary.totalChecked &&
+      payload.failureCount === computedSummary.failureCount &&
+      payload.overallPassed === computedSummary.overallPassed &&
       reportedStatusTotal === payload.totalChecked &&
-      computedStatusTotal === payload.totalChecked &&
-      hasExpectedStatusKeys &&
-      knownStatusKeysOnly &&
+      computedSummary.statusTotal === payload.totalChecked &&
       statusCountsMatch &&
-      hasKnownResultKinds &&
-      hasUniqueResultPaths &&
-      hasSortedResultPaths &&
+      hasExactTargets &&
       recommendedActionsMatch,
   );
 }

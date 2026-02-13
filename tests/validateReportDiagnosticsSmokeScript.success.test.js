@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
@@ -14,11 +14,11 @@ import { assertOutputHasDiagnostic } from './helpers/reportDiagnosticsTestUtils.
 
 test('validate-report-diagnostics-smoke passes for valid and passing summary', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
-  const markdownPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
 
   try {
-    await writeValidSmokeArtifacts({ reportPath, markdownPath });
+    const { reportPath, markdownPath } = await writeValidSmokeArtifacts({
+      rootDirectory: tempDirectory,
+    });
 
     const { stdout, stderr } = await runValidateReportDiagnosticsSmoke({
       REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
@@ -34,12 +34,12 @@ test('validate-report-diagnostics-smoke passes for valid and passing summary', a
 
 test('validate-report-diagnostics-smoke emits summary diagnostic when json diagnostics are enabled', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
-  const markdownPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
   const runId = 'validate-smoke-json-success-run';
 
   try {
-    await writeValidSmokeArtifacts({ reportPath, markdownPath });
+    const { reportPath, markdownPath } = await writeValidSmokeArtifacts({
+      rootDirectory: tempDirectory,
+    });
 
     const { stdout, stderr } = await runValidateReportDiagnosticsSmoke({
       REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
@@ -63,15 +63,13 @@ test('validate-report-diagnostics-smoke emits summary diagnostic when json diagn
 
 test('validate-report-diagnostics-smoke can skip markdown validation when disabled', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
   const markdownPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.md');
 
   try {
-    const summary = await writeValidSmokeArtifacts({
-      reportPath,
-      markdownPath: path.join(tempDirectory, 'unused-report-diagnostics-smoke.md'),
+    const { reportPath } = await writeValidSmokeArtifacts({
+      rootDirectory: tempDirectory,
+      markdownFilename: 'unused-report-diagnostics-smoke.md',
     });
-    await writeFile(reportPath, JSON.stringify(summary, null, 2), 'utf-8');
 
     const { stdout, stderr } = await runValidateReportDiagnosticsSmoke({
       REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
@@ -88,16 +86,14 @@ test('validate-report-diagnostics-smoke can skip markdown validation when disabl
 
 test('validate-report-diagnostics-smoke emits summary diagnostic context for markdown-disabled mode', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
   const markdownPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.md');
   const runId = 'validate-smoke-json-markdown-disabled-run';
 
   try {
-    const summary = await writeValidSmokeArtifacts({
-      reportPath,
-      markdownPath: path.join(tempDirectory, 'unused-report-diagnostics-smoke.md'),
+    const { reportPath } = await writeValidSmokeArtifacts({
+      rootDirectory: tempDirectory,
+      markdownFilename: 'unused-report-diagnostics-smoke.md',
     });
-    await writeFile(reportPath, JSON.stringify(summary, null, 2), 'utf-8');
 
     const { stdout, stderr } = await runValidateReportDiagnosticsSmoke({
       REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,

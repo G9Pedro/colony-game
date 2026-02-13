@@ -3,12 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { isValidScenarioTuningDashboardPayload } from '../src/game/reportPayloadValidatorsScenarioTuning.js';
-
-const execFileAsync = promisify(execFile);
+import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
 
 test('capture scenario tuning dashboard baseline script writes valid payload', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-baseline-'));
@@ -16,9 +13,8 @@ test('capture scenario tuning dashboard baseline script writes valid payload', a
   const scriptPath = path.resolve('scripts/capture-scenario-tuning-dashboard-baseline.js');
 
   try {
-    await execFileAsync(process.execPath, [scriptPath], {
+    await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         SIM_SCENARIO_TUNING_DASHBOARD_BASELINE_PATH: outputPath,
       },
     });
