@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
@@ -11,13 +11,23 @@ import {
   assertValidateSmokeRejectsWithDiagnostic,
   runValidateReportDiagnosticsSmoke,
 } from './helpers/validateReportDiagnosticsSmokeAssertions.js';
+import {
+  buildMissingArtifactPath,
+  createJsonArtifact,
+  createTextArtifact,
+  createUnreadableArtifactPath,
+} from './helpers/reportReadFailureFixtures.js';
 
 test('validate-report-diagnostics-smoke fails when report payload is invalid', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
   const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
 
   try {
-    await writeFile(reportPath, JSON.stringify({ type: 'bad-payload' }, null, 2), 'utf-8');
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.json',
+      payload: { type: 'bad-payload' },
+    });
 
     await assert.rejects(
       () =>
@@ -36,7 +46,11 @@ test('validate-report-diagnostics-smoke fails when report indicates failed scena
   const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
 
   try {
-    await writeFile(reportPath, JSON.stringify(createFailingSummary(), null, 2), 'utf-8');
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.json',
+      payload: createFailingSummary(),
+    });
 
     await assert.rejects(
       () =>
@@ -56,7 +70,11 @@ test('validate-report-diagnostics-smoke emits failed-scenarios diagnostic when j
   const runId = 'validate-smoke-json-failure-run';
 
   try {
-    await writeFile(reportPath, JSON.stringify(createFailingSummary(), null, 2), 'utf-8');
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.json',
+      payload: createFailingSummary(),
+    });
 
     await assertValidateSmokeRejectsWithDiagnostic({
       envOverrides: {
@@ -74,7 +92,10 @@ test('validate-report-diagnostics-smoke emits failed-scenarios diagnostic when j
 
 test('validate-report-diagnostics-smoke fails when report file is missing', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.json');
+  const reportPath = buildMissingArtifactPath({
+    rootDirectory: tempDirectory,
+    relativePath: 'missing-report-diagnostics-smoke.json',
+  });
 
   try {
     await assert.rejects(
@@ -91,7 +112,10 @@ test('validate-report-diagnostics-smoke fails when report file is missing', asyn
 
 test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for missing summary when diagnostics are enabled', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.json');
+  const reportPath = buildMissingArtifactPath({
+    rootDirectory: tempDirectory,
+    relativePath: 'missing-report-diagnostics-smoke.json',
+  });
   const runId = 'validate-smoke-json-missing-summary-run';
 
   try {
@@ -114,7 +138,11 @@ test('validate-report-diagnostics-smoke fails on invalid json report payload', a
   const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
 
   try {
-    await writeFile(reportPath, '{"broken": ', 'utf-8');
+    await createTextArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.json',
+      contents: '{"broken": ',
+    });
     await assert.rejects(
       () =>
         runValidateReportDiagnosticsSmoke({
@@ -133,7 +161,11 @@ test('validate-report-diagnostics-smoke emits invalid-json diagnostic for invali
   const runId = 'validate-smoke-json-invalid-summary-run';
 
   try {
-    await writeFile(reportPath, '{"broken": ', 'utf-8');
+    await createTextArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.json',
+      contents: '{"broken": ',
+    });
 
     await assertValidateSmokeRejectsWithDiagnostic({
       envOverrides: {
@@ -154,7 +186,10 @@ test('validate-report-diagnostics-smoke fails on unreadable path errors', async 
   const reportDirectoryPath = path.join(tempDirectory, 'report-diagnostics-smoke-as-directory');
 
   try {
-    await mkdir(reportDirectoryPath, { recursive: true });
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke-as-directory',
+    });
     await assert.rejects(
       () =>
         runValidateReportDiagnosticsSmoke({
@@ -174,7 +209,10 @@ test('validate-report-diagnostics-smoke emits read-error diagnostic for unreadab
   const runId = 'validate-smoke-json-unreadable-summary-run';
 
   try {
-    await mkdir(reportDirectoryPath, { recursive: true });
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke-as-directory',
+    });
     await assertValidateSmokeRejectsWithDiagnostic({
       envOverrides: {
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportDirectoryPath,

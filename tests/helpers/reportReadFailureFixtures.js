@@ -32,3 +32,15 @@ export async function createTextArtifact({ rootDirectory, relativePath, contents
   await writeFile(artifactPath, contents, 'utf-8');
   return artifactPath;
 }
+
+export async function createJsonArtifact({
+  rootDirectory,
+  relativePath,
+  payload,
+}) {
+  return createTextArtifact({
+    rootDirectory,
+    relativePath,
+    contents: JSON.stringify(payload, null, 2),
+  });
+}

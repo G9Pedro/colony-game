@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
@@ -16,6 +16,12 @@ import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
+import {
+  buildMissingArtifactPath,
+  createJsonArtifact,
+  createTextArtifact,
+  createUnreadableArtifactPath,
+} from './helpers/reportReadFailureFixtures.js';
 
 const RUN_ID = 'diagnostic-contract-fixture-run';
 
@@ -31,8 +37,16 @@ test('diagnostics smoke validation script diagnostics follow contract fixture', 
       generatedAt: '2026-02-13T12:00:00.000Z',
       scenarioResults: [],
     });
-    await writeFile(outputPath, JSON.stringify(summary, null, 2), 'utf-8');
-    await writeFile(markdownOutputPath, buildDiagnosticsSmokeMarkdown(summary), 'utf-8');
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.json',
+      payload: summary,
+    });
+    await createTextArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.md',
+      contents: buildDiagnosticsSmokeMarkdown(summary),
+    });
 
     const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
@@ -57,7 +71,10 @@ test('diagnostics smoke validation script diagnostics follow contract fixture', 
 
 test('diagnostics smoke validation emits artifact-missing diagnostic for absent summary', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-missing-'));
-  const missingOutputPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.json');
+  const missingOutputPath = buildMissingArtifactPath({
+    rootDirectory: tempDirectory,
+    relativePath: 'missing-report-diagnostics-smoke.json',
+  });
   const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
 
   try {
@@ -90,15 +107,21 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
 
 test('diagnostics smoke validation emits read-error diagnostic for unreadable summary path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-read-error-'));
+  const unreadableSummaryPath = path.join(tempDirectory, 'report-diagnostics-smoke.unreadable.json');
   const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
 
   try {
+    await createUnreadableArtifactPath({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.unreadable.json',
+    });
+
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
       env: {
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
-        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: tempDirectory,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: unreadableSummaryPath,
       },
       assertion: (error) => {
         assertOutputHasReadFailureDiagnosticContract({
@@ -108,7 +131,7 @@ test('diagnostics smoke validation emits read-error diagnostic for unreadable su
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'diagnostics:smoke:validate',
           expectedRunId: RUN_ID,
-          expectedPath: tempDirectory,
+          expectedPath: unreadableSummaryPath,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
         });
@@ -132,7 +155,11 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
       generatedAt: '2026-02-13T12:00:00.000Z',
       scenarioResults: [],
     });
-    await writeFile(outputPath, JSON.stringify(summary, null, 2), 'utf-8');
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.json',
+      payload: summary,
+    });
 
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
@@ -175,8 +202,16 @@ test('diagnostics smoke validation emits invalid-payload diagnostic for invalid 
       generatedAt: '2026-02-13T12:00:00.000Z',
       scenarioResults: [],
     });
-    await writeFile(outputPath, JSON.stringify(summary, null, 2), 'utf-8');
-    await writeFile(markdownOutputPath, '# invalid markdown payload', 'utf-8');
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.json',
+      payload: summary,
+    });
+    await createTextArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'report-diagnostics-smoke.md',
+      contents: '# invalid markdown payload',
+    });
 
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
