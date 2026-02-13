@@ -17,6 +17,7 @@ import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
 const inputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
   'reports/scenario-tuning-baseline-suggestions.json';
+const enforceIntensityBaseline = process.env.SIM_SCENARIO_TUNING_ENFORCE_INTENSITY === '1';
 
 const { source, payload } = await loadJsonPayloadOrCompute({
   path: inputPath,
@@ -61,4 +62,8 @@ if (summary.changedTotalAbsDelta > 0) {
     });
   console.warn('Suggested total |delta| baseline snippet:');
   console.warn(payload.snippets?.scenarioTuningTotalAbsDeltaBaseline ?? '(snippet unavailable)');
+  if (enforceIntensityBaseline) {
+    console.error('Scenario tuning intensity baseline drift detected with strict enforcement enabled.');
+    process.exit(1);
+  }
 }

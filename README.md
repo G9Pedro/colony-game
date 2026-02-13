@@ -133,6 +133,9 @@ Enforce scenario tuning signature baseline consistency:
 npm run simulate:check:tuning-baseline
 ```
 
+Optional strict mode:
+- set `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1` to fail when total tuning intensity baselines drift (not just signature baselines).
+
 Generate scenario tuning baseline suggestions (JSON + Markdown):
 
 ```bash
