@@ -42,8 +42,8 @@ test('report diagnostics smoke script emits passing diagnostics summary report',
       assert.ok(scenario.diagnosticsCount > 0);
       assert.equal(scenario.errors.length, 0);
     });
-    assert.ok(summary.diagnosticsByCode['artifact-missing'] >= 1);
-    assert.ok(summary.diagnosticsByCode['baseline-signature-drift'] >= 1);
+    assert.ok(summary.diagnosticsByCode[REPORT_DIAGNOSTIC_CODES.artifactMissing] >= 1);
+    assert.ok(summary.diagnosticsByCode[REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift] >= 1);
 
     const markdown = await readFile(markdownOutputPath, 'utf-8');
     assert.match(markdown, /^# Report Diagnostics Smoke Summary/m);

@@ -4,7 +4,10 @@ import {
   buildDiagnosticsSmokeSummary,
   isValidDiagnosticsSmokeSummaryPayload,
 } from '../scripts/reportDiagnosticsSmokeSummary.js';
-import { buildReportDiagnostic } from '../scripts/reportDiagnostics.js';
+import {
+  buildReportDiagnostic,
+  REPORT_DIAGNOSTIC_CODES,
+} from '../scripts/reportDiagnostics.js';
 
 function buildScenarioResult({
   name,
@@ -37,7 +40,7 @@ test('buildDiagnosticsSmokeSummary computes aggregate counts and scenario rows',
       script: 'reports:validate',
       runId,
       level: 'error',
-      code: 'artifact-invalid-json',
+      code: REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
       message: 'Invalid JSON payload.',
       context: { artifactPath: 'reports/scenario-tuning-dashboard.json' },
     }),
@@ -46,7 +49,7 @@ test('buildDiagnosticsSmokeSummary computes aggregate counts and scenario rows',
       script: 'simulate:baseline:check',
       runId,
       level: 'error',
-      code: 'baseline-signature-drift',
+      code: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
       message: 'Baseline drift detected.',
       context: { changedSnapshotCount: 1 },
     }),
@@ -62,7 +65,7 @@ test('buildDiagnosticsSmokeSummary computes aggregate counts and scenario rows',
         expectedExitCode: 1,
         actualExitCode: 1,
         diagnostics: [diagnostics[0]],
-        observedCodes: ['artifact-invalid-json'],
+        observedCodes: [REPORT_DIAGNOSTIC_CODES.artifactInvalidJson],
         ok: true,
         errors: [],
       }),
@@ -72,7 +75,7 @@ test('buildDiagnosticsSmokeSummary computes aggregate counts and scenario rows',
         expectedExitCode: 1,
         actualExitCode: 1,
         diagnostics: [diagnostics[1]],
-        observedCodes: ['baseline-signature-drift'],
+        observedCodes: [REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift],
         ok: false,
         errors: ['Expected additional summary diagnostic code.'],
       }),
@@ -83,8 +86,8 @@ test('buildDiagnosticsSmokeSummary computes aggregate counts and scenario rows',
   assert.equal(summary.passedScenarioCount, 1);
   assert.equal(summary.failedScenarioCount, 1);
   assert.equal(summary.diagnosticsCount, 2);
-  assert.equal(summary.diagnosticsByCode['artifact-invalid-json'], 1);
-  assert.equal(summary.diagnosticsByCode['baseline-signature-drift'], 1);
+  assert.equal(summary.diagnosticsByCode[REPORT_DIAGNOSTIC_CODES.artifactInvalidJson], 1);
+  assert.equal(summary.diagnosticsByCode[REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift], 1);
   assert.equal(summary.diagnosticsByLevel.error, 2);
   assert.equal(summary.diagnosticsByScript['reports:validate'], 1);
   assert.equal(summary.diagnosticsByScript['simulate:baseline:check'], 1);
@@ -102,7 +105,7 @@ test('isValidDiagnosticsSmokeSummaryPayload rejects inconsistent counts', () => 
     script: 'simulate:check:tuning-baseline',
     runId,
     level: 'warn',
-    code: 'scenario-tuning-intensity-drift',
+    code: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDrift,
     message: 'Intensity drift detected.',
     context: { changedScenarios: ['frontier'] },
   });
@@ -117,7 +120,7 @@ test('isValidDiagnosticsSmokeSummaryPayload rejects inconsistent counts', () => 
         expectedExitCode: 0,
         actualExitCode: 0,
         diagnostics: [diagnostic],
-        observedCodes: ['scenario-tuning-intensity-drift'],
+        observedCodes: [REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDrift],
         ok: true,
         errors: [],
       }),
