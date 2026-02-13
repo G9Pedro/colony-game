@@ -65,6 +65,20 @@ button {
   transition: all 0.2s ease;
 }
 
+select {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: #0f172a;
+  color: var(--text);
+  padding: 0.42rem 0.55rem;
+  border-radius: 0.45rem;
+}
+
+.compact-label {
+  color: var(--muted);
+  font-size: 0.76rem;
+  align-self: center;
+}
+
 button:hover {
   border-color: var(--accent);
 }

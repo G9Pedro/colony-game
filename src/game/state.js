@@ -5,6 +5,7 @@ import {
   RESOURCE_KEYS,
 } from '../content/resources.js';
 import { BUILDING_DEFINITIONS, STARTING_BUILDINGS } from '../content/buildings.js';
+import { getScenarioDefinition } from '../content/scenarios.js';
 import { nextRandom, seedFromString } from './random.js';
 
 const NAMES = [
@@ -60,17 +61,19 @@ export const JOB_TYPES = [
   'laborer',
 ];
 
-export function createBaseResources() {
+export function createBaseResources(multipliers = {}) {
   return RESOURCE_KEYS.reduce((acc, key) => {
-    acc[key] = RESOURCE_DEFINITIONS[key].starting;
+    const multiplier = multipliers[key] ?? 1;
+    acc[key] = RESOURCE_DEFINITIONS[key].starting * multiplier;
     return acc;
   }, {});
 }
 
-export function createColonist(id, random = Math.random) {
+export function createColonist(id, random = Math.random, options = {}) {
   const name = NAMES[(id - 1) % NAMES.length];
   const trait = TRAITS[(id - 1) % TRAITS.length];
   const jobAffinity = JOB_TYPES[(id - 1) % (JOB_TYPES.length - 1)];
+  const startingMorale = options.startingMorale ?? 72;
 
   return {
     id: `colonist-${id}`,
@@ -92,7 +95,7 @@ export function createColonist(id, random = Math.random) {
       hunger: 100,
       rest: 100,
       health: 100,
-      morale: 72,
+      morale: startingMorale,
     },
     skills: {
       farmer: 1,
@@ -129,6 +132,7 @@ function createStartingBuildings(startId = 1) {
 
 export function createInitialState(options = {}) {
   const { buildings, nextEntityId } = createStartingBuildings();
+  const scenario = getScenarioDefinition(options.scenarioId);
   const seed = options.seed ?? 'colony-default';
   const state = {
     timeSeconds: 0,
@@ -139,7 +143,7 @@ export function createInitialState(options = {}) {
     status: 'playing',
     selectedBuildingType: null,
     selectedCategory: 'housing',
-    resources: createBaseResources(),
+    resources: createBaseResources(scenario.resourceMultipliers),
     colonists: [],
     buildings,
     constructionQueue: [],
@@ -157,14 +161,19 @@ export function createInitialState(options = {}) {
     lastAutoSaveAt: 0,
     maxWorldRadius: 27,
     rules: {
-      basePopulationCap: BASE_POPULATION_CAPACITY,
-      baseStorageCapacity: BASE_STORAGE_CAPACITY,
+      basePopulationCap: BASE_POPULATION_CAPACITY + scenario.ruleAdjustments.populationCap,
+      baseStorageCapacity: BASE_STORAGE_CAPACITY + scenario.ruleAdjustments.storageCap,
     },
+    scenarioId: scenario.id,
     rngSeed: seed,
     rngState: seedFromString(seed),
   };
 
-  state.colonists = Array.from({ length: 6 }, (_, index) => createColonist(index + 1, () => nextRandom(state)));
+  state.colonists = Array.from({ length: scenario.colonistCount }, (_, index) =>
+    createColonist(index + 1, () => nextRandom(state), {
+      startingMorale: scenario.startingMorale,
+    }),
+  );
   return state;
 }
 

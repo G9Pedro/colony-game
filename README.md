@@ -10,6 +10,8 @@ You build structures, manage colonists and resources, research technologies, and
 - **Colonist simulation** with jobs, movement, skills, and needs (hunger, rest, health, morale).
 - **Construction queue** with builder-driven progress.
 - **Research tree** with prerequisites and unlocks.
+- **Scenario presets**: Frontier, Prosperous, and Harsh start conditions.
+- **Deterministic seeded simulation** support for reproducible runs.
 - **Save/Load/Reset** controls backed by `localStorage`.
 - **3D rendering with Three.js**, plus an automatic 2D fallback when WebGL is unavailable.
 - **Responsive UI** that supports both desktop and touch interactions.
@@ -44,6 +46,11 @@ npm start
 
 Then open: `http://localhost:8000`
 
+Optional URL parameters:
+
+- `?scenario=frontier|prosperous|harsh`
+- `?seed=any-string-you-like`
+
 ## Test
 
 ```bash
@@ -55,6 +62,8 @@ Unit tests cover:
 - construction system
 - research system
 - colonist simulation behavior
+- scenario setup behavior
+- deterministic simulation behavior
 - state serialization validity
 
 ## Gameplay Notes

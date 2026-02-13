@@ -28,6 +28,7 @@ export class UIController {
     this.selectedBuildType = null;
 
     this.el = {
+      scenarioSelect: document.getElementById('scenario-select'),
       pauseBtn: document.getElementById('pause-btn'),
       speedButtons: [
         document.getElementById('speed-1-btn'),
@@ -58,6 +59,7 @@ export class UIController {
       onSave: () => {},
       onLoad: () => {},
       onReset: () => {},
+      onScenarioChange: () => {},
     };
     this.bindGlobalActions();
   }
@@ -77,6 +79,9 @@ export class UIController {
     this.el.saveBtn.addEventListener('click', () => this.callbacks.onSave());
     this.el.loadBtn.addEventListener('click', () => this.callbacks.onLoad());
     this.el.resetBtn.addEventListener('click', () => this.callbacks.onReset());
+    this.el.scenarioSelect.addEventListener('change', (event) =>
+      this.callbacks.onScenarioChange(event.target.value),
+    );
   }
 
   setPersistenceCallbacks(callbacks) {
@@ -88,6 +93,17 @@ export class UIController {
 
   setSelectedBuildType(buildingType) {
     this.selectedBuildType = buildingType;
+  }
+
+  setScenarioOptions(scenarios, currentScenarioId) {
+    this.el.scenarioSelect.innerHTML = '';
+    scenarios.forEach((scenario) => {
+      const option = document.createElement('option');
+      option.value = scenario.id;
+      option.textContent = scenario.name;
+      option.selected = scenario.id === currentScenarioId;
+      this.el.scenarioSelect.appendChild(option);
+    });
   }
 
   renderCategories(state) {
@@ -242,6 +258,7 @@ export class UIController {
       const speed = index === 0 ? 1 : index === 1 ? 2 : 4;
       button.classList.toggle('active', state.speed === speed);
     });
+    this.el.scenarioSelect.value = state.scenarioId;
 
     if (state.status === 'won') {
       this.showBanner('Victory! Colony Charter Achieved.');

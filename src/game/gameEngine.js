@@ -9,12 +9,15 @@ import { runEconomySystem } from '../systems/economySystem.js';
 import { runResearchSystem, startResearch } from '../systems/researchSystem.js';
 import { runOutcomeSystem } from '../systems/outcomeSystem.js';
 import { nextRandom, seedFromString } from './random.js';
+import { getScenarioDefinition } from '../content/scenarios.js';
 
 const HIRE_COST_FOOD = 20;
 
 export class GameEngine {
   constructor(initialStateOrOptions = {}) {
-    this.initialOptions = this.isStateLike(initialStateOrOptions) ? {} : initialStateOrOptions;
+    this.initialOptions = this.isStateLike(initialStateOrOptions)
+      ? { scenarioId: initialStateOrOptions.scenarioId ?? 'frontier' }
+      : { scenarioId: 'frontier', ...initialStateOrOptions };
     this.state = this.isStateLike(initialStateOrOptions)
       ? initialStateOrOptions
       : createInitialState(initialStateOrOptions);
@@ -51,6 +54,19 @@ export class GameEngine {
 
   setSelectedBuildingType(buildingType) {
     this.state.selectedBuildingType = buildingType;
+  }
+
+  setScenario(scenarioId) {
+    const scenario = getScenarioDefinition(scenarioId);
+    this.initialOptions = {
+      ...this.initialOptions,
+      scenarioId: scenario.id,
+    };
+    this.reset();
+    this.emit('scenario-change', {
+      kind: 'warn',
+      message: `Scenario switched to ${scenario.name}.`,
+    });
   }
 
   update(deltaSeconds) {
@@ -159,6 +175,9 @@ export class GameEngine {
   }
 
   loadState(nextState) {
+    if (typeof nextState.scenarioId !== 'string') {
+      nextState.scenarioId = 'frontier';
+    }
     if (typeof nextState.rngSeed !== 'string') {
       nextState.rngSeed = 'legacy-save';
     }
@@ -166,6 +185,11 @@ export class GameEngine {
       nextState.rngState = seedFromString(nextState.rngSeed);
     }
     this.state = nextState;
+    this.initialOptions = {
+      ...this.initialOptions,
+      scenarioId: nextState.scenarioId,
+      seed: nextState.rngSeed,
+    };
     this.accumulator = 0;
     this.emit('state-loaded', {
       kind: 'success',

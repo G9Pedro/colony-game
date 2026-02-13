@@ -1,4 +1,5 @@
 import { BUILDING_DEFINITIONS } from './content/buildings.js';
+import { SCENARIO_DEFINITIONS } from './content/scenarios.js';
 import { RESOURCE_DEFINITIONS } from './content/resources.js';
 import { RESEARCH_DEFINITIONS } from './content/research.js';
 import { GameEngine } from './game/gameEngine.js';
@@ -11,7 +12,11 @@ import { UIController } from './ui/uiController.js';
 
 const sceneRoot = document.getElementById('scene-root');
 const requestedSeed = new URLSearchParams(window.location.search).get('seed');
-const engine = new GameEngine(requestedSeed ? { seed: requestedSeed } : {});
+const requestedScenario = new URLSearchParams(window.location.search).get('scenario');
+const engine = new GameEngine({
+  ...(requestedSeed ? { seed: requestedSeed } : {}),
+  ...(requestedScenario ? { scenarioId: requestedScenario } : {}),
+});
 let usingFallbackRenderer = false;
 let renderer;
 try {
@@ -26,6 +31,7 @@ const ui = new UIController({
   researchDefinitions: RESEARCH_DEFINITIONS,
   resourceDefinitions: RESOURCE_DEFINITIONS,
 });
+ui.setScenarioOptions(Object.values(SCENARIO_DEFINITIONS), engine.state.scenarioId);
 
 const recentMessages = new Map();
 
@@ -50,6 +56,7 @@ engine.on('storage-overflow', notify);
 engine.on('game-over', notify);
 engine.on('game-reset', notify);
 engine.on('state-loaded', notify);
+engine.on('scenario-change', notify);
 
 ui.setPersistenceCallbacks({
   onSave: () => {
@@ -68,6 +75,10 @@ ui.setPersistenceCallbacks({
   onReset: () => {
     clearSavedGame();
     engine.reset();
+    ui.setSelectedBuildType(null);
+  },
+  onScenarioChange: (scenarioId) => {
+    engine.setScenario(scenarioId);
     ui.setSelectedBuildType(null);
   },
 });
