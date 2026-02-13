@@ -10,6 +10,24 @@ export const REPORT_ARTIFACT_TARGETS = [
   { path: 'reports/baseline-suggestions.json', kind: REPORT_KINDS.baselineSuggestions },
 ];
 
+const REPORT_ARTIFACT_REGEN_COMMANDS = {
+  'reports/scenario-tuning-validation.json': 'npm run simulate:validate:tuning',
+  'reports/scenario-tuning-dashboard.json': 'npm run simulate:report:tuning',
+  'reports/scenario-tuning-baseline-suggestions.json': 'npm run simulate:suggest:tuning-baseline',
+  'reports/baseline-suggestions.json': 'npm run simulate:baseline:suggest',
+};
+
+function escapeMarkdownTableValue(value) {
+  if (typeof value !== 'string') {
+    return value ?? '';
+  }
+  return value.replaceAll('|', '\\|');
+}
+
+export function getReportArtifactRegenerationCommand(path) {
+  return REPORT_ARTIFACT_REGEN_COMMANDS[path] ?? 'npm run verify';
+}
+
 export function evaluateReportArtifactEntries(entries) {
   const results = entries.map((entry) => {
     if (entry.errorType === 'invalid-json') {
@@ -78,8 +96,25 @@ export function buildReportArtifactsValidationMarkdown(report) {
 
   for (const result of report.results ?? []) {
     lines.push(
-      `| ${result.path} | ${result.kind} | ${result.status} | ${result.message ?? ''} |`,
+      `| ${escapeMarkdownTableValue(result.path)} | ${escapeMarkdownTableValue(result.kind)} | ${escapeMarkdownTableValue(result.status)} | ${escapeMarkdownTableValue(result.message ?? '')} |`,
     );
+  }
+
+  const failingResults = (report.results ?? []).filter((result) => !result.ok);
+  if (failingResults.length === 0) {
+    lines.push('', '## Remediation Hints', '', '- No remediation needed. All artifacts are valid.', '');
+    return `${lines.join('\n')}\n`;
+  }
+
+  lines.push('', '## Remediation Hints', '');
+  const seenPaths = new Set();
+  for (const result of failingResults) {
+    if (seenPaths.has(result.path)) {
+      continue;
+    }
+    seenPaths.add(result.path);
+    const command = getReportArtifactRegenerationCommand(result.path);
+    lines.push(`- ${result.path}: run \`${command}\` then re-run \`npm run reports:validate\`.`);
   }
 
   lines.push('');

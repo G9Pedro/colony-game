@@ -4,6 +4,7 @@ import { withReportMeta, REPORT_KINDS } from '../src/game/reportPayloadValidator
 import {
   buildReportArtifactsValidationMarkdown,
   evaluateReportArtifactEntries,
+  getReportArtifactRegenerationCommand,
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
 
@@ -82,4 +83,27 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
   assert.ok(markdown.includes('# Report Artifacts Validation'));
   assert.ok(markdown.includes('| reports/a.json | kind-a | ok |  |'));
   assert.ok(markdown.includes('| reports/b.json | kind-b | invalid | bad payload |'));
+  assert.ok(markdown.includes('## Remediation Hints'));
+  assert.ok(markdown.includes('npm run verify'));
+});
+
+test('buildReportArtifactsValidationMarkdown includes no-op remediation on pass', () => {
+  const markdown = buildReportArtifactsValidationMarkdown({
+    overallPassed: true,
+    totalChecked: 1,
+    failureCount: 0,
+    results: [{ path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null, ok: true }],
+  });
+  assert.ok(markdown.includes('No remediation needed. All artifacts are valid.'));
+});
+
+test('getReportArtifactRegenerationCommand returns specific command when available', () => {
+  assert.equal(
+    getReportArtifactRegenerationCommand('reports/baseline-suggestions.json'),
+    'npm run simulate:baseline:suggest',
+  );
+  assert.equal(
+    getReportArtifactRegenerationCommand('reports/unknown-report.json'),
+    'npm run verify',
+  );
 });
