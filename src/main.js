@@ -52,6 +52,7 @@ engine.on('colonist-hired', notify);
 engine.on('colonist-death', notify);
 engine.on('research-started', notify);
 engine.on('research-complete', notify);
+engine.on('objective-complete', notify);
 engine.on('storage-overflow', notify);
 engine.on('game-over', notify);
 engine.on('game-reset', notify);

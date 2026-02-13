@@ -153,6 +153,9 @@ export function createInitialState(options = {}) {
       current: null,
       progress: 0,
     },
+    objectives: {
+      completed: [],
+    },
     metrics: {
       starvationTicks: 0,
       lowMoraleTicks: 0,

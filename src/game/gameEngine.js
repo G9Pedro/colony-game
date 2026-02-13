@@ -7,6 +7,7 @@ import { runColonistSystem } from '../systems/colonistSystem.js';
 import { runConstructionSystem } from '../systems/constructionSystem.js';
 import { runEconomySystem } from '../systems/economySystem.js';
 import { runResearchSystem, startResearch } from '../systems/researchSystem.js';
+import { runObjectiveSystem } from '../systems/objectiveSystem.js';
 import { runOutcomeSystem } from '../systems/outcomeSystem.js';
 import { nextRandom, seedFromString } from './random.js';
 import { getScenarioDefinition } from '../content/scenarios.js';
@@ -95,6 +96,7 @@ export class GameEngine {
     runConstructionSystem(context);
     runEconomySystem(context);
     runResearchSystem(context);
+    runObjectiveSystem(context);
     runOutcomeSystem(context);
   }
 
@@ -175,6 +177,11 @@ export class GameEngine {
   }
 
   loadState(nextState) {
+    if (!nextState.objectives || !Array.isArray(nextState.objectives.completed)) {
+      nextState.objectives = {
+        completed: [],
+      };
+    }
     if (typeof nextState.scenarioId !== 'string') {
       nextState.scenarioId = 'frontier';
     }

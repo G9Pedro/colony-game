@@ -152,7 +152,8 @@ button:disabled {
 .research-list,
 .build-list,
 .construction-list,
-.colonist-list {
+.colonist-list,
+.objective-list {
   display: grid;
   gap: 0.45rem;
 }

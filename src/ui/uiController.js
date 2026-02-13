@@ -1,5 +1,6 @@
 import { BUILDING_CATEGORIES } from '../content/buildings.js';
 import { getAvailableResearch, getAverageMorale, getPopulationCapacity, getStorageCapacity, getUsedStorage, isBuildingUnlocked } from '../game/selectors.js';
+import { getObjectiveDefinitions } from '../systems/objectiveSystem.js';
 
 function formatCost(cost) {
   return Object.entries(cost)
@@ -49,6 +50,7 @@ export class UIController {
       buildList: document.getElementById('build-list'),
       researchCurrent: document.getElementById('research-current'),
       researchList: document.getElementById('research-list'),
+      objectivesList: document.getElementById('objectives-list'),
       constructionList: document.getElementById('construction-list'),
       colonistList: document.getElementById('colonist-list'),
       notifications: document.getElementById('notifications'),
@@ -205,6 +207,24 @@ export class UIController {
     }
   }
 
+  renderObjectives(state) {
+    this.el.objectivesList.innerHTML = '';
+    const objectives = getObjectiveDefinitions();
+    for (const objective of objectives) {
+      const completed = state.objectives.completed.includes(objective.id);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="kv"><strong>${objective.title}</strong><small>${completed ? 'Done' : 'Active'}</small></div>
+        <small>${objective.description}</small>
+      `;
+      if (completed) {
+        card.style.borderColor = 'rgba(34, 197, 94, 0.65)';
+      }
+      this.el.objectivesList.appendChild(card);
+    }
+  }
+
   renderConstructionQueue(state) {
     if (state.constructionQueue.length === 0) {
       this.el.constructionList.textContent = 'No active construction';
@@ -294,6 +314,7 @@ export class UIController {
     this.renderCategories(state);
     this.renderBuildList(state);
     this.renderResearch(state);
+    this.renderObjectives(state);
     this.renderConstructionQueue(state);
     this.renderColonists(state);
   }

@@ -10,6 +10,7 @@ You build structures, manage colonists and resources, research technologies, and
 - **Colonist simulation** with jobs, movement, skills, and needs (hunger, rest, health, morale).
 - **Construction queue** with builder-driven progress.
 - **Research tree** with prerequisites and unlocks.
+- **Objective tracker** with milestone progression guidance.
 - **Scenario presets**: Frontier, Prosperous, and Harsh start conditions.
 - **Deterministic seeded simulation** support for reproducible runs.
 - **Save/Load/Reset** controls backed by `localStorage`.
@@ -66,6 +67,7 @@ Unit tests cover:
 - deterministic simulation behavior
 - state serialization validity
 - scripted integration progression milestones
+- objective progression behavior
 
 Run a deterministic scenario simulation matrix from CLI:
 
