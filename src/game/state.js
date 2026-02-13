@@ -5,6 +5,7 @@ import {
   RESOURCE_KEYS,
 } from '../content/resources.js';
 import { BUILDING_DEFINITIONS, STARTING_BUILDINGS } from '../content/buildings.js';
+import { nextRandom, seedFromString } from './random.js';
 
 const NAMES = [
   'Aria',
@@ -66,7 +67,7 @@ export function createBaseResources() {
   }, {});
 }
 
-export function createColonist(id) {
+export function createColonist(id, random = Math.random) {
   const name = NAMES[(id - 1) % NAMES.length];
   const trait = TRAITS[(id - 1) % TRAITS.length];
   const jobAffinity = JOB_TYPES[(id - 1) % (JOB_TYPES.length - 1)];
@@ -82,10 +83,10 @@ export function createColonist(id) {
     task: 'Idle',
     assignedBuildingId: null,
     position: {
-      x: (Math.random() - 0.5) * 12,
-      z: (Math.random() - 0.5) * 12,
-      targetX: (Math.random() - 0.5) * 12,
-      targetZ: (Math.random() - 0.5) * 12,
+      x: (random() - 0.5) * 12,
+      z: (random() - 0.5) * 12,
+      targetX: (random() - 0.5) * 12,
+      targetZ: (random() - 0.5) * 12,
     },
     needs: {
       hunger: 100,
@@ -126,11 +127,10 @@ function createStartingBuildings(startId = 1) {
   return { buildings, nextEntityId: entityId };
 }
 
-export function createInitialState() {
+export function createInitialState(options = {}) {
   const { buildings, nextEntityId } = createStartingBuildings();
-  const colonists = Array.from({ length: 6 }, (_, index) => createColonist(index + 1));
-
-  return {
+  const seed = options.seed ?? 'colony-default';
+  const state = {
     timeSeconds: 0,
     tick: 0,
     day: 1,
@@ -140,7 +140,7 @@ export function createInitialState() {
     selectedBuildingType: null,
     selectedCategory: 'housing',
     resources: createBaseResources(),
-    colonists,
+    colonists: [],
     buildings,
     constructionQueue: [],
     nextEntityId,
@@ -160,7 +160,12 @@ export function createInitialState() {
       basePopulationCap: BASE_POPULATION_CAPACITY,
       baseStorageCapacity: BASE_STORAGE_CAPACITY,
     },
+    rngSeed: seed,
+    rngState: seedFromString(seed),
   };
+
+  state.colonists = Array.from({ length: 6 }, (_, index) => createColonist(index + 1, () => nextRandom(state)));
+  return state;
 }
 
 export function cloneState(state) {

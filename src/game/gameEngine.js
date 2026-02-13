@@ -8,15 +8,23 @@ import { runConstructionSystem } from '../systems/constructionSystem.js';
 import { runEconomySystem } from '../systems/economySystem.js';
 import { runResearchSystem, startResearch } from '../systems/researchSystem.js';
 import { runOutcomeSystem } from '../systems/outcomeSystem.js';
+import { nextRandom, seedFromString } from './random.js';
 
 const HIRE_COST_FOOD = 20;
 
 export class GameEngine {
-  constructor(initialState = createInitialState()) {
-    this.state = initialState;
+  constructor(initialStateOrOptions = {}) {
+    this.initialOptions = this.isStateLike(initialStateOrOptions) ? {} : initialStateOrOptions;
+    this.state = this.isStateLike(initialStateOrOptions)
+      ? initialStateOrOptions
+      : createInitialState(initialStateOrOptions);
     this.eventBus = new EventBus();
     this.fixedStep = 0.2;
     this.accumulator = 0;
+  }
+
+  isStateLike(value) {
+    return Boolean(value?.resources && value?.colonists && value?.buildings && value?.research);
   }
 
   on(eventName, handler) {
@@ -115,7 +123,7 @@ export class GameEngine {
 
     this.state.resources.food -= HIRE_COST_FOOD;
     const colonistId = this.state.nextEntityId++;
-    const colonist = createColonist(colonistId);
+    const colonist = createColonist(colonistId, () => nextRandom(this.state));
     this.state.colonists.push(colonist);
     this.emit('colonist-hired', {
       kind: 'success',
@@ -142,7 +150,7 @@ export class GameEngine {
   }
 
   reset() {
-    this.state = createInitialState();
+    this.state = createInitialState(this.initialOptions);
     this.accumulator = 0;
     this.emit('game-reset', {
       kind: 'warn',
@@ -151,6 +159,12 @@ export class GameEngine {
   }
 
   loadState(nextState) {
+    if (typeof nextState.rngSeed !== 'string') {
+      nextState.rngSeed = 'legacy-save';
+    }
+    if (typeof nextState.rngState !== 'number') {
+      nextState.rngState = seedFromString(nextState.rngSeed);
+    }
     this.state = nextState;
     this.accumulator = 0;
     this.emit('state-loaded', {

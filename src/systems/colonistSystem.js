@@ -1,5 +1,6 @@
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { getPopulationCapacity } from '../game/selectors.js';
+import { nextRandom } from '../game/random.js';
 
 function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
@@ -92,12 +93,12 @@ function updateColonistMovement(state, colonist, deltaSeconds) {
     ? state.buildings.find((building) => building.id === colonist.assignedBuildingId)
     : null;
 
-  if (assignedBuilding && Math.random() < 0.035) {
-    colonist.position.targetX = assignedBuilding.x + (Math.random() - 0.5) * 1.8;
-    colonist.position.targetZ = assignedBuilding.z + (Math.random() - 0.5) * 1.8;
-  } else if (!assignedBuilding && Math.random() < 0.02) {
-    colonist.position.targetX = (Math.random() - 0.5) * 20;
-    colonist.position.targetZ = (Math.random() - 0.5) * 20;
+  if (assignedBuilding && nextRandom(state) < 0.035) {
+    colonist.position.targetX = assignedBuilding.x + (nextRandom(state) - 0.5) * 1.8;
+    colonist.position.targetZ = assignedBuilding.z + (nextRandom(state) - 0.5) * 1.8;
+  } else if (!assignedBuilding && nextRandom(state) < 0.02) {
+    colonist.position.targetX = (nextRandom(state) - 0.5) * 20;
+    colonist.position.targetZ = (nextRandom(state) - 0.5) * 20;
   }
 
   const dx = colonist.position.targetX - colonist.position.x;

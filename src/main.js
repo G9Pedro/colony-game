@@ -10,7 +10,8 @@ import { isPlacementValid } from './systems/constructionSystem.js';
 import { UIController } from './ui/uiController.js';
 
 const sceneRoot = document.getElementById('scene-root');
-const engine = new GameEngine();
+const requestedSeed = new URLSearchParams(window.location.search).get('seed');
+const engine = new GameEngine(requestedSeed ? { seed: requestedSeed } : {});
 let usingFallbackRenderer = false;
 let renderer;
 try {
@@ -134,6 +135,10 @@ function gameLoop(timestamp) {
 
 ui.render(engine.state);
 notify({ kind: 'success', message: 'Colony simulation initialized.' });
+notify({
+  kind: 'warn',
+  message: `Simulation seed: ${engine.state.rngSeed}`,
+});
 if (usingFallbackRenderer) {
   notify({
     kind: 'warn',
