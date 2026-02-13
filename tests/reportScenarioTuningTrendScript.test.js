@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
+import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import {
   assertNodeDiagnosticsScriptOutputsReadFailureScenario,
 } from './helpers/reportReadFailureMatrixTestUtils.js';
@@ -58,7 +59,7 @@ test('trend script falls back to signature baseline when dashboard baseline is m
       payload.scenarioCount,
     );
     assert.match(stdout, /statuses=added:\d+,changed:\d+,removed:\d+,unchanged:\d+/);
-    assert.match(stdout, /code=artifact-missing/);
+    assert.match(stdout, new RegExp(`code=${REPORT_DIAGNOSTIC_CODES.artifactMissing}`));
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -256,7 +257,10 @@ test('trend script suggests baseline capture command when baseline payload is in
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
-    assert.match(stderr, /code=artifact-invalid-payload/);
+    assert.match(
+      stderr,
+      new RegExp(`code=${REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload}`),
+    );
     assert.equal(diagnostic.level, 'warn');
     assert.equal(diagnostic.context?.baselinePath, baselinePath);
   } finally {
@@ -295,7 +299,7 @@ test('trend script warns and falls back when baseline payload is invalid JSON', 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /invalid JSON/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
-    assert.match(stderr, /code=artifact-invalid-json/);
+    assert.match(stderr, new RegExp(`code=${REPORT_DIAGNOSTIC_CODES.artifactInvalidJson}`));
     assert.equal(diagnostic.level, 'warn');
     assert.equal(diagnostic.context?.baselinePath, baselinePath);
   } finally {
@@ -337,7 +341,7 @@ test('trend script warns and falls back when baseline path is unreadable as file
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /falling back to signature baseline/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
-    assert.match(stderr, /code=artifact-read-error/);
+    assert.match(stderr, new RegExp(`code=${REPORT_DIAGNOSTIC_CODES.artifactReadError}`));
     assert.equal(diagnostic.level, 'warn');
     assert.equal(diagnostic.context?.baselinePath, unreadableBaselinePath);
   } finally {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { REPORT_ARTIFACT_TARGETS } from '../src/game/reportArtifactsValidation.js';
 import {
@@ -41,8 +42,14 @@ test('validate-report-artifacts script emits validation report for invalid/missi
           error.stderr,
           /report artifact at "reports\/scenario-tuning-dashboard\.json" is not valid JSON/i,
         );
-        assert.match(error.stderr, /code=artifact-invalid-json/i);
-        assert.match(error.stderr, /code=artifact-read-error/i);
+        assert.match(
+          error.stderr,
+          new RegExp(`code=${REPORT_DIAGNOSTIC_CODES.artifactInvalidJson}`, 'i'),
+        );
+        assert.match(
+          error.stderr,
+          new RegExp(`code=${REPORT_DIAGNOSTIC_CODES.artifactReadError}`, 'i'),
+        );
         return true;
       },
     });
