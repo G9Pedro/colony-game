@@ -1,7 +1,6 @@
-import assert from 'node:assert/strict';
 import {
-  assertOutputHasReadFailureDiagnostic,
-  findDiagnosticByCodeFromOutput,
+  assertOutputHasDiagnostic,
+  assertOutputHasReadFailureDiagnosticContract,
 } from './reportDiagnosticsTestUtils.js';
 import {
   assertNodeDiagnosticsScriptRejects,
@@ -19,6 +18,7 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
   envOverrides,
   diagnosticCode,
   expectedRunId,
+  expectedLevel = undefined,
   expectedPath = undefined,
   expectedStatus = 'error',
   expectedErrorCode = undefined,
@@ -27,25 +27,29 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
     scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
     env: envOverrides,
     assertion: (error) => {
-      const diagnostic = findDiagnosticByCodeFromOutput(
-        { stdout: error.stdout, stderr: error.stderr },
-        diagnosticCode,
-      );
-      assert.equal(diagnostic.script, 'diagnostics:smoke:validate');
-      if (expectedRunId !== undefined) {
-        assert.equal(diagnostic.runId, expectedRunId);
-      }
       if (expectedPath !== undefined) {
-        assertOutputHasReadFailureDiagnostic({
+        assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
+          expectedCodes: [diagnosticCode],
           diagnosticCode,
           expectedScript: 'diagnostics:smoke:validate',
+          expectedRunId,
+          expectedLevel,
           expectedPath,
           expectedStatus,
           expectedErrorCode,
         });
+        return true;
       }
+      assertOutputHasDiagnostic({
+        stdout: error.stdout,
+        stderr: error.stderr,
+        diagnosticCode,
+        expectedScript: 'diagnostics:smoke:validate',
+        expectedRunId,
+        expectedLevel,
+      });
       return true;
     },
   });
