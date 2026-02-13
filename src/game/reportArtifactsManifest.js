@@ -37,6 +37,9 @@ const REPORT_ARTIFACT_TARGET_PATH_SET = new Set(REPORT_ARTIFACT_TARGETS.map((tar
 const REPORT_ARTIFACT_TARGET_DEFINITION_BY_PATH = new Map(
   REPORT_ARTIFACT_TARGET_DEFINITIONS.map((target) => [target.path, Object.freeze({ ...target })]),
 );
+const REPORT_ARTIFACT_TARGET_PATH_BY_KIND = new Map(
+  REPORT_ARTIFACT_TARGET_DEFINITIONS.map((target) => [target.kind, target.path]),
+);
 export const REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH = Object.freeze(
   [...REPORT_ARTIFACT_TARGETS].sort((left, right) => left.path.localeCompare(right.path)),
 );
@@ -47,6 +50,10 @@ export function isKnownReportArtifactTargetKind(kind) {
 
 export function isKnownReportArtifactTargetPath(path) {
   return REPORT_ARTIFACT_TARGET_PATH_SET.has(path);
+}
+
+export function getReportArtifactTargetPath(kind) {
+  return REPORT_ARTIFACT_TARGET_PATH_BY_KIND.get(kind) ?? null;
 }
 
 export function isValidReportArtifactTarget(path, kind) {

@@ -14,10 +14,20 @@ import {
   withReportMeta,
 } from '../src/game/reportPayloadValidators.js';
 import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
+import { getReportArtifactTargetPath } from '../src/game/reportArtifactsManifest.js';
 import {
   buildFailingReportArtifactResultOverride,
   buildReportArtifactsValidationPayloadFixture,
 } from './helpers/reportArtifactsValidationFixtures.js';
+
+function requireReportArtifactPath(kind) {
+  const path = getReportArtifactTargetPath(kind);
+  assert.notEqual(path, null);
+  return path;
+}
+
+const BASELINE_SUGGESTIONS_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.baselineSuggestions);
+const DASHBOARD_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.scenarioTuningDashboard);
 
 function buildValidBaselineSuggestionPayload(kind = REPORT_KINDS.baselineSuggestions) {
   const suggestedAggregateBounds = {
@@ -984,7 +994,7 @@ test('isValidReportArtifactsValidationPayload rejects inconsistent aggregate cou
 test('isValidReportArtifactsValidationPayload rejects result status/ok semantic mismatch', () => {
   const payload = buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      'reports/baseline-suggestions.json': {
+      [BASELINE_SUGGESTIONS_ARTIFACT_PATH]: {
         status: REPORT_ARTIFACT_STATUSES.error,
         ok: true,
       },
@@ -994,7 +1004,7 @@ test('isValidReportArtifactsValidationPayload rejects result status/ok semantic 
 });
 
 test('isValidReportArtifactsValidationPayload rejects recommended actions mismatched to failures', () => {
-  const failurePath = 'reports/scenario-tuning-dashboard.json';
+  const failurePath = DASHBOARD_ARTIFACT_PATH;
   const payload = buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
       [failurePath]: buildFailingReportArtifactResultOverride(failurePath, {
@@ -1011,7 +1021,7 @@ test('isValidReportArtifactsValidationPayload rejects recommended actions mismat
 test('isValidReportArtifactsValidationPayload rejects unknown result kinds', () => {
   const payload = buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      'reports/baseline-suggestions.json': { kind: 'unknown-kind' },
+      [BASELINE_SUGGESTIONS_ARTIFACT_PATH]: { kind: 'unknown-kind' },
     },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
@@ -1020,8 +1030,8 @@ test('isValidReportArtifactsValidationPayload rejects unknown result kinds', () 
 test('isValidReportArtifactsValidationPayload rejects duplicate result paths', () => {
   const payload = buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      'reports/scenario-tuning-dashboard.json': {
-        path: 'reports/baseline-suggestions.json',
+      [DASHBOARD_ARTIFACT_PATH]: {
+        path: BASELINE_SUGGESTIONS_ARTIFACT_PATH,
       },
     },
   });

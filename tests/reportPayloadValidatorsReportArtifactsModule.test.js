@@ -3,16 +3,26 @@ import assert from 'node:assert/strict';
 import { REPORT_KINDS } from '../src/game/reportPayloadMeta.js';
 import { isValidReportArtifactsValidationPayload } from '../src/game/reportPayloadValidatorsReportArtifacts.js';
 import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
+import { getReportArtifactTargetPath } from '../src/game/reportArtifactsManifest.js';
 import {
   buildFailingReportArtifactResultOverride,
   buildReportArtifactsValidationPayloadFixture,
 } from './helpers/reportArtifactsValidationFixtures.js';
 
+function requireReportArtifactPath(kind) {
+  const path = getReportArtifactTargetPath(kind);
+  assert.notEqual(path, null);
+  return path;
+}
+
+const TREND_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.scenarioTuningTrend);
+const DASHBOARD_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.scenarioTuningDashboard);
+const BASELINE_SUGGESTIONS_ARTIFACT_PATH = requireReportArtifactPath(REPORT_KINDS.baselineSuggestions);
+
 function buildReportArtifactsPayload() {
-  const invalidTargetPath = 'reports/scenario-tuning-trend.json';
   return buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      [invalidTargetPath]: buildFailingReportArtifactResultOverride(invalidTargetPath, {
+      [TREND_ARTIFACT_PATH]: buildFailingReportArtifactResultOverride(TREND_ARTIFACT_PATH, {
         status: REPORT_ARTIFACT_STATUSES.invalid,
         message: 'payload schema mismatch',
       }),
@@ -26,14 +36,14 @@ test('report artifacts module validator accepts compliant payload', () => {
 
 test('report artifacts module validator rejects action/result parity mismatch', () => {
   const payload = buildReportArtifactsPayload();
-  payload.recommendedActions[0].paths = ['reports/scenario-tuning-dashboard.json'];
+  payload.recommendedActions[0].paths = [DASHBOARD_ARTIFACT_PATH];
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('report artifacts module validator rejects unknown report kind rows', () => {
   const payload = buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      'reports/scenario-tuning-trend.json': { kind: 'unknown-kind' },
+      [TREND_ARTIFACT_PATH]: { kind: 'unknown-kind' },
     },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
@@ -42,7 +52,9 @@ test('report artifacts module validator rejects unknown report kind rows', () =>
 test('report artifacts module validator rejects known non-target report kind rows', () => {
   const payload = buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      'reports/scenario-tuning-trend.json': { kind: REPORT_KINDS.reportArtifactsValidation },
+      [TREND_ARTIFACT_PATH]: {
+        kind: REPORT_KINDS.reportArtifactsValidation,
+      },
     },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
@@ -51,7 +63,9 @@ test('report artifacts module validator rejects known non-target report kind row
 test('report artifacts module validator rejects known path with mismatched known kind', () => {
   const payload = buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      'reports/scenario-tuning-trend.json': { kind: REPORT_KINDS.scenarioTuningDashboard },
+      [TREND_ARTIFACT_PATH]: {
+        kind: REPORT_KINDS.scenarioTuningDashboard,
+      },
     },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
@@ -60,7 +74,7 @@ test('report artifacts module validator rejects known path with mismatched known
 test('report artifacts module validator rejects unknown path with known target kind', () => {
   const payload = buildReportArtifactsValidationPayloadFixture({
     resultOverridesByPath: {
-      'reports/scenario-tuning-trend.json': { path: 'reports/non-target.json' },
+      [TREND_ARTIFACT_PATH]: { path: 'reports/non-target.json' },
     },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
@@ -68,7 +82,7 @@ test('report artifacts module validator rejects unknown path with known target k
 
 test('report artifacts module validator rejects payload missing canonical targets', () => {
   const payload = buildReportArtifactsValidationPayloadFixture({
-    omittedPaths: ['reports/baseline-suggestions.json'],
+    omittedPaths: [BASELINE_SUGGESTIONS_ARTIFACT_PATH],
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { REPORT_KINDS } from '../src/game/reportPayloadMeta.js';
 import {
+  getReportArtifactTargetPath,
   getReportArtifactRegenerationCommand,
   hasExactReportArtifactTargets,
   isKnownReportArtifactTargetKind,
@@ -36,6 +37,14 @@ test('isKnownReportArtifactTargetKind allows only target kinds', () => {
 test('isKnownReportArtifactTargetPath allows only target paths', () => {
   assert.equal(isKnownReportArtifactTargetPath('reports/scenario-tuning-trend.json'), true);
   assert.equal(isKnownReportArtifactTargetPath('reports/unknown.json'), false);
+});
+
+test('getReportArtifactTargetPath resolves canonical path for known kind', () => {
+  assert.equal(
+    getReportArtifactTargetPath(REPORT_KINDS.scenarioTuningDashboard),
+    'reports/scenario-tuning-dashboard.json',
+  );
+  assert.equal(getReportArtifactTargetPath(REPORT_KINDS.reportArtifactsValidation), null);
 });
 
 test('isValidReportArtifactTarget validates path-kind pairs', () => {
