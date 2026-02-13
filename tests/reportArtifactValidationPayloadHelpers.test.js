@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   areRecommendedActionsEqual,
+  buildReportArtifactResultStatistics,
   buildReportArtifactStatusCounts,
   buildRecommendedActionsFromResults,
   computeReportArtifactStatusCounts,
@@ -123,6 +124,26 @@ test('getReportArtifactStatusCountsTotal sums canonical status counts', () => {
     }),
     10,
   );
+});
+
+test('buildReportArtifactResultStatistics summarizes counts and pass/fail totals', () => {
+  const summary = buildReportArtifactResultStatistics([
+    { ok: true, status: REPORT_ARTIFACT_STATUSES.ok },
+    { ok: false, status: REPORT_ARTIFACT_STATUSES.error },
+    { ok: false, status: REPORT_ARTIFACT_STATUSES.invalid },
+  ]);
+  assert.deepEqual(summary, {
+    totalChecked: 3,
+    failureCount: 2,
+    overallPassed: false,
+    statusCounts: {
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 1,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 1,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+    },
+    statusTotal: 3,
+  });
 });
 
 test('doReportArtifactStatusCountsMatch compares canonical keys', () => {

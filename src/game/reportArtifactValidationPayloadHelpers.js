@@ -73,6 +73,19 @@ export function getReportArtifactStatusCountsTotal(statusCounts = undefined) {
   return REPORT_ARTIFACT_STATUS_ORDER.reduce((sum, status) => sum + normalizedCounts[status], 0);
 }
 
+export function buildReportArtifactResultStatistics(results = undefined) {
+  const normalizedResults = Array.isArray(results) ? results : [];
+  const failureCount = normalizedResults.filter((result) => result?.ok === false).length;
+  const statusCounts = computeReportArtifactStatusCounts(normalizedResults);
+  return {
+    totalChecked: normalizedResults.length,
+    failureCount,
+    overallPassed: failureCount === 0,
+    statusCounts,
+    statusTotal: getReportArtifactStatusCountsTotal(statusCounts),
+  };
+}
+
 export function formatReportArtifactStatusCounts(statusCounts = undefined) {
   const normalizedCounts = normalizeReportArtifactStatusCounts(statusCounts);
   return REPORT_ARTIFACT_STATUS_ORDER.map((status) => `${status}=${normalizedCounts[status]}`).join(', ');

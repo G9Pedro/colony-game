@@ -2,8 +2,8 @@ import { REPORT_KINDS, REPORT_SCHEMA_VERSIONS, hasValidMeta } from './reportPayl
 import { isRecordOfNumbers } from './reportPayloadValidatorUtils.js';
 import {
   areRecommendedActionsEqual,
+  buildReportArtifactResultStatistics,
   buildRecommendedActionsFromResults,
-  computeReportArtifactStatusCounts,
   doReportArtifactStatusCountsMatch,
   getReportArtifactStatusCountsTotal,
   hasExpectedReportArtifactStatusKeys,
@@ -43,12 +43,13 @@ export function isValidReportArtifactsValidationPayload(payload) {
     (result, index) => index === 0 || results[index - 1].path.localeCompare(result.path) <= 0,
   );
 
-  const failureCount = results.filter((result) => !result.ok).length;
-  const computedStatusCounts = computeReportArtifactStatusCounts(results);
-  const computedStatusTotal = getReportArtifactStatusCountsTotal(computedStatusCounts);
+  const computedSummary = buildReportArtifactResultStatistics(results);
   const reportedStatusTotal = getReportArtifactStatusCountsTotal(payload.statusCounts);
   const hasExpectedStatusKeys = hasExpectedReportArtifactStatusKeys(payload.statusCounts);
-  const statusCountsMatch = doReportArtifactStatusCountsMatch(payload.statusCounts, computedStatusCounts);
+  const statusCountsMatch = doReportArtifactStatusCountsMatch(
+    payload.statusCounts,
+    computedSummary.statusCounts,
+  );
   const expectedRecommendedActions = buildRecommendedActionsFromResults(results);
   const recommendedActionsMatch = areRecommendedActionsEqual(
     payload.recommendedActions,
@@ -56,11 +57,11 @@ export function isValidReportArtifactsValidationPayload(payload) {
   );
 
   return Boolean(
-    payload.totalChecked === results.length &&
-      payload.failureCount === failureCount &&
-      payload.overallPassed === (failureCount === 0) &&
+    payload.totalChecked === computedSummary.totalChecked &&
+      payload.failureCount === computedSummary.failureCount &&
+      payload.overallPassed === computedSummary.overallPassed &&
       reportedStatusTotal === payload.totalChecked &&
-      computedStatusTotal === payload.totalChecked &&
+      computedSummary.statusTotal === payload.totalChecked &&
       hasExpectedStatusKeys &&
       statusCountsMatch &&
       hasKnownResultKinds &&
