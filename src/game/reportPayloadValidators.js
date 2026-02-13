@@ -21,10 +21,12 @@ function hasValidMeta(payload, expectedKind) {
 
   const version = REPORT_SCHEMA_VERSIONS[expectedKind];
   return (
+    typeof payload.generatedAt === 'string' &&
     payload.meta &&
     payload.meta.kind === expectedKind &&
     payload.meta.schemaVersion === version &&
-    typeof payload.meta.generatedAt === 'string'
+    typeof payload.meta.generatedAt === 'string' &&
+    payload.meta.generatedAt === payload.generatedAt
   );
 }
 
@@ -35,13 +37,13 @@ export function withReportMeta(kind, payload) {
 
   const generatedAt = new Date().toISOString();
   return {
+    ...(payload ?? {}),
     generatedAt,
     meta: {
       kind,
       schemaVersion: REPORT_SCHEMA_VERSIONS[kind],
       generatedAt,
     },
-    ...payload,
   };
 }
 

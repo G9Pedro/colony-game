@@ -19,7 +19,24 @@ test('withReportMeta stamps kind, schema version, and timestamps', () => {
   assert.equal(payload.meta.schemaVersion, REPORT_SCHEMA_VERSIONS[REPORT_KINDS.baselineSuggestions]);
   assert.equal(typeof payload.meta.generatedAt, 'string');
   assert.equal(typeof payload.generatedAt, 'string');
+  assert.equal(payload.meta.generatedAt, payload.generatedAt);
   assert.equal(payload.value, 1);
+});
+
+test('withReportMeta overwrites stale generatedAt/meta values from payload', () => {
+  const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
+    generatedAt: '1999-01-01T00:00:00.000Z',
+    meta: {
+      kind: 'wrong-kind',
+      schemaVersion: 999,
+      generatedAt: '1999-01-01T00:00:00.000Z',
+    },
+  });
+
+  assert.equal(payload.meta.kind, REPORT_KINDS.baselineSuggestions);
+  assert.equal(payload.meta.schemaVersion, REPORT_SCHEMA_VERSIONS[REPORT_KINDS.baselineSuggestions]);
+  assert.notEqual(payload.generatedAt, '1999-01-01T00:00:00.000Z');
+  assert.equal(payload.generatedAt, payload.meta.generatedAt);
 });
 
 test('isValidBaselineSuggestionPayload accepts fully shaped payload', () => {
@@ -44,6 +61,20 @@ test('isValidBaselineSuggestionPayload rejects missing metadata', () => {
       regressionSnapshots: 'y',
     },
   };
+  assert.equal(isValidBaselineSuggestionPayload(payload), false);
+});
+
+test('isValidBaselineSuggestionPayload rejects generatedAt mismatch between root/meta', () => {
+  const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
+    aggregateDelta: {},
+    snapshotDelta: [],
+    snippets: {
+      regressionBaseline: 'x',
+      regressionSnapshots: 'y',
+    },
+  });
+
+  payload.generatedAt = '1999-01-01T00:00:00.000Z';
   assert.equal(isValidBaselineSuggestionPayload(payload), false);
 });
 
