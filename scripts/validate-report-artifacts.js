@@ -5,7 +5,7 @@ import {
 } from '../src/game/reportArtifactsValidation.js';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import {
-  emitJsonDiagnostic,
+  createScriptDiagnosticEmitter,
   REPORT_DIAGNOSTIC_CODES,
 } from './reportDiagnostics.js';
 import {
@@ -24,6 +24,7 @@ const outputPath =
 const markdownOutputPath =
   process.env.REPORTS_VALIDATE_OUTPUT_MD_PATH ?? 'reports/report-artifacts-validation.md';
 const DIAGNOSTIC_SCRIPT = 'reports:validate';
+const emitDiagnostic = createScriptDiagnosticEmitter(DIAGNOSTIC_SCRIPT);
 
 const entries = [];
 for (const target of REPORT_ARTIFACT_TARGETS) {
@@ -55,10 +56,9 @@ report.results.forEach((result) => {
   const diagnosticCode = getReportArtifactStatusDiagnosticCode(result.status);
   const diagnosticSuffix = diagnosticCode ? ` (code=${diagnosticCode})` : '';
   console.error(`[${result.status}] ${result.path}: ${result.message}${diagnosticSuffix}`);
-  emitJsonDiagnostic({
+  emitDiagnostic({
     level: 'error',
     code: diagnosticCode ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
-    script: DIAGNOSTIC_SCRIPT,
     message: result.message,
     context: {
       path: result.path,

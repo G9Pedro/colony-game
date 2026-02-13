@@ -12,7 +12,7 @@ import {
   REPORT_KINDS,
 } from '../src/game/reportPayloadValidators.js';
 import {
-  emitJsonDiagnostic,
+  createScriptDiagnosticEmitter,
   REPORT_DIAGNOSTIC_CODES,
 } from './reportDiagnostics.js';
 import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
@@ -23,6 +23,7 @@ const inputPath =
   'reports/scenario-tuning-baseline-suggestions.json';
 const enforceIntensityBaseline = process.env.SIM_SCENARIO_TUNING_ENFORCE_INTENSITY === '1';
 const DIAGNOSTIC_SCRIPT = 'simulate:check:tuning-baseline';
+const emitDiagnostic = createScriptDiagnosticEmitter(DIAGNOSTIC_SCRIPT);
 
 const { source, payload } = await loadJsonPayloadOrCompute({
   path: inputPath,
@@ -45,10 +46,9 @@ const summary = getScenarioTuningBaselineChangeSummary(payload);
 console.log(
   `Scenario tuning baseline summary: changedSignatures=${summary.changedSignatures}, changedTotalAbsDelta=${summary.changedTotalAbsDelta}, source=${source}`,
 );
-emitJsonDiagnostic({
+emitDiagnostic({
   level: 'info',
   code: REPORT_DIAGNOSTIC_CODES.scenarioTuningBaselineSummary,
-  script: DIAGNOSTIC_SCRIPT,
   message: 'Scenario tuning baseline summary calculated.',
   context: {
     changedSignatures: summary.changedSignatures,
@@ -67,10 +67,9 @@ if (summary.hasChanges) {
   console.error('Suggested baseline snippet:');
   console.error(payload.snippets?.scenarioTuningBaseline ?? '(snippet unavailable)');
   console.error('Scenario tuning baseline drift detected. Re-baseline intentionally if expected.');
-  emitJsonDiagnostic({
+  emitDiagnostic({
     level: 'error',
     code: REPORT_DIAGNOSTIC_CODES.scenarioTuningSignatureDrift,
-    script: DIAGNOSTIC_SCRIPT,
     message: 'Scenario tuning signature baseline drift detected.',
     context: {
       changedSignatures: summary.changedSignatures,
@@ -90,10 +89,9 @@ if (summary.changedTotalAbsDelta > 0) {
     });
   console.warn('Suggested total |delta| baseline snippet:');
   console.warn(payload.snippets?.scenarioTuningTotalAbsDeltaBaseline ?? '(snippet unavailable)');
-  emitJsonDiagnostic({
+  emitDiagnostic({
     level: 'warn',
     code: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDrift,
-    script: DIAGNOSTIC_SCRIPT,
     message: 'Scenario tuning intensity baseline drift detected.',
     context: {
       changedTotalAbsDelta: summary.changedTotalAbsDelta,
@@ -103,10 +101,9 @@ if (summary.changedTotalAbsDelta > 0) {
   });
   if (enforceIntensityBaseline) {
     console.error('Scenario tuning intensity baseline drift detected with strict enforcement enabled.');
-    emitJsonDiagnostic({
+    emitDiagnostic({
       level: 'error',
       code: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDriftStrict,
-      script: DIAGNOSTIC_SCRIPT,
       message: 'Strict intensity baseline enforcement triggered failure.',
       context: {
         changedTotalAbsDelta: summary.changedTotalAbsDelta,
@@ -116,10 +113,9 @@ if (summary.changedTotalAbsDelta > 0) {
     process.exit(1);
   }
   console.warn(`Tip: run "${payload.strictIntensityCommand}" to enforce intensity drift as a hard failure.`);
-  emitJsonDiagnostic({
+  emitDiagnostic({
     level: 'warn',
     code: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityEnforcementTip,
-    script: DIAGNOSTIC_SCRIPT,
     message: 'Intensity drift tip emitted with strict enforcement command.',
     context: {
       command: payload.strictIntensityCommand,

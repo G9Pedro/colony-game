@@ -142,6 +142,29 @@ export function emitJsonDiagnostic({
   console.log(line);
 }
 
+export function createScriptDiagnosticEmitter(script, defaultRunId = undefined) {
+  if (typeof script !== 'string' || script.trim().length === 0) {
+    throw new TypeError('Script diagnostic emitter requires a non-empty script identifier.');
+  }
+
+  return function emitScriptDiagnostic({
+    level = 'info',
+    code,
+    message,
+    context = null,
+    runId = defaultRunId,
+  }) {
+    emitJsonDiagnostic({
+      level,
+      code,
+      message,
+      context,
+      script,
+      runId,
+    });
+  };
+}
+
 export function isValidReportDiagnosticPayload(payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     return false;

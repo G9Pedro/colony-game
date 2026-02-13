@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildReportDiagnostic,
+  createScriptDiagnosticEmitter,
   emitJsonDiagnostic,
   isJsonDiagnosticsEnabled,
   isKnownReportDiagnosticCode,
@@ -199,4 +200,26 @@ test('parseReportDiagnosticsFromText extracts and validates diagnostic lines', (
   const diagnostics = parseReportDiagnosticsFromText(text);
   assert.equal(diagnostics.length, 1);
   assert.equal(diagnostics[0].code, REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift);
+});
+
+test('createScriptDiagnosticEmitter enforces script and injects it in diagnostics', () => {
+  assert.throws(
+    () => createScriptDiagnosticEmitter(''),
+    /requires a non-empty script identifier/i,
+  );
+
+  withEnv('REPORT_DIAGNOSTICS_JSON', '1', () => {
+    captureConsole('error', (lines) => {
+      const emitScriptDiagnostic = createScriptDiagnosticEmitter('reports:validate');
+      emitScriptDiagnostic({
+        level: 'error',
+        code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+        message: 'read failed',
+      });
+      assert.equal(lines.length, 1);
+      const payload = JSON.parse(lines[0]);
+      assert.equal(payload.script, 'reports:validate');
+      assert.equal(payload.code, REPORT_DIAGNOSTIC_CODES.artifactReadError);
+    });
+  });
 });

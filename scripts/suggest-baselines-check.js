@@ -6,7 +6,7 @@ import {
 import { buildBaselineSuggestionPayloadFromSimulations } from './baselineSuggestionRuntime.js';
 import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
 import {
-  emitJsonDiagnostic,
+  createScriptDiagnosticEmitter,
   REPORT_DIAGNOSTIC_CODES,
 } from './reportDiagnostics.js';
 import { buildValidatedReportPayload } from './reportPayloadOutput.js';
@@ -15,6 +15,7 @@ const inputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-sug
 const driftRuns = Number(process.env.SIM_BASELINE_SUGGEST_RUNS ?? 8);
 const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
 const DIAGNOSTIC_SCRIPT = 'simulate:baseline:check';
+const emitDiagnostic = createScriptDiagnosticEmitter(DIAGNOSTIC_SCRIPT);
 
 const { source, payload } = await loadJsonPayloadOrCompute({
   path: inputPath,
@@ -36,10 +37,9 @@ const summary = getBaselineChangeSummary(payload);
 console.log(
   `Baseline change summary: aggregateChangedMetrics=${summary.aggregateChangedMetrics}, snapshotChangedKeys=${summary.snapshotChangedKeys}, source=${source}`,
 );
-emitJsonDiagnostic({
+emitDiagnostic({
   level: 'info',
   code: REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary,
-  script: DIAGNOSTIC_SCRIPT,
   message: 'Baseline suggestion check summary.',
   context: {
     aggregateChangedMetrics: summary.aggregateChangedMetrics,
@@ -50,10 +50,9 @@ emitJsonDiagnostic({
 
 if (summary.hasChanges) {
   const changedSnapshots = (payload.snapshotDelta ?? []).filter((item) => item.changed);
-  emitJsonDiagnostic({
+  emitDiagnostic({
     level: 'error',
     code: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
-    script: DIAGNOSTIC_SCRIPT,
     message: 'Baseline drift detected.',
     context: {
       aggregateChangedMetrics: summary.aggregateChangedMetrics,

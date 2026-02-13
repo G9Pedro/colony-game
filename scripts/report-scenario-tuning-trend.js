@@ -12,7 +12,7 @@ import {
   REPORT_KINDS,
 } from '../src/game/reportPayloadValidators.js';
 import {
-  emitJsonDiagnostic,
+  createScriptDiagnosticEmitter,
   REPORT_DIAGNOSTIC_CODES,
 } from './reportDiagnostics.js';
 import {
@@ -33,6 +33,7 @@ const baselineDashboardPath =
   process.env.SIM_SCENARIO_TUNING_TREND_BASELINE_PATH ?? 'reports/scenario-tuning-dashboard.baseline.json';
 const BASELINE_CAPTURE_COMMAND = 'npm run simulate:capture:tuning-dashboard-baseline';
 const DIAGNOSTIC_SCRIPT = 'simulate:report:tuning:trend';
+const emitDiagnostic = createScriptDiagnosticEmitter(DIAGNOSTIC_SCRIPT);
 
 const currentDashboard = buildScenarioTuningDashboard(SCENARIO_DEFINITIONS);
 
@@ -54,10 +55,9 @@ try {
     console.warn(
       `Baseline dashboard payload at ${baselineDashboardPath} is invalid (${baselineDashboardResult.message}; code=${diagnostic?.code ?? 'unknown'}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
-    emitJsonDiagnostic({
+    emitDiagnostic({
       level: 'warn',
       code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
-      script: DIAGNOSTIC_SCRIPT,
       message: 'Baseline dashboard payload is invalid; falling back to signature baseline.',
       context: {
         baselinePath: baselineDashboardPath,
@@ -70,10 +70,9 @@ try {
     console.log(
       `Baseline dashboard not found at ${baselineDashboardPath} (code=${diagnostic?.code ?? 'unknown'}); using signature baseline comparison. To create one, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
-    emitJsonDiagnostic({
+    emitDiagnostic({
       level: 'info',
       code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactMissing,
-      script: DIAGNOSTIC_SCRIPT,
       message: 'Baseline dashboard not found; using signature baseline comparison.',
       context: {
         baselinePath: baselineDashboardPath,
@@ -86,10 +85,9 @@ try {
     console.warn(
       `Unable to read baseline dashboard from ${baselineDashboardPath} (${label}; code=${diagnostic?.code ?? 'unknown'}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
-    emitJsonDiagnostic({
+    emitDiagnostic({
       level: 'warn',
       code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
-      script: DIAGNOSTIC_SCRIPT,
       message: 'Unable to read baseline dashboard; falling back to signature baseline.',
       context: {
         baselinePath: baselineDashboardPath,
@@ -102,10 +100,9 @@ try {
   console.warn(
     `Unexpected baseline dashboard handling failure (${error.message}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
   );
-  emitJsonDiagnostic({
+  emitDiagnostic({
     level: 'warn',
     code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-    script: DIAGNOSTIC_SCRIPT,
     message: 'Unexpected baseline dashboard handling failure; falling back to signature baseline.',
     context: {
       baselinePath: baselineDashboardPath,
