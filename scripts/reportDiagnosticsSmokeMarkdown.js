@@ -1,5 +1,14 @@
 import { isValidDiagnosticsSmokeSummaryPayload } from './reportDiagnosticsSmokeSummary.js';
 
+export const REPORT_DIAGNOSTICS_SMOKE_MARKDOWN_REQUIRED_SECTIONS = Object.freeze([
+  '# Report Diagnostics Smoke Summary',
+  '## Scenario results',
+  '## Diagnostic counts by code',
+  '## Diagnostic counts by level',
+  '## Diagnostic counts by script',
+  '## Failures',
+]);
+
 function sortRecordEntries(record) {
   return Object.entries(record).sort(([left], [right]) => left.localeCompare(right));
 }
@@ -83,16 +92,11 @@ export function isValidDiagnosticsSmokeMarkdown(markdownText, summaryPayload) {
   }
 
   const requiredSnippets = [
-    '# Report Diagnostics Smoke Summary',
+    ...REPORT_DIAGNOSTICS_SMOKE_MARKDOWN_REQUIRED_SECTIONS,
     `- run id: ${summaryPayload.runId}`,
     `- scenarios: ${summaryPayload.scenarioCount}`,
     `- passed: ${summaryPayload.passedScenarioCount}`,
     `- failed: ${summaryPayload.failedScenarioCount}`,
-    '## Scenario results',
-    '## Diagnostic counts by code',
-    '## Diagnostic counts by level',
-    '## Diagnostic counts by script',
-    '## Failures',
   ];
 
   return requiredSnippets.every((snippet) => markdownText.includes(snippet));
