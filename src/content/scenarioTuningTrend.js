@@ -114,6 +114,7 @@ export function buildScenarioTuningTrendMarkdown(report) {
     `- Comparison Source: ${report.comparisonSource}`,
     `- Baseline Reference: ${report.baselineReference ?? 'none'}`,
     `- Baseline Dashboard Available: ${report.hasBaselineDashboard ? 'yes' : 'no'}`,
+    `- Baseline Scenarios Available: ${report.baselineScenarioCount}`,
     `- Scenarios Compared: ${report.scenarioCount}`,
     `- Changed: ${report.changedCount}`,
     `- Unchanged: ${report.unchangedCount}`,

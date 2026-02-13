@@ -93,6 +93,7 @@ test('buildScenarioTuningTrendMarkdown renders changed table and no-change summa
 
   assert.ok(changedMarkdown.includes('# Scenario Tuning Trend'));
   assert.ok(changedMarkdown.includes('Baseline Dashboard Available: yes'));
+  assert.ok(changedMarkdown.includes('Baseline Scenarios Available: 2'));
   assert.ok(changedMarkdown.includes('| prosperous | changed | aaaa1111 → bbbb2222 | +4.50% |'));
 
   const noChangeMarkdown = buildScenarioTuningTrendMarkdown({
@@ -107,4 +108,5 @@ test('buildScenarioTuningTrendMarkdown renders changed table and no-change summa
     scenarios: [],
   });
   assert.ok(noChangeMarkdown.includes('No scenario tuning changes detected.'));
+  assert.ok(noChangeMarkdown.includes('Baseline Scenarios Available: 0'));
 });
