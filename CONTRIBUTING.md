@@ -33,6 +33,8 @@ Use this minimal flow before opening a PR:
 
 4. Open `.github/pull_request_template.md` and complete the checklist using the command outputs/artifacts.
 
+5. If you changed command/process docs, rerun `npm test` before pushing to keep the baseline green.
+
 ## Validation Commands
 
 - `npm test` — required baseline test suite.
