@@ -148,3 +148,45 @@ test('isValidDiagnosticsSmokeSummaryPayload rejects unknown top-level fields', (
     false,
   );
 });
+
+test('isValidDiagnosticsSmokeSummaryPayload rejects unknown diagnostics levels', () => {
+  const summary = buildDiagnosticsSmokeSummary({
+    runId: 'smoke-summary-invalid-level-run',
+    generatedAt: '2026-02-13T12:00:00.000Z',
+    scenarioResults: [],
+  });
+  const mutated = {
+    ...summary,
+    diagnosticsByLevel: {
+      debug: 1,
+    },
+    diagnosticsCount: 1,
+  };
+  assert.equal(isValidDiagnosticsSmokeSummaryPayload(mutated), false);
+});
+
+test('isValidDiagnosticsSmokeSummaryPayload rejects unknown scenario observed codes', () => {
+  const summary = buildDiagnosticsSmokeSummary({
+    runId: 'smoke-summary-invalid-observed-code-run',
+    generatedAt: '2026-02-13T12:00:00.000Z',
+    scenarioResults: [],
+  });
+  const mutated = {
+    ...summary,
+    scenarioCount: 1,
+    passedScenarioCount: 1,
+    scenarios: [
+      {
+        name: 'fake-scenario',
+        expectedScript: 'diagnostics:smoke',
+        expectedExitCode: 0,
+        actualExitCode: 0,
+        diagnosticsCount: 0,
+        observedCodes: ['non-existent-diagnostic-code'],
+        ok: true,
+        errors: [],
+      },
+    ],
+  };
+  assert.equal(isValidDiagnosticsSmokeSummaryPayload(mutated), false);
+});

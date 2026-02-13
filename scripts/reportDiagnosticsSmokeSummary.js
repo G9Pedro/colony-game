@@ -1,3 +1,8 @@
+import {
+  isKnownReportDiagnosticCode,
+  REPORT_DIAGNOSTIC_LEVELS,
+} from './reportDiagnostics.js';
+
 export const REPORT_DIAGNOSTICS_SMOKE_SUMMARY_TYPE = 'report-diagnostics-smoke-summary';
 export const REPORT_DIAGNOSTICS_SMOKE_SCHEMA_VERSION = 1;
 export const REPORT_DIAGNOSTICS_SMOKE_SUMMARY_FIELDS = Object.freeze([
@@ -69,6 +74,10 @@ function isIntegerRecord(record) {
     Object.keys(record).every((key) => isNonEmptyString(key)) &&
     Object.values(record).every((value) => isNonNegativeInteger(value))
   );
+}
+
+function hasOnlyKnownDiagnosticLevels(record) {
+  return Object.keys(record).every((key) => REPORT_DIAGNOSTIC_LEVELS.includes(key));
 }
 
 function isSortedUniqueStringArray(values) {
@@ -174,6 +183,9 @@ export function isValidDiagnosticsSmokeSummaryPayload(payload) {
   if (!isIntegerRecord(payload.diagnosticsByLevel)) {
     return false;
   }
+  if (!hasOnlyKnownDiagnosticLevels(payload.diagnosticsByLevel)) {
+    return false;
+  }
   if (!isIntegerRecord(payload.diagnosticsByScript)) {
     return false;
   }
@@ -217,6 +229,9 @@ export function isValidDiagnosticsSmokeSummaryPayload(payload) {
       return false;
     }
     if (!isSortedUniqueStringArray(scenario.observedCodes)) {
+      return false;
+    }
+    if (!scenario.observedCodes.every((code) => isKnownReportDiagnosticCode(code))) {
       return false;
     }
     if (typeof scenario.ok !== 'boolean') {
