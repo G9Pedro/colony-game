@@ -7,7 +7,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { REPORT_ARTIFACT_TARGETS } from '../src/game/reportArtifactsValidation.js';
-import { collectReportDiagnostics } from './helpers/reportDiagnosticsTestUtils.js';
+import { findDiagnosticByCodeFromOutput } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -102,12 +102,10 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
           },
         }),
       (error) => {
-        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
-        assert.ok(diagnostics.length > 0);
-        const invalidJsonDiagnostic = diagnostics.find(
-          (diagnostic) => diagnostic.code === 'artifact-invalid-json',
+        const invalidJsonDiagnostic = findDiagnosticByCodeFromOutput(
+          { stdout: error.stdout, stderr: error.stderr },
+          'artifact-invalid-json',
         );
-        assert.ok(invalidJsonDiagnostic);
         assert.equal(invalidJsonDiagnostic.level, 'error');
         assert.equal(invalidJsonDiagnostic.script, 'reports:validate');
         assert.equal(

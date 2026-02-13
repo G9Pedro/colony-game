@@ -6,7 +6,10 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
-import { collectReportDiagnostics } from './helpers/reportDiagnosticsTestUtils.js';
+import {
+  assertReadFailureDiagnosticContext,
+  findDiagnosticByCodeFromOutput,
+} from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -75,14 +78,20 @@ test('trend script emits JSON diagnostics when enabled', async () => {
     });
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
-    const diagnostics = collectReportDiagnostics(stdout, '');
-    assert.ok(diagnostics.length > 0);
-    const diagnostic = diagnostics[0];
+    const diagnostic = findDiagnosticByCodeFromOutput(
+      { stdout },
+      'artifact-missing',
+    );
     assert.equal(diagnostic.level, 'info');
     assert.equal(diagnostic.code, 'artifact-missing');
     assert.equal(diagnostic.script, 'simulate:report:tuning:trend');
     assert.equal(diagnostic.context?.baselinePath, missingBaselinePath);
-    assert.equal(diagnostic.context?.status, 'missing');
+    assertReadFailureDiagnosticContext({
+      diagnostic,
+      expectedPath: missingBaselinePath,
+      expectedStatus: 'missing',
+      expectedErrorCode: 'ENOENT',
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

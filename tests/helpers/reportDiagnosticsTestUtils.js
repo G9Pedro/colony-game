@@ -52,6 +52,10 @@ export function getDiagnosticByCodeFromOutput({ stdout = '', stderr = '' }, code
   return getDiagnosticByCode(collectReportDiagnostics(stdout, stderr), code);
 }
 
+export function findDiagnosticByCodeFromOutput({ stdout = '', stderr = '' }, code) {
+  return findDiagnosticByCode(collectReportDiagnostics(stdout, stderr), code);
+}
+
 export function assertReadFailureDiagnosticContext({
   diagnostic,
   expectedPath,
