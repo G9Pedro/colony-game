@@ -1,5 +1,5 @@
 import { isValidDiagnosticsSmokeSummaryPayload } from './reportDiagnosticsSmokeSummary.js';
-import { readJsonArtifact } from './reportPayloadInput.js';
+import { getReadArtifactDiagnosticCode, readJsonArtifact } from './reportPayloadInput.js';
 import { createScriptDiagnosticEmitter, REPORT_DIAGNOSTIC_CODES } from './reportDiagnostics.js';
 
 const outputPath =
@@ -20,11 +20,7 @@ async function main() {
   const readResult = await readJsonArtifact(outputPath);
   if (!readResult.ok) {
     const diagnosticCode =
-      readResult.status === 'missing'
-        ? REPORT_DIAGNOSTIC_CODES.artifactMissing
-        : readResult.status === 'invalid-json'
-          ? REPORT_DIAGNOSTIC_CODES.artifactInvalidJson
-          : REPORT_DIAGNOSTIC_CODES.artifactReadError;
+      getReadArtifactDiagnosticCode(readResult) ?? REPORT_DIAGNOSTIC_CODES.artifactReadError;
     emitDiagnostic({
       level: 'error',
       code: diagnosticCode,
