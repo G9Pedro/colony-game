@@ -39,6 +39,18 @@ function isRecordOfNumbers(value) {
   return Object.values(value).every((entry) => Number.isInteger(entry) && entry >= 0);
 }
 
+function isPlainRecord(value) {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function isNullableString(value) {
+  return value === null || typeof value === 'string';
+}
+
+function isNullableFiniteNumber(value) {
+  return value === null || Number.isFinite(value);
+}
+
 function isValidRecommendedActions(value) {
   if (!Array.isArray(value)) {
     return false;
@@ -83,16 +95,70 @@ export function isValidBaselineSuggestionPayload(payload) {
   );
 }
 
-export function isValidScenarioTuningSuggestionPayload(payload) {
+function isValidScenarioTuningSignatureResultEntry(entry) {
   return Boolean(
-    hasValidMeta(payload, REPORT_KINDS.scenarioTuningBaselineSuggestions) &&
-      Array.isArray(payload.results) &&
-      Array.isArray(payload.intensityResults) &&
-      typeof payload.strictIntensityRecommended === 'boolean' &&
-      typeof payload.strictIntensityCommand === 'string' &&
-      payload.snippets &&
-      typeof payload.snippets.scenarioTuningBaseline === 'string' &&
-      typeof payload.snippets.scenarioTuningTotalAbsDeltaBaseline === 'string',
+    entry &&
+      typeof entry === 'object' &&
+      typeof entry.scenarioId === 'string' &&
+      isNullableString(entry.currentSignature) &&
+      isNullableString(entry.expectedSignature) &&
+      typeof entry.changed === 'boolean' &&
+      isNullableString(entry.message) &&
+      ((entry.changed && typeof entry.message === 'string') || (!entry.changed && entry.message === null)),
+  );
+}
+
+function isValidScenarioTuningIntensityResultEntry(entry) {
+  return Boolean(
+    entry &&
+      typeof entry === 'object' &&
+      typeof entry.scenarioId === 'string' &&
+      isNullableFiniteNumber(entry.currentTotalAbsDeltaPercent) &&
+      isNullableFiniteNumber(entry.expectedTotalAbsDeltaPercent) &&
+      typeof entry.changed === 'boolean' &&
+      isNullableString(entry.message) &&
+      ((entry.changed && typeof entry.message === 'string') || (!entry.changed && entry.message === null)),
+  );
+}
+
+export function isValidScenarioTuningSuggestionPayload(payload) {
+  if (
+    !Boolean(
+      hasValidMeta(payload, REPORT_KINDS.scenarioTuningBaselineSuggestions) &&
+        isNonNegativeInteger(payload.changedCount) &&
+        isNonNegativeInteger(payload.intensityChangedCount) &&
+        typeof payload.overallPassed === 'boolean' &&
+        Array.isArray(payload.results) &&
+        Array.isArray(payload.intensityResults) &&
+        isPlainRecord(payload.currentSignatures) &&
+        isPlainRecord(payload.expectedSignatures) &&
+        isPlainRecord(payload.currentTotalAbsDelta) &&
+        isPlainRecord(payload.expectedTotalAbsDelta) &&
+        typeof payload.strictIntensityRecommended === 'boolean' &&
+        typeof payload.strictIntensityCommand === 'string' &&
+        payload.strictIntensityCommand.length > 0 &&
+        payload.snippets &&
+        typeof payload.snippets.scenarioTuningBaseline === 'string' &&
+        typeof payload.snippets.scenarioTuningTotalAbsDeltaBaseline === 'string',
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    !payload.results.every(isValidScenarioTuningSignatureResultEntry) ||
+    !payload.intensityResults.every(isValidScenarioTuningIntensityResultEntry)
+  ) {
+    return false;
+  }
+
+  const changedCount = payload.results.filter((result) => result.changed).length;
+  const intensityChangedCount = payload.intensityResults.filter((result) => result.changed).length;
+  return Boolean(
+    payload.changedCount === changedCount &&
+      payload.intensityChangedCount === intensityChangedCount &&
+      payload.overallPassed === (changedCount === 0 && intensityChangedCount === 0) &&
+      payload.strictIntensityRecommended === (intensityChangedCount > 0),
   );
 }
 

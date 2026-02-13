@@ -81,8 +81,31 @@ test('isValidBaselineSuggestionPayload rejects generatedAt mismatch between root
 
 test('isValidScenarioTuningSuggestionPayload accepts fully shaped payload', () => {
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
-    results: [],
-    intensityResults: [],
+    overallPassed: true,
+    changedCount: 0,
+    intensityChangedCount: 0,
+    currentSignatures: {},
+    expectedSignatures: {},
+    currentTotalAbsDelta: {},
+    expectedTotalAbsDelta: {},
+    results: [
+      {
+        scenarioId: 'frontier',
+        currentSignature: 'aaaa1111',
+        expectedSignature: 'aaaa1111',
+        changed: false,
+        message: null,
+      },
+    ],
+    intensityResults: [
+      {
+        scenarioId: 'frontier',
+        currentTotalAbsDeltaPercent: 0,
+        expectedTotalAbsDeltaPercent: 0,
+        changed: false,
+        message: null,
+      },
+    ],
     strictIntensityRecommended: false,
     strictIntensityCommand:
       'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
@@ -97,6 +120,13 @@ test('isValidScenarioTuningSuggestionPayload accepts fully shaped payload', () =
 
 test('isValidScenarioTuningSuggestionPayload rejects wrong report kind', () => {
   const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
+    overallPassed: true,
+    changedCount: 0,
+    intensityChangedCount: 0,
+    currentSignatures: {},
+    expectedSignatures: {},
+    currentTotalAbsDelta: {},
+    expectedTotalAbsDelta: {},
     results: [],
     intensityResults: [],
     strictIntensityRecommended: false,
@@ -113,8 +143,46 @@ test('isValidScenarioTuningSuggestionPayload rejects wrong report kind', () => {
 
 test('isValidScenarioTuningSuggestionPayload rejects missing strict enforcement fields', () => {
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
+    overallPassed: true,
+    changedCount: 0,
+    intensityChangedCount: 0,
+    currentSignatures: {},
+    expectedSignatures: {},
+    currentTotalAbsDelta: {},
+    expectedTotalAbsDelta: {},
     results: [],
     intensityResults: [],
+    snippets: {
+      scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};',
+      scenarioTuningTotalAbsDeltaBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {};',
+    },
+  });
+  assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
+});
+
+test('isValidScenarioTuningSuggestionPayload rejects inconsistent changed counters', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
+    overallPassed: true,
+    changedCount: 0,
+    intensityChangedCount: 0,
+    currentSignatures: {},
+    expectedSignatures: {},
+    currentTotalAbsDelta: {},
+    expectedTotalAbsDelta: {},
+    results: [
+      {
+        scenarioId: 'frontier',
+        currentSignature: 'aaaa1111',
+        expectedSignature: 'bbbb2222',
+        changed: true,
+        message: 'expected bbbb2222 but got aaaa1111',
+      },
+    ],
+    intensityResults: [],
+    strictIntensityRecommended: false,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
     snippets: {
       scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};',
       scenarioTuningTotalAbsDeltaBaseline:
