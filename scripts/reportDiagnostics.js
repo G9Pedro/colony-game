@@ -27,7 +27,11 @@ export const REPORT_DIAGNOSTIC_CODES = Object.freeze({
   baselineSignatureDrift: 'baseline-signature-drift',
 });
 
-const REPORT_DIAGNOSTIC_CODE_SET = new Set(Object.values(REPORT_DIAGNOSTIC_CODES));
+export const REPORT_DIAGNOSTIC_CODE_VALUES = Object.freeze(
+  Object.values(REPORT_DIAGNOSTIC_CODES),
+);
+
+const REPORT_DIAGNOSTIC_CODE_SET = new Set(REPORT_DIAGNOSTIC_CODE_VALUES);
 const REPORT_DIAGNOSTIC_FIELD_SET = new Set(REPORT_DIAGNOSTIC_FIELDS);
 
 export function isJsonDiagnosticsEnabled() {
@@ -36,6 +40,10 @@ export function isJsonDiagnosticsEnabled() {
 
 export function isKnownReportDiagnosticCode(code) {
   return typeof code === 'string' && REPORT_DIAGNOSTIC_CODE_SET.has(code);
+}
+
+export function getSortedReportDiagnosticCodes() {
+  return [...REPORT_DIAGNOSTIC_CODE_VALUES].sort((left, right) => left.localeCompare(right));
 }
 
 export function buildReportDiagnostic({
