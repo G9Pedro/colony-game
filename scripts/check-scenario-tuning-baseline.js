@@ -11,6 +11,7 @@ import {
   isValidScenarioTuningSuggestionPayload,
   REPORT_KINDS,
 } from '../src/game/reportPayloadValidators.js';
+import { emitJsonDiagnostic } from './reportDiagnostics.js';
 import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
 import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 
@@ -40,6 +41,17 @@ const summary = getScenarioTuningBaselineChangeSummary(payload);
 console.log(
   `Scenario tuning baseline summary: changedSignatures=${summary.changedSignatures}, changedTotalAbsDelta=${summary.changedTotalAbsDelta}, source=${source}`,
 );
+emitJsonDiagnostic({
+  level: 'info',
+  code: 'scenario-tuning-baseline-summary',
+  message: 'Scenario tuning baseline summary calculated.',
+  context: {
+    changedSignatures: summary.changedSignatures,
+    changedTotalAbsDelta: summary.changedTotalAbsDelta,
+    source,
+    strictIntensity: enforceIntensityBaseline,
+  },
+});
 
 if (summary.hasChanges) {
   payload.results
@@ -50,6 +62,15 @@ if (summary.hasChanges) {
   console.error('Suggested baseline snippet:');
   console.error(payload.snippets?.scenarioTuningBaseline ?? '(snippet unavailable)');
   console.error('Scenario tuning baseline drift detected. Re-baseline intentionally if expected.');
+  emitJsonDiagnostic({
+    level: 'error',
+    code: 'scenario-tuning-signature-drift',
+    message: 'Scenario tuning signature baseline drift detected.',
+    context: {
+      changedSignatures: summary.changedSignatures,
+      source,
+    },
+  });
   process.exit(1);
 }
 
@@ -63,9 +84,37 @@ if (summary.changedTotalAbsDelta > 0) {
     });
   console.warn('Suggested total |delta| baseline snippet:');
   console.warn(payload.snippets?.scenarioTuningTotalAbsDeltaBaseline ?? '(snippet unavailable)');
+  emitJsonDiagnostic({
+    level: 'warn',
+    code: 'scenario-tuning-intensity-drift',
+    message: 'Scenario tuning intensity baseline drift detected.',
+    context: {
+      changedTotalAbsDelta: summary.changedTotalAbsDelta,
+      strictIntensity: enforceIntensityBaseline,
+      source,
+    },
+  });
   if (enforceIntensityBaseline) {
     console.error('Scenario tuning intensity baseline drift detected with strict enforcement enabled.');
+    emitJsonDiagnostic({
+      level: 'error',
+      code: 'scenario-tuning-intensity-drift-strict',
+      message: 'Strict intensity baseline enforcement triggered failure.',
+      context: {
+        changedTotalAbsDelta: summary.changedTotalAbsDelta,
+        source,
+      },
+    });
     process.exit(1);
   }
   console.warn(`Tip: run "${payload.strictIntensityCommand}" to enforce intensity drift as a hard failure.`);
+  emitJsonDiagnostic({
+    level: 'warn',
+    code: 'scenario-tuning-intensity-enforcement-tip',
+    message: 'Intensity drift tip emitted with strict enforcement command.',
+    context: {
+      command: payload.strictIntensityCommand,
+      source,
+    },
+  });
 }

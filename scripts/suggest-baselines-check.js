@@ -5,6 +5,7 @@ import {
 } from '../src/game/reportPayloadValidators.js';
 import { buildBaselineSuggestionPayloadFromSimulations } from './baselineSuggestionRuntime.js';
 import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
+import { emitJsonDiagnostic } from './reportDiagnostics.js';
 import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 
 const inputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-suggestions.json';
@@ -31,9 +32,30 @@ const summary = getBaselineChangeSummary(payload);
 console.log(
   `Baseline change summary: aggregateChangedMetrics=${summary.aggregateChangedMetrics}, snapshotChangedKeys=${summary.snapshotChangedKeys}, source=${source}`,
 );
+emitJsonDiagnostic({
+  level: 'info',
+  code: 'baseline-suggestion-summary',
+  message: 'Baseline suggestion check summary.',
+  context: {
+    aggregateChangedMetrics: summary.aggregateChangedMetrics,
+    snapshotChangedKeys: summary.snapshotChangedKeys,
+    source,
+  },
+});
 
 if (summary.hasChanges) {
   const changedSnapshots = (payload.snapshotDelta ?? []).filter((item) => item.changed);
+  emitJsonDiagnostic({
+    level: 'error',
+    code: 'baseline-signature-drift',
+    message: 'Baseline drift detected.',
+    context: {
+      aggregateChangedMetrics: summary.aggregateChangedMetrics,
+      snapshotChangedKeys: summary.snapshotChangedKeys,
+      changedSnapshotKeys: changedSnapshots.map((item) => item.key),
+      source,
+    },
+  });
   if (changedSnapshots.length > 0) {
     changedSnapshots.forEach((item) => {
       console.error(`- Snapshot ${item.key}: ${item.from ?? 'null'} -> ${item.to ?? 'null'}`);
