@@ -109,6 +109,12 @@ test('isValidBaselineSuggestionPayload rejects snapshot delta mismatch against s
   assert.equal(isValidBaselineSuggestionPayload(payload), false);
 });
 
+test('isValidBaselineSuggestionPayload rejects aggregate delta mismatch against bounds maps', () => {
+  const payload = buildValidBaselineSuggestionPayload();
+  payload.aggregateDelta.frontier.alivePopulationMean.minDelta = 0.2;
+  assert.equal(isValidBaselineSuggestionPayload(payload), false);
+});
+
 test('isValidScenarioTuningSuggestionPayload accepts fully shaped payload', () => {
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
     overallPassed: true,

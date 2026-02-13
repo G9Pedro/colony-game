@@ -55,6 +55,10 @@ function roundToTwo(value) {
   return Number(value.toFixed(2));
 }
 
+function roundToFour(value) {
+  return Number(value.toFixed(4));
+}
+
 function isRecordOfNullableStrings(value) {
   if (!isPlainRecord(value)) {
     return false;
@@ -66,12 +70,23 @@ function isValidBoundsEntry(value) {
   return Boolean(
     isPlainRecord(value) &&
       Number.isFinite(value.min) &&
-      Number.isFinite(value.max),
+      Number.isFinite(value.max) &&
+      value.min <= value.max,
   );
 }
 
 function isNullableBoundsEntry(value) {
   return value === null || isValidBoundsEntry(value);
+}
+
+function areBoundsEqual(left, right) {
+  if (left === null || right === null) {
+    return left === right;
+  }
+  if (!isValidBoundsEntry(left) || !isValidBoundsEntry(right)) {
+    return false;
+  }
+  return roundToFour(left.min) === roundToFour(right.min) && roundToFour(left.max) === roundToFour(right.max);
 }
 
 function isValidBoundsMap(value) {
@@ -157,6 +172,86 @@ function hasValidSnapshotDeltaConsistency(payload) {
   }
 
   return seenKeys.size === allKeys.size && snapshotDelta.length === allKeys.size;
+}
+
+function hasValidAggregateDeltaConsistency(payload) {
+  const currentBounds = payload?.currentAggregateBounds ?? {};
+  const suggestedBounds = payload?.suggestedAggregateBounds ?? {};
+  const aggregateDelta = payload?.aggregateDelta ?? {};
+
+  const expectedScenarioIds = new Set([
+    ...Object.keys(currentBounds),
+    ...Object.keys(suggestedBounds),
+  ]);
+  const actualScenarioIds = Object.keys(aggregateDelta);
+  if (actualScenarioIds.length !== expectedScenarioIds.size) {
+    return false;
+  }
+
+  for (const scenarioId of actualScenarioIds) {
+    if (!expectedScenarioIds.has(scenarioId)) {
+      return false;
+    }
+
+    const currentScenarioBounds = currentBounds[scenarioId] ?? {};
+    const suggestedScenarioBounds = suggestedBounds[scenarioId] ?? {};
+    const scenarioDelta = aggregateDelta[scenarioId];
+    if (!isPlainRecord(scenarioDelta)) {
+      return false;
+    }
+
+    const expectedMetricKeys = new Set([
+      ...Object.keys(currentScenarioBounds),
+      ...Object.keys(suggestedScenarioBounds),
+    ]);
+    const actualMetricKeys = Object.keys(scenarioDelta);
+    if (actualMetricKeys.length !== expectedMetricKeys.size) {
+      return false;
+    }
+
+    for (const metricKey of actualMetricKeys) {
+      if (!expectedMetricKeys.has(metricKey)) {
+        return false;
+      }
+
+      const entry = scenarioDelta[metricKey];
+      const currentMetric = currentScenarioBounds[metricKey] ?? null;
+      const suggestedMetric = suggestedScenarioBounds[metricKey] ?? null;
+
+      if (!currentMetric || !suggestedMetric) {
+        if (!Boolean(entry && typeof entry === 'object' && entry.changed === true)) {
+          return false;
+        }
+        if (
+          !isNullableBoundsEntry(entry.from ?? null) ||
+          !isNullableBoundsEntry(entry.to ?? null) ||
+          !areBoundsEqual(entry.from ?? null, currentMetric) ||
+          !areBoundsEqual(entry.to ?? null, suggestedMetric)
+        ) {
+          return false;
+        }
+        continue;
+      }
+
+      const expectedMinDelta = roundToFour(suggestedMetric.min - currentMetric.min);
+      const expectedMaxDelta = roundToFour(suggestedMetric.max - currentMetric.max);
+      if (
+        !Boolean(
+          entry &&
+            typeof entry === 'object' &&
+            Number.isFinite(entry.minDelta) &&
+            Number.isFinite(entry.maxDelta) &&
+            entry.minDelta === expectedMinDelta &&
+            entry.maxDelta === expectedMaxDelta &&
+            entry.changed === (expectedMinDelta !== 0 || expectedMaxDelta !== 0),
+        )
+      ) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 function isValidDashboardDeltaEntry(entry) {
@@ -361,7 +456,10 @@ export function isValidBaselineSuggestionPayload(payload) {
     return false;
   }
 
-  return hasValidSnapshotDeltaConsistency(payload);
+  return (
+    hasValidAggregateDeltaConsistency(payload) &&
+    hasValidSnapshotDeltaConsistency(payload)
+  );
 }
 
 function isValidScenarioTuningSignatureResultEntry(entry) {
