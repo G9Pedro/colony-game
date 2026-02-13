@@ -177,6 +177,20 @@ export class GameEngine {
   }
 
   loadState(nextState) {
+    if (!nextState.metrics || typeof nextState.metrics !== 'object') {
+      nextState.metrics = {
+        starvationTicks: 0,
+        lowMoraleTicks: 0,
+        deaths: 0,
+        peakPopulation: nextState.colonists?.filter((colonist) => colonist.alive).length ?? 0,
+        buildingsConstructed: 0,
+        researchCompleted: nextState.research?.completed?.length ?? 0,
+        objectivesCompleted: nextState.objectives?.completed?.length ?? 0,
+      };
+    }
+    if (!Array.isArray(nextState.runSummaryHistory)) {
+      nextState.runSummaryHistory = [];
+    }
     if (!nextState.objectives || !Array.isArray(nextState.objectives.completed)) {
       nextState.objectives = {
         completed: [],

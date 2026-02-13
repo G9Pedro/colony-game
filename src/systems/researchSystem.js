@@ -55,6 +55,7 @@ export function runResearchSystem(context) {
   }
 
   state.research.completed.push(tech.id);
+  state.metrics.researchCompleted += 1;
   state.research.current = null;
   state.research.progress = 0;
   emit('research-complete', {

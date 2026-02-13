@@ -160,7 +160,13 @@ export function createInitialState(options = {}) {
       starvationTicks: 0,
       lowMoraleTicks: 0,
       deaths: 0,
+      peakPopulation: scenario.colonistCount,
+      buildingsConstructed: 0,
+      researchCompleted: 0,
+      objectivesCompleted: 0,
     },
+    runSummaryHistory: [],
+    lastRunSummary: null,
     lastAutoSaveAt: 0,
     maxWorldRadius: 27,
     rules: {

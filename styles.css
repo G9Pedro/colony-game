@@ -153,7 +153,9 @@ button:disabled {
 .build-list,
 .construction-list,
 .colonist-list,
-.objective-list {
+.objective-list,
+.metrics-summary,
+.run-history {
   display: grid;
   gap: 0.45rem;
 }

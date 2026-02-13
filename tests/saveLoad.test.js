@@ -38,5 +38,7 @@ test('deserializeState migrates legacy save payload fields', () => {
   assert.equal(migrated.scenarioId, 'frontier');
   assert.equal(Array.isArray(migrated.objectives.completed), true);
   assert.equal(typeof migrated.rngState, 'number');
+  assert.equal(typeof migrated.metrics.peakPopulation, 'number');
+  assert.equal(Array.isArray(migrated.runSummaryHistory), true);
   assert.equal(migrated.saveMeta.schemaVersion, SAVE_SCHEMA_VERSION);
 });

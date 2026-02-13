@@ -40,9 +40,24 @@ export function migrateSaveState(inputState) {
   if (typeof state.metrics.lowMoraleTicks !== 'number') {
     state.metrics.lowMoraleTicks = 0;
   }
+  if (typeof state.metrics.peakPopulation !== 'number') {
+    state.metrics.peakPopulation = state.colonists?.filter((colonist) => colonist.alive).length ?? 0;
+  }
+  if (typeof state.metrics.buildingsConstructed !== 'number') {
+    state.metrics.buildingsConstructed = 0;
+  }
+  if (typeof state.metrics.researchCompleted !== 'number') {
+    state.metrics.researchCompleted = state.research?.completed?.length ?? 0;
+  }
+  if (typeof state.metrics.objectivesCompleted !== 'number') {
+    state.metrics.objectivesCompleted = state.objectives.completed.length;
+  }
 
   if (!Array.isArray(state.runSummaryHistory)) {
     state.runSummaryHistory = [];
+  }
+  if (state.lastRunSummary && typeof state.lastRunSummary !== 'object') {
+    state.lastRunSummary = null;
   }
 
   state.saveMeta = {

@@ -117,6 +117,7 @@ export function runObjectiveSystem(context) {
     }
 
     state.objectives.completed.push(objective.id);
+    state.metrics.objectivesCompleted += 1;
     applyObjectiveReward(state, objective);
     emit('objective-complete', {
       kind: 'success',

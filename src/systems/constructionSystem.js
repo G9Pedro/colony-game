@@ -113,6 +113,7 @@ export function runConstructionSystem(context) {
       health: 100,
       workersAssigned: 0,
     });
+    state.metrics.buildingsConstructed += 1;
 
     emit('construction-complete', {
       kind: 'success',

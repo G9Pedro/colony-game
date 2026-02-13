@@ -56,6 +56,8 @@ export class UIController {
       objectivesList: document.getElementById('objectives-list'),
       constructionList: document.getElementById('construction-list'),
       colonistList: document.getElementById('colonist-list'),
+      metricsSummary: document.getElementById('metrics-summary'),
+      runHistory: document.getElementById('run-history'),
       notifications: document.getElementById('notifications'),
       messageBanner: document.getElementById('message-banner'),
       hintBadge: document.getElementById('hint-badge'),
@@ -285,6 +287,35 @@ export class UIController {
     }
   }
 
+  renderRunStats(state) {
+    this.el.metricsSummary.innerHTML = `
+      <div class="card">
+        <div class="kv"><span>Peak Population</span><strong>${state.metrics.peakPopulation}</strong></div>
+        <div class="kv"><span>Built Structures</span><strong>${state.metrics.buildingsConstructed}</strong></div>
+        <div class="kv"><span>Research Completed</span><strong>${state.metrics.researchCompleted}</strong></div>
+        <div class="kv"><span>Objectives Completed</span><strong>${state.metrics.objectivesCompleted}</strong></div>
+        <div class="kv"><span>Deaths</span><strong>${state.metrics.deaths}</strong></div>
+      </div>
+    `;
+
+    const history = [...(state.runSummaryHistory ?? [])].slice(-3).reverse();
+    if (history.length === 0) {
+      this.el.runHistory.innerHTML = '<div class="card"><small>No previous completed runs yet.</small></div>';
+      return;
+    }
+
+    this.el.runHistory.innerHTML = '';
+    history.forEach((run) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="kv"><strong>${run.outcome === 'won' ? 'Victory' : 'Defeat'}</strong><small>Day ${run.day}</small></div>
+        <small>${run.scenarioId} · peak ${run.peakPopulation} pop · ${run.buildingsConstructed} builds</small>
+      `;
+      this.el.runHistory.appendChild(card);
+    });
+  }
+
   renderStatus(state) {
     const alivePopulation = state.colonists.filter((colonist) => colonist.alive).length;
     const populationCap = getPopulationCapacity(state);
@@ -341,5 +372,6 @@ export class UIController {
     this.renderObjectives(state);
     this.renderConstructionQueue(state);
     this.renderColonists(state);
+    this.renderRunStats(state);
   }
 }
