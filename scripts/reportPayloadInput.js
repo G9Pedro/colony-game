@@ -130,6 +130,44 @@ export function getReadArtifactDiagnosticCode(readResult) {
   return READ_ARTIFACT_DIAGNOSTIC_CODES.readError;
 }
 
+export function formatReadArtifactFailureMessage({
+  readResult,
+  artifactLabel = 'artifact',
+  invalidMessage = null,
+}) {
+  if (!readResult || readResult.ok) {
+    return null;
+  }
+
+  if (readResult.status === 'missing') {
+    return `Missing ${artifactLabel} at "${readResult.path}".`;
+  }
+
+  if (readResult.status === 'invalid-json') {
+    return `${artifactLabel} at "${readResult.path}" is not valid JSON.`;
+  }
+
+  if (readResult.status === 'invalid') {
+    return invalidMessage ?? `${artifactLabel} at "${readResult.path}" failed validation.`;
+  }
+
+  return `Unable to read ${artifactLabel} at "${readResult.path}": ${readResult.message ?? 'read error'}`;
+}
+
+export function buildReadArtifactFailureContext(readResult, extraContext = {}) {
+  if (!readResult || readResult.ok) {
+    return null;
+  }
+
+  return {
+    path: readResult.path,
+    status: readResult.status,
+    reason: readResult.message ?? null,
+    errorCode: readResult.errorCode ?? null,
+    ...extraContext,
+  };
+}
+
 export function buildReadArtifactFailureLabel(readResult) {
   if (!readResult || readResult.ok) {
     return null;

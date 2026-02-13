@@ -5,8 +5,10 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import {
+  buildReadArtifactFailureContext,
   buildReadArtifactFailureLabel,
   buildReadArtifactDiagnostic,
+  formatReadArtifactFailureMessage,
   getReportArtifactStatusDiagnosticCode,
   getReadArtifactDiagnosticCode,
   READ_ARTIFACT_DIAGNOSTIC_CODES,
@@ -207,6 +209,66 @@ test('buildReadArtifactFailureLabel returns stable labels by status', () => {
     'EISDIR',
   );
   assert.equal(buildReadArtifactFailureLabel({ ok: true, payload: {} }), null);
+});
+
+test('formatReadArtifactFailureMessage renders consistent missing/read/invalid strings', () => {
+  assert.equal(
+    formatReadArtifactFailureMessage({
+      readResult: { ok: false, status: 'missing', path: 'reports/missing.json' },
+      artifactLabel: 'diagnostics smoke report',
+    }),
+    'Missing diagnostics smoke report at "reports/missing.json".',
+  );
+  assert.equal(
+    formatReadArtifactFailureMessage({
+      readResult: { ok: false, status: 'invalid-json', path: 'reports/invalid.json' },
+      artifactLabel: 'diagnostics smoke report',
+    }),
+    'diagnostics smoke report at "reports/invalid.json" is not valid JSON.',
+  );
+  assert.equal(
+    formatReadArtifactFailureMessage({
+      readResult: {
+        ok: false,
+        status: 'error',
+        path: 'reports/broken.json',
+        message: 'EISDIR',
+      },
+      artifactLabel: 'diagnostics smoke report',
+    }),
+    'Unable to read diagnostics smoke report at "reports/broken.json": EISDIR',
+  );
+  assert.equal(
+    formatReadArtifactFailureMessage({
+      readResult: { ok: false, status: 'invalid', path: 'reports/broken.md' },
+      artifactLabel: 'diagnostics smoke markdown report',
+      invalidMessage: 'Markdown content failed validation.',
+    }),
+    'Markdown content failed validation.',
+  );
+});
+
+test('buildReadArtifactFailureContext builds stable diagnostic context fields', () => {
+  assert.deepEqual(
+    buildReadArtifactFailureContext(
+      {
+        ok: false,
+        path: 'reports/report.json',
+        status: 'error',
+        message: 'EISDIR',
+        errorCode: 'EISDIR',
+      },
+      { artifactKind: 'diagnostics-smoke-summary' },
+    ),
+    {
+      path: 'reports/report.json',
+      status: 'error',
+      reason: 'EISDIR',
+      errorCode: 'EISDIR',
+      artifactKind: 'diagnostics-smoke-summary',
+    },
+  );
+  assert.equal(buildReadArtifactFailureContext({ ok: true, payload: {} }), null);
 });
 
 test('getReadArtifactDiagnosticCode maps statuses to stable codes', () => {

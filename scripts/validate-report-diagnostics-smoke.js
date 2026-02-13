@@ -1,5 +1,7 @@
 import { isValidDiagnosticsSmokeSummaryPayload } from './reportDiagnosticsSmokeSummary.js';
 import {
+  buildReadArtifactFailureContext,
+  formatReadArtifactFailureMessage,
   getReadArtifactDiagnosticCode,
   readJsonArtifact,
   readValidatedTextArtifact,
@@ -14,16 +16,6 @@ const markdownPath =
 const shouldValidateMarkdown = process.env.REPORT_DIAGNOSTICS_SMOKE_VALIDATE_MARKDOWN !== '0';
 const emitDiagnostic = createScriptDiagnosticEmitter('diagnostics:smoke:validate');
 
-function formatReadFailure(readResult) {
-  if (readResult.status === 'missing') {
-    return `Missing diagnostics smoke report at "${readResult.path}".`;
-  }
-  if (readResult.status === 'invalid-json') {
-    return `Diagnostics smoke report at "${readResult.path}" is not valid JSON.`;
-  }
-  return `Unable to read diagnostics smoke report at "${readResult.path}": ${readResult.message}`;
-}
-
 async function main() {
   const readResult = await readJsonArtifact(outputPath);
   if (!readResult.ok) {
@@ -33,13 +25,14 @@ async function main() {
       level: 'error',
       code: diagnosticCode,
       message: `Diagnostics smoke report read failed (${readResult.status}).`,
-      context: {
-        path: readResult.path,
-        status: readResult.status,
-        errorCode: readResult.errorCode ?? null,
-      },
+      context: buildReadArtifactFailureContext(readResult),
     });
-    console.error(formatReadFailure(readResult));
+    console.error(
+      formatReadArtifactFailureMessage({
+        readResult,
+        artifactLabel: 'diagnostics smoke report',
+      }),
+    );
     process.exit(1);
   }
 
@@ -91,24 +84,17 @@ async function main() {
           markdownReadResult.status === 'invalid'
             ? 'Diagnostics smoke markdown report failed validation.'
             : 'Diagnostics smoke markdown report read failed.',
-        context: {
-          path: markdownPath,
-          status: markdownReadResult.status,
-          reason: markdownReadResult.message ?? null,
-          errorCode: markdownReadResult.errorCode ?? null,
-        },
+        context: buildReadArtifactFailureContext(markdownReadResult, {
+          expectedSummaryPath: outputPath,
+        }),
       });
-      if (markdownReadResult.status === 'missing') {
-        console.error(`Missing diagnostics smoke markdown report at "${markdownPath}".`);
-      } else if (markdownReadResult.status === 'invalid') {
-        console.error(
-          `Diagnostics smoke markdown report at "${markdownPath}" failed validation against summary payload.`,
-        );
-      } else {
-        console.error(
-          `Unable to read diagnostics smoke markdown report at "${markdownPath}": ${markdownReadResult.message ?? 'read error'}`,
-        );
-      }
+      console.error(
+        formatReadArtifactFailureMessage({
+          readResult: markdownReadResult,
+          artifactLabel: 'diagnostics smoke markdown report',
+          invalidMessage: `Diagnostics smoke markdown report at "${markdownPath}" failed validation against summary payload.`,
+        }),
+      );
       process.exit(1);
     }
   }
