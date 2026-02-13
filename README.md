@@ -117,6 +117,11 @@ One-command local verification:
 npm run verify
 ```
 
+`verify` now runs:
+- `npm test`
+- `npm run simulate:assert`
+- `npm run simulate:drift`
+
 ## Gameplay Notes
 
 ### Controls
