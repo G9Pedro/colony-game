@@ -167,6 +167,36 @@ test('baseline suggestion check diagnostics follow contract fixture', async () =
   }
 });
 
+test('baseline suggestion check emits read-error diagnostics for unreadable cache path', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-baseline-read-error-'));
+  const scriptPath = path.resolve('scripts/suggest-baselines-check.js');
+
+  try {
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          env: {
+            ...process.env,
+            SIM_BASELINE_SUGGEST_PATH: tempDirectory,
+            REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+          },
+        }),
+      (error) => {
+        assertReportDiagnosticsContract({
+          diagnostics: collectReportDiagnostics(error.stdout, error.stderr),
+          expectedScript: 'simulate:baseline:check',
+          expectedRunId: RUN_ID,
+          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
+        });
+        return true;
+      },
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test('diagnostics smoke script diagnostics follow contract fixture', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-run-'));
   const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
@@ -189,6 +219,36 @@ test('diagnostics smoke script diagnostics follow contract fixture', async () =>
       expectedRunId: RUN_ID,
       expectedCodes: [REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeRunSummary],
     });
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('scenario tuning baseline check emits read-error diagnostics for unreadable cache path', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-tuning-read-error-'));
+  const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
+
+  try {
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          env: {
+            ...process.env,
+            SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: tempDirectory,
+            REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+          },
+        }),
+      (error) => {
+        assertReportDiagnosticsContract({
+          diagnostics: collectReportDiagnostics(error.stdout, error.stderr),
+          expectedScript: 'simulate:check:tuning-baseline',
+          expectedRunId: RUN_ID,
+          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
+        });
+        return true;
+      },
+    );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
