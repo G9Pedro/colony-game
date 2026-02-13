@@ -18,6 +18,14 @@ function assertKnownReportArtifactOverridePaths(overridesByPath) {
   }
 }
 
+function assertKnownReportArtifactPaths(paths = []) {
+  for (const path of paths ?? []) {
+    if (!isKnownReportArtifactTargetPath(path)) {
+      throw new Error(`Unknown report artifact path "${path}".`);
+    }
+  }
+}
+
 export function buildReportArtifactValidationResults(overridesByPath = {}) {
   assertKnownReportArtifactOverridePaths(overridesByPath);
   return REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.map((target) => {
@@ -70,10 +78,24 @@ export function buildFailingReportArtifactResultOverride(path, overrides = {}) {
 
 export function buildReportArtifactsValidationPayloadFixture({
   resultOverridesByPath = {},
+  omittedPaths = [],
+  transformResults = null,
   payloadOverrides = {},
 } = {}) {
+  assertKnownReportArtifactPaths(omittedPaths);
+  let results = buildReportArtifactValidationResults(resultOverridesByPath).filter(
+    (result) => !omittedPaths.includes(result.path),
+  );
+  if (typeof transformResults === 'function') {
+    const transformedResults = transformResults([...results]);
+    if (!Array.isArray(transformedResults)) {
+      throw new Error('transformResults must return an array of report artifact results.');
+    }
+    results = transformedResults;
+  }
+
   return buildValidReportArtifactsValidationPayload({
-    results: buildReportArtifactValidationResults(resultOverridesByPath),
+    results,
     ...payloadOverrides,
   });
 }

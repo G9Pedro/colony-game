@@ -5,9 +5,7 @@ import { isValidReportArtifactsValidationPayload } from '../src/game/reportPaylo
 import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
 import {
   buildFailingReportArtifactResultOverride,
-  buildReportArtifactValidationResults,
   buildReportArtifactsValidationPayloadFixture,
-  buildValidReportArtifactsValidationPayload,
 } from './helpers/reportArtifactsValidationFixtures.js';
 
 function buildReportArtifactsPayload() {
@@ -69,14 +67,15 @@ test('report artifacts module validator rejects unknown path with known target k
 });
 
 test('report artifacts module validator rejects payload missing canonical targets', () => {
-  const payload = buildValidReportArtifactsValidationPayload({
-    results: buildReportArtifactValidationResults().slice(1),
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    omittedPaths: ['reports/baseline-suggestions.json'],
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('report artifacts module validator rejects unsorted result rows', () => {
-  const payload = buildReportArtifactsPayload();
-  payload.results = [...payload.results].reverse();
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    transformResults: (results) => [...results].reverse(),
+  });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });

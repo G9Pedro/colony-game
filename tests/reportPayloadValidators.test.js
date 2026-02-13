@@ -16,7 +16,6 @@ import {
 import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
 import {
   buildFailingReportArtifactResultOverride,
-  buildReportArtifactValidationResults,
   buildReportArtifactsValidationPayloadFixture,
   buildValidReportArtifactsValidationPayload,
 } from './helpers/reportArtifactsValidationFixtures.js';
@@ -1027,9 +1026,8 @@ test('isValidReportArtifactsValidationPayload rejects duplicate result paths', (
 });
 
 test('isValidReportArtifactsValidationPayload rejects unsorted result paths', () => {
-  const results = buildReportArtifactValidationResults();
-  const payload = buildValidReportArtifactsValidationPayload({
-    results: [...results].reverse(),
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    transformResults: (results) => [...results].reverse(),
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });

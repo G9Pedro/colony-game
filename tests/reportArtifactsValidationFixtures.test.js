@@ -115,3 +115,41 @@ test('buildReportArtifactsValidationPayloadFixture composes result and payload o
   assert.equal(baselineRow.status, REPORT_ARTIFACT_STATUSES.error);
   assert.equal(baselineRow.ok, false);
 });
+
+test('buildReportArtifactsValidationPayloadFixture supports omitting canonical paths', () => {
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    omittedPaths: ['reports/baseline-suggestions.json'],
+  });
+  assert.equal(payload.results.some((result) => result.path === 'reports/baseline-suggestions.json'), false);
+  assert.equal(payload.totalChecked, REPORT_ARTIFACT_TARGETS.length - 1);
+});
+
+test('buildReportArtifactsValidationPayloadFixture supports transforming results', () => {
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    transformResults: (results) => [...results].reverse(),
+  });
+  assert.deepEqual(
+    payload.results.map((result) => result.path),
+    [...REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.map((target) => target.path)].reverse(),
+  );
+});
+
+test('buildReportArtifactsValidationPayloadFixture rejects unknown omitted paths', () => {
+  assert.throws(
+    () =>
+      buildReportArtifactsValidationPayloadFixture({
+        omittedPaths: ['reports/not-a-target.json'],
+      }),
+    /Unknown report artifact path/i,
+  );
+});
+
+test('buildReportArtifactsValidationPayloadFixture rejects invalid transform return values', () => {
+  assert.throws(
+    () =>
+      buildReportArtifactsValidationPayloadFixture({
+        transformResults: () => null,
+      }),
+    /transformResults must return an array/i,
+  );
+});
