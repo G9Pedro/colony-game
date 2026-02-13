@@ -21,6 +21,10 @@ test('report artifact manifest exposes expected target rows', () => {
     REPORT_ARTIFACT_TARGETS.some((target) => target.path === 'reports/baseline-suggestions.json'),
     true,
   );
+  assert.equal(
+    REPORT_ARTIFACT_TARGETS.every((target) => isValidReportArtifactTarget(target.path, target.kind)),
+    true,
+  );
 });
 
 test('isKnownReportArtifactTargetKind allows only target kinds', () => {

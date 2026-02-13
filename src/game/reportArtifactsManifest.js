@@ -33,20 +33,11 @@ export const REPORT_ARTIFACT_TARGETS = Object.freeze(
 );
 
 const REPORT_ARTIFACT_TARGET_KIND_SET = new Set(REPORT_ARTIFACT_TARGETS.map((target) => target.kind));
-const REPORT_ARTIFACT_TARGET_KIND_BY_PATH = new Map(
-  REPORT_ARTIFACT_TARGETS.map((target) => [target.path, target.kind]),
+const REPORT_ARTIFACT_TARGET_DEFINITION_BY_PATH = new Map(
+  REPORT_ARTIFACT_TARGET_DEFINITIONS.map((target) => [target.path, Object.freeze({ ...target })]),
 );
 export const REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH = Object.freeze(
   [...REPORT_ARTIFACT_TARGETS].sort((left, right) => left.path.localeCompare(right.path)),
-);
-
-const REPORT_ARTIFACT_REGEN_COMMANDS = Object.freeze(
-  Object.fromEntries(
-    REPORT_ARTIFACT_TARGET_DEFINITIONS.map(({ path, regenerationCommand }) => [
-      path,
-      regenerationCommand,
-    ]),
-  ),
 );
 
 export function isKnownReportArtifactTargetKind(kind) {
@@ -54,7 +45,7 @@ export function isKnownReportArtifactTargetKind(kind) {
 }
 
 export function isValidReportArtifactTarget(path, kind) {
-  return REPORT_ARTIFACT_TARGET_KIND_BY_PATH.get(path) === kind;
+  return REPORT_ARTIFACT_TARGET_DEFINITION_BY_PATH.get(path)?.kind === kind;
 }
 
 export function hasExactReportArtifactTargets(results = undefined) {
@@ -75,5 +66,5 @@ export function hasExactReportArtifactTargets(results = undefined) {
 }
 
 export function getReportArtifactRegenerationCommand(path) {
-  return REPORT_ARTIFACT_REGEN_COMMANDS[path] ?? 'npm run verify';
+  return REPORT_ARTIFACT_TARGET_DEFINITION_BY_PATH.get(path)?.regenerationCommand ?? 'npm run verify';
 }

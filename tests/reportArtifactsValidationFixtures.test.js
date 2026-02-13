@@ -4,6 +4,7 @@ import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPa
 import {
   getReportArtifactRegenerationCommand,
   REPORT_ARTIFACT_TARGETS,
+  REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH,
 } from '../src/game/reportArtifactsManifest.js';
 import {
   buildReportArtifactValidationResults,
@@ -25,9 +26,7 @@ test('buildReportArtifactValidationResults returns sorted canonical rows', () =>
     true,
   );
 
-  const expectedPaths = [...REPORT_ARTIFACT_TARGETS.map((target) => target.path)].sort((a, b) =>
-    a.localeCompare(b),
-  );
+  const expectedPaths = REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.map((target) => target.path);
   assert.deepEqual(
     results.map((result) => result.path),
     expectedPaths,
