@@ -84,6 +84,21 @@ export class IsometricRenderer {
     this.knownBuildingIds = new Set();
     this.knownConstructionIds = new Set();
     this.interactiveEntities = [];
+    this.terrainLayerCanvas = document.createElement('canvas');
+    this.terrainLayerCtx = this.terrainLayerCanvas.getContext('2d', { alpha: true });
+    this.terrainLayerCache = {
+      valid: false,
+      centerX: 0,
+      centerZ: 0,
+      zoom: 0,
+      minX: 0,
+      maxX: 0,
+      minZ: 0,
+      maxZ: 0,
+      buildingSignature: '',
+      width: 0,
+      height: 0,
+    };
 
     this.boundHandlers = {
       resize: () => this.resize(),
@@ -120,6 +135,9 @@ export class IsometricRenderer {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.scale(dpr, dpr);
     this.camera.setViewport(width, height);
+    this.terrainLayerCanvas.width = width;
+    this.terrainLayerCanvas.height = height;
+    this.terrainLayerCache.valid = false;
   }
 
   dispose() {
@@ -135,6 +153,8 @@ export class IsometricRenderer {
     this.canvas.removeEventListener('touchend', this.boundHandlers.touchEnd);
     this.canvas.remove();
     this.interactiveEntities = [];
+    this.terrainLayerCanvas = null;
+    this.terrainLayerCtx = null;
   }
 
   setGroundClickHandler(handler) {
@@ -462,16 +482,64 @@ export class IsometricRenderer {
   }
 
   drawTerrain(state) {
+    const bounds = this.getTerrainBounds();
+    const shouldRefresh = this.shouldRefreshTerrainLayer(state, bounds);
+    if (shouldRefresh) {
+      this.rebuildTerrainLayer(state, bounds);
+    }
+    this.ctx.drawImage(this.terrainLayerCanvas, 0, 0);
+  }
+
+  getTerrainBounds() {
     const corners = [
       this.camera.screenToWorld(0, 0),
       this.camera.screenToWorld(this.camera.viewportWidth, 0),
       this.camera.screenToWorld(0, this.camera.viewportHeight),
       this.camera.screenToWorld(this.camera.viewportWidth, this.camera.viewportHeight),
     ];
-    const minX = Math.floor(Math.min(...corners.map((point) => point.x))) - 3;
-    const maxX = Math.ceil(Math.max(...corners.map((point) => point.x))) + 3;
-    const minZ = Math.floor(Math.min(...corners.map((point) => point.z))) - 3;
-    const maxZ = Math.ceil(Math.max(...corners.map((point) => point.z))) + 3;
+    return {
+      minX: Math.floor(Math.min(...corners.map((point) => point.x))) - 3,
+      maxX: Math.ceil(Math.max(...corners.map((point) => point.x))) + 3,
+      minZ: Math.floor(Math.min(...corners.map((point) => point.z))) - 3,
+      maxZ: Math.ceil(Math.max(...corners.map((point) => point.z))) + 3,
+    };
+  }
+
+  buildTerrainSignature(state) {
+    const sample = state.buildings
+      .slice(0, 8)
+      .map((building) => `${Math.round(building.x)}:${Math.round(building.z)}:${building.type}`)
+      .join('|');
+    return `${state.buildings.length}:${sample}`;
+  }
+
+  shouldRefreshTerrainLayer(state, bounds) {
+    if (!this.terrainLayerCache.valid) {
+      return true;
+    }
+    if (this.terrainLayerCache.width !== this.camera.viewportWidth || this.terrainLayerCache.height !== this.camera.viewportHeight) {
+      return true;
+    }
+
+    const centerDelta = Math.hypot(
+      this.terrainLayerCache.centerX - this.camera.centerX,
+      this.terrainLayerCache.centerZ - this.camera.centerZ,
+    );
+    const zoomDelta = Math.abs(this.terrainLayerCache.zoom - this.camera.zoom);
+    const boundsChanged = this.terrainLayerCache.minX !== bounds.minX
+      || this.terrainLayerCache.maxX !== bounds.maxX
+      || this.terrainLayerCache.minZ !== bounds.minZ
+      || this.terrainLayerCache.maxZ !== bounds.maxZ;
+    if (centerDelta > 0.45 || zoomDelta > 0.04 || boundsChanged) {
+      return true;
+    }
+    const buildingSignature = this.buildTerrainSignature(state);
+    return buildingSignature !== this.terrainLayerCache.buildingSignature;
+  }
+
+  rebuildTerrainLayer(state, bounds) {
+    const { minX, maxX, minZ, maxZ } = bounds;
+    this.terrainLayerCtx.clearRect(0, 0, this.terrainLayerCanvas.width, this.terrainLayerCanvas.height);
 
     const buildingTileSet = new Set();
     state.buildings.forEach((building) => {
@@ -490,9 +558,36 @@ export class IsometricRenderer {
         const kind = nearBuilding ? 'dirt' : variant === 0 ? 'path' : 'grass';
         const tile = this.spriteFactory.getTerrainTile(kind, variant);
         const screen = this.camera.worldToScreen(x, z);
-        this.ctx.drawImage(tile, screen.x - tile.width * 0.5, screen.y - tile.height * 0.5);
+        this.terrainLayerCtx.drawImage(tile, screen.x - tile.width * 0.5, screen.y - tile.height * 0.5);
       }
     }
+
+    this.terrainLayerCache = {
+      valid: true,
+      centerX: this.camera.centerX,
+      centerZ: this.camera.centerZ,
+      zoom: this.camera.zoom,
+      minX,
+      maxX,
+      minZ,
+      maxZ,
+      buildingSignature: this.buildTerrainSignature(state),
+      width: this.camera.viewportWidth,
+      height: this.camera.viewportHeight,
+    };
+  }
+
+  isRectVisible(x, y, width, height, padding = 48) {
+    if (x + width < -padding) {
+      return false;
+    }
+    if (y + height < -padding) {
+      return false;
+    }
+    if (x > this.camera.viewportWidth + padding) {
+      return false;
+    }
+    return y <= this.camera.viewportHeight + padding;
   }
 
   drawPreview() {
@@ -582,13 +677,16 @@ export class IsometricRenderer {
       const completeSprite = this.spriteFactory.getBuildingSprite(item.type, { construction: false });
       const screen = this.camera.worldToScreen(item.x, item.z);
       const progress = clamp(item.progress / Math.max(0.1, item.buildTime), 0, 1);
+      const drawX = screen.x - sprite.anchorX * this.camera.zoom;
+      const drawY = screen.y - sprite.anchorY * this.camera.zoom;
+      const drawW = sprite.canvas.width * this.camera.zoom;
+      const drawH = sprite.canvas.height * this.camera.zoom;
+      if (!this.isRectVisible(drawX, drawY, drawW, drawH)) {
+        return;
+      }
       renderables.push({
         depth: item.x + item.z + 0.04,
         draw: (ctx) => {
-          const drawX = screen.x - sprite.anchorX * this.camera.zoom;
-          const drawY = screen.y - sprite.anchorY * this.camera.zoom;
-          const drawW = sprite.canvas.width * this.camera.zoom;
-          const drawH = sprite.canvas.height * this.camera.zoom;
           ctx.globalAlpha = 0.95;
           ctx.drawImage(sprite.canvas, drawX, drawY, drawW, drawH);
 
@@ -621,6 +719,9 @@ export class IsometricRenderer {
       const drawH = sprite.canvas.height * scale;
       const drawX = screen.x - sprite.anchorX * scale;
       const drawY = screen.y - sprite.anchorY * scale;
+      if (!this.isRectVisible(drawX, drawY, drawW, drawH)) {
+        return;
+      }
       const isNight = 1 - daylight;
       renderables.push({
         depth: building.x + building.z + 0.15,
@@ -677,6 +778,9 @@ export class IsometricRenderer {
       const drawH = sprite.height * this.camera.zoom;
       const drawX = screen.x - drawW * 0.5;
       const drawY = screen.y - drawH * 0.8 - bob * this.camera.zoom;
+      if (!this.isRectVisible(drawX, drawY, drawW, drawH, 36)) {
+        return;
+      }
       renderables.push({
         depth: renderState.x + renderState.z + 0.28,
         draw: (ctx) => {
