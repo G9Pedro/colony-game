@@ -106,6 +106,12 @@ jobs:
       - name: Validate generated report artifacts
         run: npm run reports:validate
 
+      - name: Upload report artifact validation summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-artifact-validation-summary
+          path: reports/report-artifacts-validation.json
+
       - name: Enforce baseline suggestion check
         run: npm run simulate:baseline:check
 

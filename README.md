@@ -167,6 +167,8 @@ Validate generated JSON report artifacts against schema-tagged payload contracts
 npm run reports:validate
 ```
 
+This writes: `reports/report-artifacts-validation.json`
+
 CI now runs:
 - `npm test`
 - `npm run simulate:validate:tuning` (uploaded as artifact)
@@ -180,6 +182,7 @@ CI now runs:
 - `npm run simulate:balance` (uploaded as artifact)
 - `npm run simulate:baseline:suggest` (uploaded as artifact)
 - `npm run reports:validate`
+- `reports/report-artifacts-validation.json` (uploaded as artifact)
 - `npm run simulate:baseline:check` (enforced)
 
 One-command local verification:

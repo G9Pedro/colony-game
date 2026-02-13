@@ -1,43 +1,60 @@
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import {
-  REPORT_KINDS,
-  validateReportPayloadByKind,
-} from '../src/game/reportPayloadValidators.js';
+  evaluateReportArtifactEntries,
+  REPORT_ARTIFACT_TARGETS,
+} from '../src/game/reportArtifactsValidation.js';
 
-const DEFAULT_REPORT_TARGETS = [
-  { path: 'reports/scenario-tuning-validation.json', kind: REPORT_KINDS.scenarioTuningValidation },
-  { path: 'reports/scenario-tuning-dashboard.json', kind: REPORT_KINDS.scenarioTuningDashboard },
-  {
-    path: 'reports/scenario-tuning-baseline-suggestions.json',
-    kind: REPORT_KINDS.scenarioTuningBaselineSuggestions,
-  },
-  { path: 'reports/baseline-suggestions.json', kind: REPORT_KINDS.baselineSuggestions },
-];
+const outputPath =
+  process.env.REPORTS_VALIDATE_OUTPUT_PATH ?? 'reports/report-artifacts-validation.json';
 
-let hasFailure = false;
-for (const target of DEFAULT_REPORT_TARGETS) {
+const entries = [];
+for (const target of REPORT_ARTIFACT_TARGETS) {
   try {
     const payloadText = await readFile(target.path, 'utf-8');
-    const payload = JSON.parse(payloadText);
-    const validation = validateReportPayloadByKind(target.kind, payload);
-
-    if (!validation.ok) {
-      hasFailure = true;
-      console.error(`[invalid] ${target.path}: ${validation.reason}`);
-      continue;
-    }
-
-    console.log(`[ok] ${target.path}: kind=${target.kind}`);
+    entries.push({
+      path: target.path,
+      kind: target.kind,
+      payload: JSON.parse(payloadText),
+    });
   } catch (error) {
-    hasFailure = true;
-    if (error instanceof SyntaxError) {
-      console.error(`[invalid-json] ${target.path}: ${error.message}`);
-    } else {
-      console.error(`[error] ${target.path}: ${error.message}`);
-    }
+    entries.push({
+      path: target.path,
+      kind: target.kind,
+      errorType: error instanceof SyntaxError ? 'invalid-json' : 'error',
+      message: error.message,
+    });
   }
 }
 
-if (hasFailure) {
+const report = evaluateReportArtifactEntries(entries);
+await mkdir(dirname(outputPath), { recursive: true });
+await writeFile(
+  outputPath,
+  JSON.stringify(
+    {
+      generatedAt: new Date().toISOString(),
+      ...report,
+    },
+    null,
+    2,
+  ),
+  'utf-8',
+);
+
+report.results.forEach((result) => {
+  if (result.ok) {
+    console.log(`[ok] ${result.path}: kind=${result.kind}`);
+    return;
+  }
+  console.error(`[${result.status}] ${result.path}: ${result.message}`);
+});
+
+console.log(
+  `Report artifact validation summary: total=${report.totalChecked}, failed=${report.failureCount}`,
+);
+console.log(`Report artifact validation report written to: ${outputPath}`);
+
+if (!report.overallPassed) {
   process.exit(1);
 }
