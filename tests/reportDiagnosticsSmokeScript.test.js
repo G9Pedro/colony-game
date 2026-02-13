@@ -1,18 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import {
   REPORT_DIAGNOSTICS_SMOKE_SCHEMA_VERSION,
   REPORT_DIAGNOSTICS_SMOKE_SUMMARY_TYPE,
 } from '../scripts/reportDiagnosticsSmokeSummary.js';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { findDiagnosticByCodeFromOutput } from './helpers/reportDiagnosticsTestUtils.js';
-
-const execFileAsync = promisify(execFile);
+import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
 
 test('report diagnostics smoke script emits passing diagnostics summary report', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'report-diagnostics-smoke-'));
@@ -22,9 +19,8 @@ test('report diagnostics smoke script emits passing diagnostics summary report',
   const scriptPath = path.resolve('scripts/report-diagnostics-smoke.js');
 
   try {
-    const { stdout } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
         REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
         REPORT_DIAGNOSTICS_RUN_ID: runId,
@@ -67,9 +63,8 @@ test('report diagnostics smoke script emits structured diagnostics when enabled'
   const scriptPath = path.resolve('scripts/report-diagnostics-smoke.js');
 
   try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,

@@ -3,12 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { isValidScenarioTuningValidationPayload } from '../src/game/reportPayloadValidatorsScenarioTuning.js';
-
-const execFileAsync = promisify(execFile);
+import { runNodeDiagnosticsScript } from './helpers/reportDiagnosticsScriptTestUtils.js';
 
 test('validate scenario tuning script writes schema-valid sorted validation payload', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-validate-script-'));
@@ -16,9 +13,8 @@ test('validate scenario tuning script writes schema-valid sorted validation payl
   const scriptPath = path.resolve('scripts/validate-scenario-tuning.js');
 
   try {
-    const { stdout } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         SIM_SCENARIO_TUNING_REPORT_PATH: outputPath,
       },
     });
