@@ -168,6 +168,7 @@ npm run reports:validate
 ```
 
 This writes: `reports/report-artifacts-validation.json`
+and `reports/report-artifacts-validation.md`
 
 CI now runs:
 - `npm test`
@@ -182,7 +183,7 @@ CI now runs:
 - `npm run simulate:balance` (uploaded as artifact)
 - `npm run simulate:baseline:suggest` (uploaded as artifact)
 - `npm run reports:validate`
-- `reports/report-artifacts-validation.json` (uploaded as artifact)
+- `reports/report-artifacts-validation.json/.md` (uploaded as artifact)
 - `npm run simulate:baseline:check` (enforced)
 
 One-command local verification:

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReportMeta, REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import {
+  buildReportArtifactsValidationMarkdown,
   evaluateReportArtifactEntries,
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
@@ -65,4 +66,20 @@ test('evaluateReportArtifactEntries flags schema-invalid payloads', () => {
   assert.equal(report.failureCount, 1);
   assert.equal(report.results[0].status, 'invalid');
   assert.ok(report.results[0].message?.includes('failed validation'));
+});
+
+test('buildReportArtifactsValidationMarkdown renders table rows', () => {
+  const markdown = buildReportArtifactsValidationMarkdown({
+    overallPassed: false,
+    totalChecked: 2,
+    failureCount: 1,
+    results: [
+      { path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null },
+      { path: 'reports/b.json', kind: 'kind-b', status: 'invalid', message: 'bad payload' },
+    ],
+  });
+
+  assert.ok(markdown.includes('# Report Artifacts Validation'));
+  assert.ok(markdown.includes('| reports/a.json | kind-a | ok |  |'));
+  assert.ok(markdown.includes('| reports/b.json | kind-b | invalid | bad payload |'));
 });

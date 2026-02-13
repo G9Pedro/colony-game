@@ -60,3 +60,28 @@ export function evaluateReportArtifactEntries(entries) {
     results,
   };
 }
+
+export function buildReportArtifactsValidationMarkdown(report) {
+  const statusLabel = report.overallPassed ? 'Passed' : 'Failed';
+  const lines = [
+    '# Report Artifacts Validation',
+    '',
+    `- Status: ${statusLabel}`,
+    `- Total Checked: ${report.totalChecked}`,
+    `- Failed: ${report.failureCount}`,
+    '',
+    '## Results',
+    '',
+    '| Artifact | Kind | Status | Message |',
+    '| --- | --- | --- | --- |',
+  ];
+
+  for (const result of report.results ?? []) {
+    lines.push(
+      `| ${result.path} | ${result.kind} | ${result.status} | ${result.message ?? ''} |`,
+    );
+  }
+
+  lines.push('');
+  return `${lines.join('\n')}\n`;
+}

@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import {
+  buildReportArtifactsValidationMarkdown,
   evaluateReportArtifactEntries,
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
@@ -12,6 +13,8 @@ import {
 
 const outputPath =
   process.env.REPORTS_VALIDATE_OUTPUT_PATH ?? 'reports/report-artifacts-validation.json';
+const markdownOutputPath =
+  process.env.REPORTS_VALIDATE_OUTPUT_MD_PATH ?? 'reports/report-artifacts-validation.md';
 
 const entries = [];
 for (const target of REPORT_ARTIFACT_TARGETS) {
@@ -40,18 +43,9 @@ if (!metaValidation.ok) {
   process.exit(1);
 }
 await mkdir(dirname(outputPath), { recursive: true });
-await writeFile(
-  outputPath,
-  JSON.stringify(
-    {
-      generatedAt: new Date().toISOString(),
-      ...report,
-    },
-    null,
-    2,
-  ),
-  'utf-8',
-);
+await writeFile(outputPath, JSON.stringify(report, null, 2), 'utf-8');
+const markdown = buildReportArtifactsValidationMarkdown(report);
+await writeFile(markdownOutputPath, markdown, 'utf-8');
 
 report.results.forEach((result) => {
   if (result.ok) {
@@ -65,6 +59,7 @@ console.log(
   `Report artifact validation summary: total=${report.totalChecked}, failed=${report.failureCount}`,
 );
 console.log(`Report artifact validation report written to: ${outputPath}`);
+console.log(`Report artifact validation markdown written to: ${markdownOutputPath}`);
 
 if (!report.overallPassed) {
   process.exit(1);

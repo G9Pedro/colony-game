@@ -110,7 +110,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: report-artifact-validation-summary
-          path: reports/report-artifacts-validation.json
+          path: |
+            reports/report-artifacts-validation.json
+            reports/report-artifacts-validation.md
 
       - name: Enforce baseline suggestion check
         run: npm run simulate:baseline:check
