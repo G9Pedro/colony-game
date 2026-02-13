@@ -206,8 +206,8 @@ test('parseReportDiagnosticsFromText extracts and validates diagnostic lines', (
     })),
     reorderedDiagnosticLine,
     '{"type":"report-diagnostic","level":"info","code":"unknown","message":"bad","context":{}}',
-    '{"type":"report-diagnostic","level":"warn","code":"artifact-read-error","message":"ok","context":[]}',
-    '{"level":"info","code":"artifact-read-error","message":"not diagnostic type","context":null}',
+    `{"type":"${REPORT_DIAGNOSTIC_TYPE}","level":"warn","code":"${REPORT_DIAGNOSTIC_CODES.artifactReadError}","message":"ok","context":[]}`,
+    `{"level":"info","code":"${REPORT_DIAGNOSTIC_CODES.artifactReadError}","message":"not diagnostic type","context":null}`,
   ].join('\n');
 
   const diagnostics = parseReportDiagnosticsFromText(text);
