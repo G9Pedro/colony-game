@@ -10,11 +10,7 @@ import {
   REPORT_DIAGNOSTIC_CODES,
 } from './reportDiagnostics.js';
 import { buildValidatedReportPayload } from './reportPayloadOutput.js';
-import {
-  buildReadArtifactFailureContext,
-  formatReadArtifactFailureMessage,
-  getReadArtifactDiagnosticCode,
-} from './reportPayloadInput.js';
+import { handleJsonCacheLoadFailure } from './reportCacheDiagnostics.js';
 
 const inputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-suggestions.json';
 const driftRuns = Number(process.env.SIM_BASELINE_SUGGEST_RUNS ?? 8);
@@ -41,38 +37,14 @@ try {
       ),
   }));
 } catch (error) {
-  const readFailure = error?.cacheReadFailure;
-  if (readFailure) {
-    const diagnosticCode =
-      getReadArtifactDiagnosticCode(readFailure) ?? REPORT_DIAGNOSTIC_CODES.artifactReadError;
-    emitDiagnostic({
-      level: 'error',
-      code: diagnosticCode,
-      message: 'Baseline suggestion cache payload read failed.',
-      context: buildReadArtifactFailureContext(readFailure),
-    });
-    console.error(
-      formatReadArtifactFailureMessage({
-        readResult: readFailure,
-        artifactLabel: 'baseline suggestion cache payload',
-      }),
-    );
-    process.exit(1);
-  }
-
-  emitDiagnostic({
-    level: 'error',
-    code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-    message: 'Baseline suggestion check failed before summary evaluation.',
-    context: {
-      path: inputPath,
-      reason: error?.message ?? 'unknown error',
-      errorCode: error?.code ?? null,
-    },
+  handleJsonCacheLoadFailure({
+    error,
+    emitDiagnostic,
+    inputPath,
+    cacheArtifactLabel: 'baseline suggestion cache payload',
+    cacheReadFailureMessage: 'Baseline suggestion cache payload read failed.',
+    genericFailureMessage: 'Baseline suggestion check failed before summary evaluation.',
   });
-  console.error(
-    `Unable to prepare baseline suggestion payload at "${inputPath}": ${error?.message ?? 'unknown error'}`,
-  );
   process.exit(1);
 }
 const summary = getBaselineChangeSummary(payload);

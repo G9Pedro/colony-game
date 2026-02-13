@@ -17,11 +17,7 @@ import {
 } from './reportDiagnostics.js';
 import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
 import { buildValidatedReportPayload } from './reportPayloadOutput.js';
-import {
-  buildReadArtifactFailureContext,
-  formatReadArtifactFailureMessage,
-  getReadArtifactDiagnosticCode,
-} from './reportPayloadInput.js';
+import { handleJsonCacheLoadFailure } from './reportCacheDiagnostics.js';
 
 const inputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
@@ -50,38 +46,14 @@ try {
       ),
   }));
 } catch (error) {
-  const readFailure = error?.cacheReadFailure;
-  if (readFailure) {
-    const diagnosticCode =
-      getReadArtifactDiagnosticCode(readFailure) ?? REPORT_DIAGNOSTIC_CODES.artifactReadError;
-    emitDiagnostic({
-      level: 'error',
-      code: diagnosticCode,
-      message: 'Scenario tuning baseline cache payload read failed.',
-      context: buildReadArtifactFailureContext(readFailure),
-    });
-    console.error(
-      formatReadArtifactFailureMessage({
-        readResult: readFailure,
-        artifactLabel: 'scenario tuning baseline cache payload',
-      }),
-    );
-    process.exit(1);
-  }
-
-  emitDiagnostic({
-    level: 'error',
-    code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-    message: 'Scenario tuning baseline check failed before summary evaluation.',
-    context: {
-      path: inputPath,
-      reason: error?.message ?? 'unknown error',
-      errorCode: error?.code ?? null,
-    },
+  handleJsonCacheLoadFailure({
+    error,
+    emitDiagnostic,
+    inputPath,
+    cacheArtifactLabel: 'scenario tuning baseline cache payload',
+    cacheReadFailureMessage: 'Scenario tuning baseline cache payload read failed.',
+    genericFailureMessage: 'Scenario tuning baseline check failed before summary evaluation.',
   });
-  console.error(
-    `Unable to prepare scenario tuning baseline payload at "${inputPath}": ${error?.message ?? 'unknown error'}`,
-  );
   process.exit(1);
 }
 const summary = getScenarioTuningBaselineChangeSummary(payload);
