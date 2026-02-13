@@ -8,6 +8,8 @@ import { promisify } from 'node:util';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { buildBaselineSuggestionPayload } from '../scripts/reportDiagnosticsFixtures.js';
 import {
+  assertOutputDiagnosticsContract,
+  assertOutputHasDiagnostic,
   assertOutputHasReadFailureDiagnostic,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
@@ -17,6 +19,7 @@ test('suggest-baselines-check passes with no drift and emits summary diagnostic'
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'suggest-baselines-check-'));
   const payloadPath = path.join(tempDirectory, 'baseline-suggestions.json');
   const scriptPath = path.resolve('scripts/suggest-baselines-check.js');
+  const runId = 'suggest-baseline-check-pass-run';
 
   try {
     await writeFile(
@@ -30,11 +33,28 @@ test('suggest-baselines-check passes with no drift and emits summary diagnostic'
         ...process.env,
         SIM_BASELINE_SUGGEST_PATH: payloadPath,
         REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
     });
     assert.match(stdout, /aggregateChangedMetrics=0/);
-    assert.match(stdout, /"code":"baseline-suggestion-summary"/);
-    assert.match(stdout, /"script":"simulate:baseline:check"/);
+    assertOutputDiagnosticsContract({
+      stdout,
+      stderr,
+      expectedScript: 'simulate:baseline:check',
+      expectedRunId: runId,
+      expectedCodes: [REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary],
+    });
+    const summaryDiagnostic = assertOutputHasDiagnostic({
+      stdout,
+      stderr,
+      diagnosticCode: REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary,
+      expectedScript: 'simulate:baseline:check',
+      expectedRunId: runId,
+      expectedLevel: 'info',
+    });
+    assert.equal(summaryDiagnostic.context?.aggregateChangedMetrics, 0);
+    assert.equal(summaryDiagnostic.context?.snapshotChangedKeys, 0);
+    assert.equal(summaryDiagnostic.context?.source, 'file');
     assert.equal(stderr.trim(), '');
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -45,6 +65,7 @@ test('suggest-baselines-check fails on drift and emits drift diagnostic', async 
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'suggest-baselines-check-'));
   const payloadPath = path.join(tempDirectory, 'baseline-suggestions.json');
   const scriptPath = path.resolve('scripts/suggest-baselines-check.js');
+  const runId = 'suggest-baseline-check-drift-run';
 
   try {
     await writeFile(
@@ -60,13 +81,38 @@ test('suggest-baselines-check fails on drift and emits drift diagnostic', async 
             ...process.env,
             SIM_BASELINE_SUGGEST_PATH: payloadPath,
             REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: runId,
           },
         }),
-      (error) =>
-        error.code === 1 &&
-        error.stderr.includes('Baseline drift detected') &&
-        error.stderr.includes('"code":"baseline-signature-drift"') &&
-        error.stderr.includes('"script":"simulate:baseline:check"'),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.ok(error.stderr.includes('Baseline drift detected'));
+        assertOutputDiagnosticsContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          expectedScript: 'simulate:baseline:check',
+          expectedRunId: runId,
+          expectedCodes: [
+            REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary,
+            REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
+          ],
+        });
+        const driftDiagnostic = assertOutputHasDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
+          expectedScript: 'simulate:baseline:check',
+          expectedRunId: runId,
+          expectedLevel: 'error',
+        });
+        assert.equal(driftDiagnostic.context?.aggregateChangedMetrics, 1);
+        assert.equal(driftDiagnostic.context?.snapshotChangedKeys, 1);
+        assert.equal(
+          Array.isArray(driftDiagnostic.context?.changedSnapshotKeys),
+          true,
+        );
+        return true;
+      },
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

@@ -108,3 +108,25 @@ export function assertOutputHasReadFailureDiagnostic({
   });
   return diagnostic;
 }
+
+export function assertOutputHasDiagnostic({
+  stdout = '',
+  stderr = '',
+  diagnosticCode,
+  expectedScript = undefined,
+  expectedRunId = undefined,
+  expectedLevel = undefined,
+}) {
+  const diagnostics = collectReportDiagnostics(stdout, stderr);
+  const diagnostic = findDiagnosticByCode(diagnostics, diagnosticCode);
+  if (expectedScript !== undefined) {
+    assert.equal(diagnostic.script, expectedScript);
+  }
+  if (expectedRunId !== undefined) {
+    assert.equal(diagnostic.runId, expectedRunId);
+  }
+  if (expectedLevel !== undefined) {
+    assert.equal(diagnostic.level, expectedLevel);
+  }
+  return diagnostic;
+}

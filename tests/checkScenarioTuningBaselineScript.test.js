@@ -8,6 +8,8 @@ import { promisify } from 'node:util';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { buildScenarioTuningIntensityOnlyDriftPayload } from '../scripts/reportDiagnosticsFixtures.js';
 import {
+  assertOutputDiagnosticsContract,
+  assertOutputHasDiagnostic,
   assertOutputHasReadFailureDiagnostic,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
@@ -17,6 +19,7 @@ test('check-scenario-tuning-baseline allows intensity drift when strict mode is 
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'check-tuning-baseline-'));
   const payloadPath = path.join(tempDirectory, 'scenario-tuning-baseline-suggestions.json');
   const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
+  const runId = 'tuning-baseline-check-intensity-warn-run';
 
   try {
     await writeFile(
@@ -24,17 +27,46 @@ test('check-scenario-tuning-baseline allows intensity drift when strict mode is 
       JSON.stringify(buildScenarioTuningIntensityOnlyDriftPayload(), null, 2),
       'utf-8',
     );
-    const { stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
       env: {
         ...process.env,
         SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: payloadPath,
         REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
     });
+    assertOutputDiagnosticsContract({
+      stdout,
+      stderr,
+      expectedScript: 'simulate:check:tuning-baseline',
+      expectedRunId: runId,
+      expectedCodes: [
+        REPORT_DIAGNOSTIC_CODES.scenarioTuningBaselineSummary,
+        REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDrift,
+        REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityEnforcementTip,
+      ],
+    });
+    const intensityDiagnostic = assertOutputHasDiagnostic({
+      stdout,
+      stderr,
+      diagnosticCode: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDrift,
+      expectedScript: 'simulate:check:tuning-baseline',
+      expectedRunId: runId,
+      expectedLevel: 'warn',
+    });
+    assert.equal(intensityDiagnostic.context?.strictIntensity, false);
+    assert.equal(intensityDiagnostic.context?.changedTotalAbsDelta, 1);
+    const tipDiagnostic = assertOutputHasDiagnostic({
+      stdout,
+      stderr,
+      diagnosticCode: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityEnforcementTip,
+      expectedScript: 'simulate:check:tuning-baseline',
+      expectedRunId: runId,
+      expectedLevel: 'warn',
+    });
+    assert.equal(typeof tipDiagnostic.context?.command, 'string');
+    assert.match(tipDiagnostic.context.command, /SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1/);
     assert.ok(stderr.includes('SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1'));
-    assert.ok(stderr.includes('"code":"scenario-tuning-intensity-drift"'));
-    assert.ok(stderr.includes('"code":"scenario-tuning-intensity-enforcement-tip"'));
-    assert.ok(stderr.includes('"script":"simulate:check:tuning-baseline"'));
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -44,6 +76,7 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'check-tuning-baseline-'));
   const payloadPath = path.join(tempDirectory, 'scenario-tuning-baseline-suggestions.json');
   const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
+  const runId = 'tuning-baseline-check-intensity-strict-run';
 
   try {
     await writeFile(
@@ -60,13 +93,34 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
             SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: payloadPath,
             SIM_SCENARIO_TUNING_ENFORCE_INTENSITY: '1',
             REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: runId,
           },
         }),
-      (error) =>
-        error.code === 1 &&
-        error.stderr.includes('strict enforcement enabled') &&
-        error.stderr.includes('"code":"scenario-tuning-intensity-drift-strict"') &&
-        error.stderr.includes('"script":"simulate:check:tuning-baseline"'),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.ok(error.stderr.includes('strict enforcement enabled'));
+        assertOutputDiagnosticsContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          expectedScript: 'simulate:check:tuning-baseline',
+          expectedRunId: runId,
+          expectedCodes: [
+            REPORT_DIAGNOSTIC_CODES.scenarioTuningBaselineSummary,
+            REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDrift,
+            REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDriftStrict,
+          ],
+        });
+        const strictDiagnostic = assertOutputHasDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDriftStrict,
+          expectedScript: 'simulate:check:tuning-baseline',
+          expectedRunId: runId,
+          expectedLevel: 'error',
+        });
+        assert.equal(strictDiagnostic.context?.changedTotalAbsDelta, 1);
+        return true;
+      },
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
