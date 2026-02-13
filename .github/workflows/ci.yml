@@ -73,4 +73,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: baseline-suggestion-report
-          path: reports/baseline-suggestions.json
+          path: |
+            reports/baseline-suggestions.json
+            reports/baseline-suggestions.md

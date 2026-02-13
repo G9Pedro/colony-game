@@ -1,9 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildAggregateBoundsDelta,
+  buildSnapshotSignatureDelta,
   buildSnapshotSignatureMap,
   buildSuggestedAggregateBounds,
   buildSuggestedBoundsFromMetrics,
+  formatAggregateBoundsSnippet,
+  formatSnapshotSignaturesSnippet,
 } from '../src/game/baselineSuggestion.js';
 
 test('buildSuggestedBoundsFromMetrics creates min/max envelope', () => {
@@ -57,4 +61,48 @@ test('buildSnapshotSignatureMap extracts key-signature pairs', () => {
     'frontier:standard': 'aaaa1111',
     'harsh:standard': 'bbbb2222',
   });
+});
+
+test('buildAggregateBoundsDelta marks changed and unchanged metrics', () => {
+  const delta = buildAggregateBoundsDelta(
+    {
+      frontier: {
+        alivePopulationMean: { min: 7.9, max: 8.1 },
+      },
+    },
+    {
+      frontier: {
+        alivePopulationMean: { min: 8, max: 8.2 },
+      },
+    },
+  );
+
+  assert.equal(delta.frontier.alivePopulationMean.changed, true);
+  assert.equal(delta.frontier.alivePopulationMean.minDelta, 0.1);
+  assert.equal(delta.frontier.alivePopulationMean.maxDelta, 0.1);
+});
+
+test('buildSnapshotSignatureDelta reports changed keys', () => {
+  const changes = buildSnapshotSignatureDelta(
+    { 'frontier:standard': 'aaaa1111' },
+    { 'frontier:standard': 'bbbb2222' },
+  );
+  assert.equal(changes.length, 1);
+  assert.equal(changes[0].changed, true);
+  assert.equal(changes[0].from, 'aaaa1111');
+  assert.equal(changes[0].to, 'bbbb2222');
+});
+
+test('snippet formatters emit copy-ready export statements', () => {
+  const boundsSnippet = formatAggregateBoundsSnippet({
+    frontier: { alivePopulationMean: { min: 7.9, max: 8.1 } },
+  });
+  const signatureSnippet = formatSnapshotSignaturesSnippet({
+    'frontier:standard': 'aaaa1111',
+  });
+
+  assert.ok(boundsSnippet.startsWith('export const AGGREGATE_BASELINE_BOUNDS ='));
+  assert.ok(boundsSnippet.includes('"frontier"'));
+  assert.ok(signatureSnippet.startsWith('export const EXPECTED_SUMMARY_SIGNATURES ='));
+  assert.ok(signatureSnippet.includes('"frontier:standard"'));
 });

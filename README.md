@@ -123,6 +123,10 @@ Generate suggested baseline updates from current deterministic behavior:
 npm run simulate:baseline:suggest
 ```
 
+This produces:
+- `reports/baseline-suggestions.json` (structured data + deltas + snippets)
+- `reports/baseline-suggestions.md` (human-readable summary with copy-ready snippets)
+
 CI now runs:
 - `npm test`
 - `npm run simulate:assert`
