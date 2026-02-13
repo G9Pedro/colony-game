@@ -196,6 +196,23 @@ Common diagnostic codes:
   - `scenario-tuning-intensity-drift-strict`
   - `baseline-signature-drift`
 
+Diagnostic JSON line format:
+
+```json
+{
+  "type": "report-diagnostic",
+  "level": "info|warn|error",
+  "code": "stable-diagnostic-code",
+  "message": "human-readable summary",
+  "context": { "optional": "object payload" }
+}
+```
+
+Contract notes:
+- `type` is always `report-diagnostic`.
+- `code` values are from a fixed, validated code catalog (unknown codes are rejected).
+- `context` is either `null` or an object (never an array/string).
+
 Enable strict mode in CI:
 1. Open repository **Settings → Secrets and variables → Actions → Variables**.
 2. Add variable `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY` with value `1`.
