@@ -485,6 +485,70 @@ function isValidRecommendedActions(value) {
   );
 }
 
+const KNOWN_REPORT_ARTIFACT_STATUSES = new Set(['ok', 'error', 'invalid', 'invalid-json']);
+
+function isValidReportArtifactResultEntry(result) {
+  if (
+    !Boolean(
+      result &&
+        typeof result === 'object' &&
+        typeof result.path === 'string' &&
+        result.path.length > 0 &&
+        typeof result.kind === 'string' &&
+        result.kind.length > 0 &&
+        typeof result.status === 'string' &&
+        KNOWN_REPORT_ARTIFACT_STATUSES.has(result.status) &&
+        typeof result.ok === 'boolean' &&
+        (result.message === null || typeof result.message === 'string') &&
+        (result.recommendedCommand === null || typeof result.recommendedCommand === 'string'),
+    )
+  ) {
+    return false;
+  }
+
+  if (result.ok) {
+    return result.status === 'ok' && result.message === null && result.recommendedCommand === null;
+  }
+
+  return (
+    result.status !== 'ok' &&
+    typeof result.message === 'string' &&
+    result.message.length > 0 &&
+    typeof result.recommendedCommand === 'string' &&
+    result.recommendedCommand.length > 0
+  );
+}
+
+function buildRecommendedActionsFromResults(results) {
+  const byCommand = new Map();
+  for (const result of results ?? []) {
+    if (result.ok) {
+      continue;
+    }
+    const command = result.recommendedCommand;
+    if (!byCommand.has(command)) {
+      byCommand.set(command, new Set());
+    }
+    byCommand.get(command).add(result.path);
+  }
+
+  return Array.from(byCommand.entries())
+    .map(([command, pathSet]) => ({
+      command,
+      paths: Array.from(pathSet).sort((a, b) => a.localeCompare(b)),
+    }))
+    .sort((a, b) => a.command.localeCompare(b.command));
+}
+
+function normalizeRecommendedActions(actions) {
+  return (actions ?? [])
+    .map((action) => ({
+      command: action.command,
+      paths: [...action.paths].sort((a, b) => a.localeCompare(b)),
+    }))
+    .sort((a, b) => a.command.localeCompare(b.command));
+}
+
 export function withReportMeta(kind, payload) {
   if (!(kind in REPORT_SCHEMA_VERSIONS)) {
     throw new Error(`Unknown report kind "${kind}".`);
@@ -776,19 +840,7 @@ export function isValidReportArtifactsValidationPayload(payload) {
     return false;
   }
 
-  const validResults = results.every(
-    (result) =>
-      result &&
-      typeof result === 'object' &&
-      typeof result.path === 'string' &&
-      result.path.length > 0 &&
-      typeof result.kind === 'string' &&
-      result.kind.length > 0 &&
-      typeof result.status === 'string' &&
-      typeof result.ok === 'boolean' &&
-      (result.message === null || typeof result.message === 'string') &&
-      (result.recommendedCommand === null || typeof result.recommendedCommand === 'string'),
-  );
+  const validResults = results.every((result) => isValidReportArtifactResultEntry(result));
   if (!validResults) {
     return false;
   }
@@ -803,6 +855,15 @@ export function isValidReportArtifactsValidationPayload(payload) {
   const statusCountsMatch = Object.keys(computedStatusCounts).every(
     (status) => payload.statusCounts[status] === computedStatusCounts[status],
   );
+  const knownStatusKeysOnly = Object.keys(payload.statusCounts).every((status) =>
+    KNOWN_REPORT_ARTIFACT_STATUSES.has(status),
+  );
+  const statusKeySetMatches = Object.keys(payload.statusCounts).length === Object.keys(computedStatusCounts).length;
+  const expectedRecommendedActions = buildRecommendedActionsFromResults(results);
+  const recommendedActionsMatch = areNormalizedJsonValuesEqual(
+    normalizeRecommendedActions(payload.recommendedActions),
+    normalizeRecommendedActions(expectedRecommendedActions),
+  );
 
   return Boolean(
     payload.totalChecked === results.length &&
@@ -810,7 +871,10 @@ export function isValidReportArtifactsValidationPayload(payload) {
       payload.overallPassed === (failureCount === 0) &&
       reportedStatusTotal === payload.totalChecked &&
       computedStatusTotal === payload.totalChecked &&
-      statusCountsMatch,
+      knownStatusKeysOnly &&
+      statusKeySetMatches &&
+      statusCountsMatch &&
+      recommendedActionsMatch,
   );
 }
 

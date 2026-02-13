@@ -687,6 +687,48 @@ test('isValidReportArtifactsValidationPayload rejects inconsistent aggregate cou
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
+test('isValidReportArtifactsValidationPayload rejects result status/ok semantic mismatch', () => {
+  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
+    overallPassed: true,
+    failureCount: 0,
+    totalChecked: 1,
+    statusCounts: { error: 1 },
+    recommendedActions: [],
+    results: [
+      {
+        path: 'reports/a.json',
+        kind: REPORT_KINDS.baselineSuggestions,
+        status: 'error',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+    ],
+  });
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
+});
+
+test('isValidReportArtifactsValidationPayload rejects recommended actions mismatched to failures', () => {
+  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
+    overallPassed: false,
+    failureCount: 1,
+    totalChecked: 1,
+    statusCounts: { error: 1 },
+    recommendedActions: [],
+    results: [
+      {
+        path: 'reports/broken.json',
+        kind: REPORT_KINDS.scenarioTuningDashboard,
+        status: 'error',
+        ok: false,
+        message: 'read failure',
+        recommendedCommand: 'npm run verify',
+      },
+    ],
+  });
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
+});
+
 test('withReportMeta throws for unknown report kind', () => {
   assert.throws(
     () => withReportMeta('unknown-report-kind', {}),
