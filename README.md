@@ -188,6 +188,7 @@ Optional machine-readable diagnostics mode:
 - `npm run diagnostics:smoke` executes a lightweight end-to-end diagnostics contract check, then writes consolidated JSON + Markdown reports (`reports/report-diagnostics-smoke.json/.md` by default) with counts by script/level/code plus per-scenario pass/fail details.
 - optional: set `REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH=<path>` to control where the consolidated smoke report is written.
 - optional: set `REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH=<path>` to control where the markdown smoke report is written.
+- `npm run diagnostics:smoke:validate` validates a smoke JSON artifact contract and fails if `failedScenarioCount > 0`.
 - smoke summary payloads are versioned and tagged for automation:
   - `type: "report-diagnostics-smoke-summary"`
   - `schemaVersion: 1`
@@ -261,6 +262,7 @@ npm run simulate:suggest:tuning-baseline
 | `npm run simulate:tuning:session:strict` | Run the same tuning sequence but fail on intensity drift | all tuning reports + strict baseline check output |
 | `npm run simulate:tuning:prepr` | Run strict tuning session plus report artifact schema checks | strict session output + report validation summary |
 | `npm run diagnostics:smoke` | Execute diagnostics contract smoke checks across report scripts | `reports/report-diagnostics-smoke.json/.md` |
+| `npm run diagnostics:smoke:validate` | Validate an existing smoke JSON artifact and enforce zero failed scenarios | console output + exit status |
 
 ### Recommended Manual Tuning Session Order
 
