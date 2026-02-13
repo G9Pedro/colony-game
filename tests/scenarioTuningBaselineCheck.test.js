@@ -6,8 +6,11 @@ import {
   buildScenarioTuningSignatureMap,
 } from '../src/content/scenarioTuningSignature.js';
 import {
+  buildScenarioTuningBaselineSuggestionMarkdown,
+  buildScenarioTuningBaselineSuggestionPayload,
   buildScenarioTuningBaselineReport,
   formatScenarioTuningBaselineSnippet,
+  getScenarioTuningBaselineChangeSummary,
 } from '../src/content/scenarioTuningBaselineCheck.js';
 
 test('buildCanonicalScenarioTuning strips neutral and invalid values', () => {
@@ -72,6 +75,23 @@ test('buildScenarioTuningBaselineReport flags changed signatures', () => {
   assert.ok(report.snippets.scenarioTuningBaseline.includes('EXPECTED_SCENARIO_TUNING_SIGNATURES'));
 });
 
+test('buildScenarioTuningBaselineSuggestionPayload mirrors report payload', () => {
+  const payload = buildScenarioTuningBaselineSuggestionPayload({
+    scenarios: {
+      frontier: {
+        productionMultipliers: { resource: { food: 1.06 }, job: {} },
+        jobPriorityMultipliers: {},
+      },
+    },
+    expectedSignatures: {
+      frontier: 'deadbeef',
+    },
+  });
+
+  assert.equal(payload.changedCount, 1);
+  assert.equal(payload.results[0].changed, true);
+});
+
 test('formatScenarioTuningBaselineSnippet emits copy-ready export', () => {
   const snippet = formatScenarioTuningBaselineSnippet({
     frontier: 'aaaa1111',
@@ -79,4 +99,32 @@ test('formatScenarioTuningBaselineSnippet emits copy-ready export', () => {
 
   assert.ok(snippet.startsWith('export const EXPECTED_SCENARIO_TUNING_SIGNATURES ='));
   assert.ok(snippet.includes('"frontier"'));
+});
+
+test('buildScenarioTuningBaselineSuggestionMarkdown renders changed scenarios', () => {
+  const markdown = buildScenarioTuningBaselineSuggestionMarkdown({
+    results: [
+      {
+        scenarioId: 'frontier',
+        expectedSignature: 'aaaa1111',
+        currentSignature: 'bbbb2222',
+        changed: true,
+      },
+    ],
+    snippets: {
+      scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};\n',
+    },
+  });
+
+  assert.ok(markdown.includes('# Scenario Tuning Baseline Suggestions'));
+  assert.ok(markdown.includes('frontier: aaaa1111 -> bbbb2222'));
+  assert.ok(markdown.includes('EXPECTED_SCENARIO_TUNING_SIGNATURES'));
+});
+
+test('getScenarioTuningBaselineChangeSummary counts changes', () => {
+  const summary = getScenarioTuningBaselineChangeSummary({
+    results: [{ changed: false }, { changed: true }],
+  });
+  assert.equal(summary.changedSignatures, 1);
+  assert.equal(summary.hasChanges, true);
 });

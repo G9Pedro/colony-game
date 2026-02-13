@@ -22,6 +22,16 @@ export function buildScenarioTuningBaselineReport({
   scenarios,
   expectedSignatures,
 }) {
+  return buildScenarioTuningBaselineSuggestionPayload({
+    scenarios,
+    expectedSignatures,
+  });
+}
+
+export function buildScenarioTuningBaselineSuggestionPayload({
+  scenarios,
+  expectedSignatures,
+}) {
   const currentSignatures = buildScenarioTuningSignatureMap(scenarios);
   const scenarioIds = Array.from(
     new Set([...Object.keys(currentSignatures), ...Object.keys(expectedSignatures ?? {})]),
@@ -51,5 +61,43 @@ export function buildScenarioTuningBaselineReport({
     snippets: {
       scenarioTuningBaseline: formatScenarioTuningBaselineSnippet(currentSignatures),
     },
+  };
+}
+
+export function buildScenarioTuningBaselineSuggestionMarkdown(payload) {
+  const changed = payload.results.filter((result) => result.changed);
+  const lines = [
+    '# Scenario Tuning Baseline Suggestions',
+    '',
+    `- Changed signatures: ${changed.length}`,
+    '',
+  ];
+
+  if (changed.length === 0) {
+    lines.push('No baseline signature changes detected.', '');
+  } else {
+    lines.push('## Changed Scenarios', '');
+    changed.forEach((item) => {
+      lines.push(`- ${item.scenarioId}: ${item.expectedSignature ?? 'null'} -> ${item.currentSignature ?? 'null'}`);
+    });
+    lines.push('');
+  }
+
+  lines.push(
+    '## Suggested Baseline Snippet',
+    '',
+    '```js',
+    payload.snippets.scenarioTuningBaseline.trim(),
+    '```',
+    '',
+  );
+  return lines.join('\n');
+}
+
+export function getScenarioTuningBaselineChangeSummary(payload) {
+  const changedSignatures = (payload.results ?? []).filter((result) => result.changed).length;
+  return {
+    changedSignatures,
+    hasChanges: changedSignatures > 0,
   };
 }

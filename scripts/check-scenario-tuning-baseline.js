@@ -1,42 +1,18 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
-import { EXPECTED_SCENARIO_TUNING_SIGNATURES } from '../src/content/scenarioTuningBaseline.js';
-import { buildScenarioTuningBaselineReport } from '../src/content/scenarioTuningBaselineCheck.js';
-import { SCENARIO_DEFINITIONS } from '../src/content/scenarios.js';
+import { readFile } from 'node:fs/promises';
+import { getScenarioTuningBaselineChangeSummary } from '../src/content/scenarioTuningBaselineCheck.js';
 
-const outputPath =
-  process.env.SIM_SCENARIO_TUNING_BASELINE_CHECK_PATH ?? 'reports/scenario-tuning-baseline-check.json';
+const inputPath =
+  process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
+  'reports/scenario-tuning-baseline-suggestions.json';
 
-const report = buildScenarioTuningBaselineReport({
-  scenarios: SCENARIO_DEFINITIONS,
-  expectedSignatures: EXPECTED_SCENARIO_TUNING_SIGNATURES,
-});
+const payload = JSON.parse(await readFile(inputPath, 'utf-8'));
+const summary = getScenarioTuningBaselineChangeSummary(payload);
 
-await mkdir(dirname(outputPath), { recursive: true });
-await writeFile(
-  outputPath,
-  JSON.stringify(
-    {
-      generatedAt: new Date().toISOString(),
-      ...report,
-    },
-    null,
-    2,
-  ),
-  'utf-8',
+console.log(
+  `Scenario tuning baseline summary: changedSignatures=${summary.changedSignatures}`,
 );
 
-report.results.forEach((result) => {
-  const status = result.changed ? 'changed' : 'ok';
-  console.log(`[${result.scenarioId}] ${status}: ${result.currentSignature}`);
-  if (result.changed) {
-    console.error(`  - ${result.message}`);
-  }
-});
-
-console.log(`Scenario tuning baseline report written to: ${outputPath}`);
-console.log(`Changed signatures detected: ${report.changedCount}`);
-
-if (!report.overallPassed) {
+if (summary.hasChanges) {
+  console.error('Scenario tuning baseline drift detected. Re-baseline intentionally if expected.');
   process.exit(1);
 }

@@ -50,14 +50,19 @@ jobs:
             reports/scenario-tuning-dashboard.json
             reports/scenario-tuning-dashboard.md
 
-      - name: Enforce scenario tuning baseline signatures
-        run: npm run simulate:check:tuning-baseline
+      - name: Generate scenario tuning baseline suggestions
+        run: npm run simulate:suggest:tuning-baseline
 
-      - name: Upload scenario tuning baseline check artifact
+      - name: Upload scenario tuning baseline suggestion artifact
         uses: actions/upload-artifact@v4
         with:
-          name: scenario-tuning-baseline-check-report
-          path: reports/scenario-tuning-baseline-check.json
+          name: scenario-tuning-baseline-suggestions-report
+          path: |
+            reports/scenario-tuning-baseline-suggestions.json
+            reports/scenario-tuning-baseline-suggestions.md
+
+      - name: Enforce scenario tuning baseline signatures
+        run: npm run simulate:check:tuning-baseline
 
       - name: Generate simulation regression report
         run: npm run simulate:report
