@@ -17,6 +17,7 @@ import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPa
 import { getReportArtifactRegenerationCommand } from '../src/game/reportArtifactsManifest.js';
 import {
   buildReportArtifactValidationResults,
+  buildReportArtifactsValidationPayloadFixture,
   buildValidReportArtifactsValidationPayload,
 } from './helpers/reportArtifactsValidationFixtures.js';
 
@@ -979,50 +980,51 @@ test('isValidReportArtifactsValidationPayload rejects inconsistent aggregate cou
 });
 
 test('isValidReportArtifactsValidationPayload rejects result status/ok semantic mismatch', () => {
-  const payload = buildValidReportArtifactsValidationPayload({
-    results: buildReportArtifactValidationResults({
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    resultOverridesByPath: {
       'reports/baseline-suggestions.json': {
         status: REPORT_ARTIFACT_STATUSES.error,
         ok: true,
       },
-    }),
+    },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects recommended actions mismatched to failures', () => {
   const failurePath = 'reports/scenario-tuning-dashboard.json';
-  const results = buildReportArtifactValidationResults({
-    [failurePath]: {
-      status: REPORT_ARTIFACT_STATUSES.error,
-      ok: false,
-      message: 'read failure',
-      recommendedCommand: getReportArtifactRegenerationCommand(failurePath),
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    resultOverridesByPath: {
+      [failurePath]: {
+        status: REPORT_ARTIFACT_STATUSES.error,
+        ok: false,
+        message: 'read failure',
+        recommendedCommand: getReportArtifactRegenerationCommand(failurePath),
+      },
     },
-  });
-  const payload = buildValidReportArtifactsValidationPayload({
-    results,
-    recommendedActions: [],
+    payloadOverrides: {
+      recommendedActions: [],
+    },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects unknown result kinds', () => {
-  const payload = buildValidReportArtifactsValidationPayload({
-    results: buildReportArtifactValidationResults({
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    resultOverridesByPath: {
       'reports/baseline-suggestions.json': { kind: 'unknown-kind' },
-    }),
+    },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('isValidReportArtifactsValidationPayload rejects duplicate result paths', () => {
-  const payload = buildValidReportArtifactsValidationPayload({
-    results: buildReportArtifactValidationResults({
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    resultOverridesByPath: {
       'reports/scenario-tuning-dashboard.json': {
         path: 'reports/baseline-suggestions.json',
       },
-    }),
+    },
   });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
