@@ -1,6 +1,4 @@
-import {
-  REPORT_DIAGNOSTIC_CODES,
-} from '../../scripts/reportDiagnostics.js';
+import { READ_ARTIFACT_DIAGNOSTIC_CODES } from '../../scripts/reportPayloadInput.js';
 import assert from 'node:assert/strict';
 import {
   assertOutputHasReadFailureDiagnosticContract,
@@ -13,22 +11,22 @@ import {
 
 export const REPORT_READ_FAILURE_SCENARIO_CONTRACTS = Object.freeze({
   missing: Object.freeze({
-    diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+    diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.missing,
     status: 'missing',
     errorCode: 'ENOENT',
   }),
   invalidJson: Object.freeze({
-    diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
+    diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidJson,
     status: 'invalid-json',
     errorCode: null,
   }),
   invalidPayload: Object.freeze({
-    diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
+    diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.invalidPayload,
     status: 'invalid',
     errorCode: null,
   }),
   unreadable: Object.freeze({
-    diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+    diagnosticCode: READ_ARTIFACT_DIAGNOSTIC_CODES.readError,
     status: 'error',
     errorCode: 'EISDIR',
   }),
