@@ -5,57 +5,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
+import { buildBaselineSuggestionPayload } from '../scripts/reportDiagnosticsFixtures.js';
 
 const execFileAsync = promisify(execFile);
-
-function buildBaselineSuggestionPayload({ changed }) {
-  const suggestedAggregateBounds = {
-    frontier: {
-      alivePopulationMean: { min: 8, max: 8.2 },
-    },
-  };
-  const suggestedSnapshotSignatures = {
-    'frontier:standard': 'bbbb2222',
-  };
-  const currentAggregateBounds = {
-    frontier: {
-      alivePopulationMean: changed ? { min: 7.9, max: 8.1 } : { min: 8, max: 8.2 },
-    },
-  };
-  const currentSnapshotSignatures = {
-    'frontier:standard': changed ? 'aaaa1111' : 'bbbb2222',
-  };
-
-  return withReportMeta(REPORT_KINDS.baselineSuggestions, {
-    driftRuns: 8,
-    currentAggregateBounds,
-    suggestedAggregateBounds,
-    currentSnapshotSignatures,
-    suggestedSnapshotSignatures,
-    aggregateDelta: {
-      frontier: {
-        alivePopulationMean: {
-          changed,
-          minDelta: changed ? 0.1 : 0,
-          maxDelta: changed ? 0.1 : 0,
-        },
-      },
-    },
-    snapshotDelta: [
-      {
-        key: 'frontier:standard',
-        changed,
-        from: currentSnapshotSignatures['frontier:standard'],
-        to: suggestedSnapshotSignatures['frontier:standard'],
-      },
-    ],
-    snippets: {
-      regressionBaseline: `export const AGGREGATE_BASELINE_BOUNDS = ${JSON.stringify(suggestedAggregateBounds)};\n`,
-      regressionSnapshots: `export const EXPECTED_SUMMARY_SIGNATURES = ${JSON.stringify(suggestedSnapshotSignatures)};\n`,
-    },
-  });
-}
 
 test('suggest-baselines-check passes with no drift and emits summary diagnostic', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'suggest-baselines-check-'));
