@@ -7,6 +7,22 @@ function normalizeMode(mode) {
   return mode === 'three' ? 'three' : 'isometric';
 }
 
+function readRendererModePreference() {
+  try {
+    return window.localStorage.getItem(RENDERER_MODE_STORAGE_KEY);
+  } catch (error) {
+    return null;
+  }
+}
+
+function persistRendererModePreference(mode) {
+  try {
+    window.localStorage.setItem(RENDERER_MODE_STORAGE_KEY, mode);
+  } catch (error) {
+    // no-op when storage is unavailable
+  }
+}
+
 export class SceneRenderer {
   constructor(rootElement) {
     this.rootElement = rootElement;
@@ -14,7 +30,7 @@ export class SceneRenderer {
     this._onPlacementPreview = null;
     this._onEntitySelect = null;
     this.preview = null;
-    this.mode = normalizeMode(window.localStorage.getItem(RENDERER_MODE_STORAGE_KEY) ?? 'isometric');
+    this.mode = normalizeMode(readRendererModePreference() ?? 'isometric');
     this.activeRenderer = null;
     this.lastState = null;
     Object.defineProperty(this, 'onGroundClick', {
@@ -58,7 +74,7 @@ export class SceneRenderer {
       this.mode = 'isometric';
     }
 
-    window.localStorage.setItem(RENDERER_MODE_STORAGE_KEY, this.mode);
+    persistRendererModePreference(this.mode);
     this.activeRenderer.setGroundClickHandler(this._onGroundClick);
     this.activeRenderer.setPlacementPreviewHandler(this._onPlacementPreview);
     this.activeRenderer.setEntitySelectHandler(this._onEntitySelect);
