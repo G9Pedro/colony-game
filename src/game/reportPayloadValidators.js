@@ -59,6 +59,57 @@ function roundToFour(value) {
   return Number(value.toFixed(4));
 }
 
+function normalizeJsonValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeJsonValue(item));
+  }
+  if (!isPlainRecord(value)) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort((a, b) => a.localeCompare(b))
+      .map((key) => [key, normalizeJsonValue(value[key])]),
+  );
+}
+
+function areNormalizedJsonValuesEqual(left, right) {
+  return JSON.stringify(normalizeJsonValue(left)) === JSON.stringify(normalizeJsonValue(right));
+}
+
+function parseExportedConstSnippetObject(snippet, constName) {
+  if (typeof snippet !== 'string' || snippet.length === 0) {
+    return { ok: false, value: null };
+  }
+
+  const escapedConstName = constName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(
+    `^\\s*export\\s+const\\s+${escapedConstName}\\s*=\\s*([\\s\\S]+?)\\s*;\\s*$`,
+  );
+  const match = snippet.match(pattern);
+  if (!match) {
+    return { ok: false, value: null };
+  }
+
+  try {
+    const value = JSON.parse(match[1]);
+    if (!isPlainRecord(value)) {
+      return { ok: false, value: null };
+    }
+    return { ok: true, value };
+  } catch {
+    return { ok: false, value: null };
+  }
+}
+
+function isSnippetObjectParityValid({ snippet, constName, expectedValue }) {
+  const parsed = parseExportedConstSnippetObject(snippet, constName);
+  if (!parsed.ok) {
+    return false;
+  }
+  return areNormalizedJsonValuesEqual(parsed.value, expectedValue);
+}
+
 function isRecordOfNullableStrings(value) {
   if (!isPlainRecord(value)) {
     return false;
@@ -458,7 +509,17 @@ export function isValidBaselineSuggestionPayload(payload) {
 
   return (
     hasValidAggregateDeltaConsistency(payload) &&
-    hasValidSnapshotDeltaConsistency(payload)
+    hasValidSnapshotDeltaConsistency(payload) &&
+    isSnippetObjectParityValid({
+      snippet: payload.snippets?.regressionBaseline,
+      constName: 'AGGREGATE_BASELINE_BOUNDS',
+      expectedValue: payload.suggestedAggregateBounds,
+    }) &&
+    isSnippetObjectParityValid({
+      snippet: payload.snippets?.regressionSnapshots,
+      constName: 'EXPECTED_SUMMARY_SIGNATURES',
+      expectedValue: payload.suggestedSnapshotSignatures,
+    })
   );
 }
 
@@ -539,7 +600,17 @@ export function isValidScenarioTuningSuggestionPayload(payload) {
     payload.changedCount === changedCount &&
       payload.intensityChangedCount === intensityChangedCount &&
       payload.overallPassed === (changedCount === 0 && intensityChangedCount === 0) &&
-      payload.strictIntensityRecommended === (intensityChangedCount > 0),
+      payload.strictIntensityRecommended === (intensityChangedCount > 0) &&
+      isSnippetObjectParityValid({
+        snippet: payload.snippets?.scenarioTuningBaseline,
+        constName: 'EXPECTED_SCENARIO_TUNING_SIGNATURES',
+        expectedValue: payload.currentSignatures,
+      }) &&
+      isSnippetObjectParityValid({
+        snippet: payload.snippets?.scenarioTuningTotalAbsDeltaBaseline,
+        constName: 'EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA',
+        expectedValue: payload.currentTotalAbsDelta,
+      }),
   );
 }
 

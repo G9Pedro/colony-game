@@ -18,6 +18,14 @@ test('REPORT_ARTIFACT_TARGETS includes expected report kinds', () => {
 });
 
 test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
+  const suggestedAggregateBounds = {
+    frontier: {
+      alivePopulationMean: { min: 8, max: 8.2 },
+    },
+  };
+  const suggestedSnapshotSignatures = {
+    'frontier:standard': 'bbbb2222',
+  };
   const validBaselinePayload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
     driftRuns: 8,
     currentAggregateBounds: {
@@ -25,17 +33,11 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
         alivePopulationMean: { min: 7.9, max: 8.1 },
       },
     },
-    suggestedAggregateBounds: {
-      frontier: {
-        alivePopulationMean: { min: 8, max: 8.2 },
-      },
-    },
+    suggestedAggregateBounds,
     currentSnapshotSignatures: {
       'frontier:standard': 'aaaa1111',
     },
-    suggestedSnapshotSignatures: {
-      'frontier:standard': 'bbbb2222',
-    },
+    suggestedSnapshotSignatures,
     aggregateDelta: {
       frontier: {
         alivePopulationMean: {
@@ -54,8 +56,8 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
       },
     ],
     snippets: {
-      regressionBaseline: 'export const AGGREGATE_BASELINE_BOUNDS = {};',
-      regressionSnapshots: 'export const EXPECTED_SUMMARY_SIGNATURES = {};',
+      regressionBaseline: `export const AGGREGATE_BASELINE_BOUNDS = ${JSON.stringify(suggestedAggregateBounds, null, 2)};\n`,
+      regressionSnapshots: `export const EXPECTED_SUMMARY_SIGNATURES = ${JSON.stringify(suggestedSnapshotSignatures, null, 2)};\n`,
     },
   });
 

@@ -15,6 +15,14 @@ import {
 } from '../src/game/reportPayloadValidators.js';
 
 function buildValidBaselineSuggestionPayload(kind = REPORT_KINDS.baselineSuggestions) {
+  const suggestedAggregateBounds = {
+    frontier: {
+      alivePopulationMean: { min: 8, max: 8.2 },
+    },
+  };
+  const suggestedSnapshotSignatures = {
+    'frontier:standard': 'bbbb2222',
+  };
   return withReportMeta(kind, {
     driftRuns: 8,
     currentAggregateBounds: {
@@ -22,17 +30,11 @@ function buildValidBaselineSuggestionPayload(kind = REPORT_KINDS.baselineSuggest
         alivePopulationMean: { min: 7.9, max: 8.1 },
       },
     },
-    suggestedAggregateBounds: {
-      frontier: {
-        alivePopulationMean: { min: 8, max: 8.2 },
-      },
-    },
+    suggestedAggregateBounds,
     currentSnapshotSignatures: {
       'frontier:standard': 'aaaa1111',
     },
-    suggestedSnapshotSignatures: {
-      'frontier:standard': 'bbbb2222',
-    },
+    suggestedSnapshotSignatures,
     aggregateDelta: {
       frontier: {
         alivePopulationMean: {
@@ -51,8 +53,8 @@ function buildValidBaselineSuggestionPayload(kind = REPORT_KINDS.baselineSuggest
       },
     ],
     snippets: {
-      regressionBaseline: 'export const AGGREGATE_BASELINE_BOUNDS = {};',
-      regressionSnapshots: 'export const EXPECTED_SUMMARY_SIGNATURES = {};',
+      regressionBaseline: `export const AGGREGATE_BASELINE_BOUNDS = ${JSON.stringify(suggestedAggregateBounds, null, 2)};\n`,
+      regressionSnapshots: `export const EXPECTED_SUMMARY_SIGNATURES = ${JSON.stringify(suggestedSnapshotSignatures, null, 2)};\n`,
     },
   });
 }
@@ -112,6 +114,13 @@ test('isValidBaselineSuggestionPayload rejects snapshot delta mismatch against s
 test('isValidBaselineSuggestionPayload rejects aggregate delta mismatch against bounds maps', () => {
   const payload = buildValidBaselineSuggestionPayload();
   payload.aggregateDelta.frontier.alivePopulationMean.minDelta = 0.2;
+  assert.equal(isValidBaselineSuggestionPayload(payload), false);
+});
+
+test('isValidBaselineSuggestionPayload rejects snippet mismatch against suggested values', () => {
+  const payload = buildValidBaselineSuggestionPayload();
+  payload.snippets.regressionSnapshots =
+    'export const EXPECTED_SUMMARY_SIGNATURES = {"frontier:standard":"cccc3333"};\n';
   assert.equal(isValidBaselineSuggestionPayload(payload), false);
 });
 
@@ -223,6 +232,46 @@ test('isValidScenarioTuningSuggestionPayload rejects inconsistent changed counte
       scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};',
       scenarioTuningTotalAbsDeltaBaseline:
         'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {};',
+    },
+  });
+  assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
+});
+
+test('isValidScenarioTuningSuggestionPayload rejects snippet mismatch against current maps', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
+    overallPassed: true,
+    changedCount: 0,
+    intensityChangedCount: 0,
+    currentSignatures: { frontier: 'aaaa1111' },
+    expectedSignatures: { frontier: 'aaaa1111' },
+    currentTotalAbsDelta: { frontier: 0 },
+    expectedTotalAbsDelta: { frontier: 0 },
+    results: [
+      {
+        scenarioId: 'frontier',
+        currentSignature: 'aaaa1111',
+        expectedSignature: 'aaaa1111',
+        changed: false,
+        message: null,
+      },
+    ],
+    intensityResults: [
+      {
+        scenarioId: 'frontier',
+        currentTotalAbsDeltaPercent: 0,
+        expectedTotalAbsDeltaPercent: 0,
+        changed: false,
+        message: null,
+      },
+    ],
+    strictIntensityRecommended: false,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
+    snippets: {
+      scenarioTuningBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {"frontier":"bbbb2222"};\n',
+      scenarioTuningTotalAbsDeltaBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {"frontier":0};\n',
     },
   });
   assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
