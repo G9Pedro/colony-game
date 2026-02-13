@@ -178,6 +178,7 @@ Optional strict mode:
 Optional machine-readable diagnostics mode:
 - set `REPORT_DIAGNOSTICS_JSON=1` to emit one-line JSON diagnostics in addition to normal human-readable logs.
 - this is useful for CI log parsing and custom automation.
+- optional: set `REPORT_DIAGNOSTICS_RUN_ID=<value>` to attach a shared correlation ID across all emitted diagnostics in a run.
 - currently supported by:
   - `npm run simulate:report:tuning:trend`
   - `npm run reports:validate`
@@ -201,6 +202,10 @@ Diagnostic JSON line format:
 ```json
 {
   "type": "report-diagnostic",
+  "schemaVersion": 1,
+  "generatedAt": "2026-02-13T12:34:56.789Z",
+  "script": "npm-script-or-null",
+  "runId": "optional-correlation-id-or-null",
   "level": "info|warn|error",
   "code": "stable-diagnostic-code",
   "message": "human-readable summary",
@@ -210,6 +215,10 @@ Diagnostic JSON line format:
 
 Contract notes:
 - `type` is always `report-diagnostic`.
+- `schemaVersion` is an integer and currently `1`.
+- `generatedAt` is canonical ISO-8601 (`Date.toISOString()` format).
+- `script` is either `null` or a non-empty command identifier string.
+- `runId` is either `null` or a non-empty string (`REPORT_DIAGNOSTICS_RUN_ID` can set this globally).
 - `code` values are from a fixed, validated code catalog (unknown codes are rejected).
 - `context` is either `null` or an object (never an array/string).
 
