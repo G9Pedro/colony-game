@@ -41,6 +41,7 @@ export function buildScenarioTuningTrendReport({
   currentDashboard,
   baselineDashboard = null,
   baselineSignatures = {},
+  baselineTotalAbsDelta = {},
   comparisonSource = 'dashboard',
   baselineReference = null,
 }) {
@@ -54,7 +55,9 @@ export function buildScenarioTuningTrendReport({
     const currentSignature = currentScenario?.signature ?? null;
     const baselineSignature = baselineScenario?.signature ?? baselineSignatures?.[scenarioId] ?? null;
     const currentIntensity = asFiniteNumber(currentScenario?.totalAbsDeltaPercent);
-    const baselineIntensity = asFiniteNumber(baselineScenario?.totalAbsDeltaPercent);
+    const baselineIntensity =
+      asFiniteNumber(baselineScenario?.totalAbsDeltaPercent) ??
+      asFiniteNumber(baselineTotalAbsDelta?.[scenarioId]);
     const signatureChanged = currentSignature !== baselineSignature;
     const intensityDelta =
       currentIntensity !== null && baselineIntensity !== null

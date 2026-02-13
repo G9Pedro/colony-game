@@ -121,6 +121,8 @@ Generate a scenario tuning trend report against baseline signatures (or a baseli
 npm run simulate:report:tuning:trend
 ```
 
+When a baseline dashboard artifact is unavailable, the trend report falls back to committed signature and intensity baselines.
+
 Trend baseline path can be overridden with:
 - `SIM_SCENARIO_TUNING_TREND_BASELINE_PATH` (read path used by trend report)
 - `SIM_SCENARIO_TUNING_DASHBOARD_BASELINE_PATH` (write path used by baseline capture)

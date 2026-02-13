@@ -1,7 +1,10 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { SCENARIO_DEFINITIONS } from '../src/content/scenarios.js';
-import { EXPECTED_SCENARIO_TUNING_SIGNATURES } from '../src/content/scenarioTuningBaseline.js';
+import {
+  EXPECTED_SCENARIO_TUNING_SIGNATURES,
+  EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA,
+} from '../src/content/scenarioTuningBaseline.js';
 import { buildScenarioTuningDashboard } from '../src/content/scenarioTuningDashboard.js';
 import {
   buildScenarioTuningTrendMarkdown,
@@ -58,6 +61,7 @@ const report = buildScenarioTuningTrendReport({
   currentDashboard,
   baselineDashboard,
   baselineSignatures: EXPECTED_SCENARIO_TUNING_SIGNATURES,
+  baselineTotalAbsDelta: EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA,
   comparisonSource,
   baselineReference,
 });

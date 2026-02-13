@@ -49,6 +49,10 @@ test('buildScenarioTuningTrendReport falls back to signature baselines', () => {
       frontier: 'aaaa1111',
       harsh: 'bbbb2222',
     },
+    baselineTotalAbsDelta: {
+      frontier: 0,
+      harsh: 122,
+    },
   });
 
   assert.equal(report.changedCount, 1);
@@ -57,7 +61,8 @@ test('buildScenarioTuningTrendReport falls back to signature baselines', () => {
   assert.deepEqual(report.changedScenarioIds, ['harsh']);
   const frontier = report.scenarios.find((scenario) => scenario.scenarioId === 'frontier');
   assert.equal(frontier.status, 'unchanged');
-  assert.equal(frontier.deltaTotalAbsDeltaPercent, null);
+  assert.equal(frontier.baselineTotalAbsDeltaPercent, 0);
+  assert.equal(frontier.deltaTotalAbsDeltaPercent, 0);
 });
 
 test('buildScenarioTuningTrendMarkdown renders changed table and no-change summary', () => {
