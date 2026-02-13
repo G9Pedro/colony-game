@@ -116,6 +116,7 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
     },
   });
   assert.equal(invalidJsonEntry.errorType, 'invalid-json');
+  assert.equal(invalidJsonEntry.message, 'Invalid JSON payload.');
 
   const missingEntry = toArtifactValidationEntry({
     path: 'reports/example.json',
@@ -127,6 +128,7 @@ test('toArtifactValidationEntry maps helper outcomes to evaluator contract', () 
     },
   });
   assert.equal(missingEntry.errorType, 'error');
+  assert.equal(missingEntry.message, 'Missing report artifact at "reports/example.json".');
 });
 
 test('buildReadArtifactFailureLabel returns stable labels by status', () => {
