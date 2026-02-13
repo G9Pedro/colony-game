@@ -4,6 +4,7 @@ import {
   areRecommendedActionsEqual,
   buildReportArtifactStatusCounts,
   buildRecommendedActionsFromResults,
+  formatReportArtifactStatusCounts,
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
@@ -38,6 +39,14 @@ test('buildReportArtifactStatusCounts creates fresh zeroed status maps', () => {
   });
   assert.deepEqual(second, first);
   assert.notEqual(first, second);
+});
+
+test('formatReportArtifactStatusCounts uses canonical order and defaults', () => {
+  const formatted = formatReportArtifactStatusCounts({
+    [REPORT_ARTIFACT_STATUSES.invalid]: 4,
+    [REPORT_ARTIFACT_STATUSES.ok]: 2,
+  });
+  assert.equal(formatted, 'ok=2, error=0, invalid=4, invalid-json=0');
 });
 
 test('isValidRecommendedActions validates command/path entries', () => {

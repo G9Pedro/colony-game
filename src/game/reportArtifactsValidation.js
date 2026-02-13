@@ -1,6 +1,7 @@
 import { REPORT_KINDS, validateReportPayloadByKind } from './reportPayloadValidators.js';
 import {
   buildReportArtifactStatusCounts,
+  formatReportArtifactStatusCounts,
   REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
   REPORT_ARTIFACT_STATUSES,
 } from './reportArtifactValidationPayloadHelpers.js';
@@ -133,9 +134,7 @@ export function buildReportArtifactsValidationMarkdown(report) {
     `- Status: ${statusLabel}`,
     `- Total Checked: ${report.totalChecked}`,
     `- Failed: ${report.failureCount}`,
-    `- Status Counts: ${Object.entries(report.statusCounts ?? {})
-      .map(([status, count]) => `${status}=${count}`)
-      .join(', ')}`,
+    `- Status Counts: ${formatReportArtifactStatusCounts(report.statusCounts)}`,
     '',
     '## Results',
     '',

@@ -183,10 +183,10 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
     totalChecked: 2,
     failureCount: 1,
     statusCounts: {
-      [REPORT_ARTIFACT_STATUSES.ok]: 1,
-      [REPORT_ARTIFACT_STATUSES.error]: 0,
       [REPORT_ARTIFACT_STATUSES.invalid]: 1,
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
       [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
     },
     results: [
       {

@@ -27,6 +27,17 @@ export function buildReportArtifactStatusCounts() {
   return { ...REPORT_ARTIFACT_STATUS_COUNTS_TEMPLATE };
 }
 
+export function formatReportArtifactStatusCounts(statusCounts = undefined) {
+  const normalizedCounts = buildReportArtifactStatusCounts();
+  for (const status of REPORT_ARTIFACT_STATUS_ORDER) {
+    const value = statusCounts?.[status];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      normalizedCounts[status] = value;
+    }
+  }
+  return REPORT_ARTIFACT_STATUS_ORDER.map((status) => `${status}=${normalizedCounts[status]}`).join(', ');
+}
+
 export function isValidRecommendedActions(value) {
   if (!Array.isArray(value)) {
     return false;
