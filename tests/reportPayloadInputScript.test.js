@@ -11,6 +11,7 @@ import {
   getReadArtifactDiagnosticCode,
   READ_ARTIFACT_DIAGNOSTIC_CODES,
   readJsonArtifact,
+  readTextArtifact,
   readValidatedReportArtifact,
   toArtifactValidationEntry,
 } from '../scripts/reportPayloadInput.js';
@@ -59,6 +60,31 @@ test('readJsonArtifact classifies non-file read failures as error', async () => 
     assert.equal(result.status, 'error');
     assert.equal(typeof result.message, 'string');
     assert.equal(result.errorCode, 'EISDIR');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('readTextArtifact returns file text and classifies missing/error outcomes', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'report-input-helper-'));
+  const textPath = join(directory, 'artifact.md');
+  const missingPath = join(directory, 'missing.md');
+
+  try {
+    await writeFile(textPath, '# Smoke Report\n\nok', 'utf-8');
+
+    const textResult = await readTextArtifact(textPath);
+    assert.equal(textResult.ok, true);
+    assert.equal(textResult.text, '# Smoke Report\n\nok');
+
+    const missingResult = await readTextArtifact(missingPath);
+    assert.equal(missingResult.ok, false);
+    assert.equal(missingResult.status, 'missing');
+
+    const unreadableResult = await readTextArtifact(directory);
+    assert.equal(unreadableResult.ok, false);
+    assert.equal(unreadableResult.status, 'error');
+    assert.equal(unreadableResult.errorCode, 'EISDIR');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

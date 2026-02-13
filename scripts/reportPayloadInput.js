@@ -9,42 +9,61 @@ export const READ_ARTIFACT_DIAGNOSTIC_CODES = Object.freeze({
   readError: REPORT_DIAGNOSTIC_CODES.artifactReadError,
 });
 
+function classifyReadFailure(path, error) {
+  if (error?.code === 'ENOENT') {
+    return {
+      ok: false,
+      path,
+      status: 'missing',
+      message: error.message,
+      errorCode: error.code,
+    };
+  }
+
+  return {
+    ok: false,
+    path,
+    status: 'error',
+    message: error.message,
+    errorCode: error?.code ?? null,
+  };
+}
+
 export async function readJsonArtifact(path) {
+  let payloadText;
   try {
-    const payloadText = await readFile(path, 'utf-8');
+    payloadText = await readFile(path, 'utf-8');
+  } catch (error) {
+    return classifyReadFailure(path, error);
+  }
+
+  try {
     return {
       ok: true,
       path,
       payload: JSON.parse(payloadText),
     };
   } catch (error) {
-    if (error?.code === 'ENOENT') {
-      return {
-        ok: false,
-        path,
-        status: 'missing',
-        message: error.message,
-        errorCode: error.code,
-      };
-    }
-
-    if (error instanceof SyntaxError) {
-      return {
-        ok: false,
-        path,
-        status: 'invalid-json',
-        message: error.message,
-        errorCode: null,
-      };
-    }
-
     return {
       ok: false,
       path,
-      status: 'error',
+      status: 'invalid-json',
       message: error.message,
-      errorCode: error?.code ?? null,
+      errorCode: null,
     };
+  }
+}
+
+export async function readTextArtifact(path) {
+  try {
+    const text = await readFile(path, 'utf-8');
+    return {
+      ok: true,
+      path,
+      text,
+    };
+  } catch (error) {
+    return classifyReadFailure(path, error);
   }
 }
 

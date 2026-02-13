@@ -1,6 +1,9 @@
-import { readFile } from 'node:fs/promises';
 import { isValidDiagnosticsSmokeSummaryPayload } from './reportDiagnosticsSmokeSummary.js';
-import { getReadArtifactDiagnosticCode, readJsonArtifact } from './reportPayloadInput.js';
+import {
+  getReadArtifactDiagnosticCode,
+  readJsonArtifact,
+  readTextArtifact,
+} from './reportPayloadInput.js';
 import { createScriptDiagnosticEmitter, REPORT_DIAGNOSTIC_CODES } from './reportDiagnostics.js';
 import { isValidDiagnosticsSmokeMarkdown } from './reportDiagnosticsSmokeMarkdown.js';
 
@@ -73,34 +76,31 @@ async function main() {
   }
 
   if (shouldValidateMarkdown) {
-    let markdownText;
-    try {
-      markdownText = await readFile(markdownPath, 'utf-8');
-    } catch (error) {
+    const markdownReadResult = await readTextArtifact(markdownPath);
+    if (!markdownReadResult.ok) {
       const diagnosticCode =
-        error?.code === 'ENOENT'
-          ? REPORT_DIAGNOSTIC_CODES.artifactMissing
-          : REPORT_DIAGNOSTIC_CODES.artifactReadError;
+        getReadArtifactDiagnosticCode(markdownReadResult) ?? REPORT_DIAGNOSTIC_CODES.artifactReadError;
       emitDiagnostic({
         level: 'error',
         code: diagnosticCode,
         message: 'Diagnostics smoke markdown report read failed.',
         context: {
           path: markdownPath,
-          errorCode: error?.code ?? null,
+          status: markdownReadResult.status,
+          errorCode: markdownReadResult.errorCode ?? null,
         },
       });
-      if (error?.code === 'ENOENT') {
+      if (markdownReadResult.status === 'missing') {
         console.error(`Missing diagnostics smoke markdown report at "${markdownPath}".`);
       } else {
         console.error(
-          `Unable to read diagnostics smoke markdown report at "${markdownPath}": ${error?.message ?? 'read error'}`,
+          `Unable to read diagnostics smoke markdown report at "${markdownPath}": ${markdownReadResult.message ?? 'read error'}`,
         );
       }
       process.exit(1);
     }
 
-    if (!isValidDiagnosticsSmokeMarkdown(markdownText, readResult.payload)) {
+    if (!isValidDiagnosticsSmokeMarkdown(markdownReadResult.text, readResult.payload)) {
       emitDiagnostic({
         level: 'error',
         code: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
