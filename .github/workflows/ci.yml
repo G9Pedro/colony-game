@@ -33,6 +33,7 @@ jobs:
       # Maintenance note: if validation/report command names change here,
       # treat package.json scripts as source of truth and keep
       # README.md, CONTRIBUTING.md, and .github/pull_request_template.md in sync.
+      # Command-rename PRs should also mention docs-sync updates in the PR summary.
       - name: Validate scenario tuning configuration
         run: npm run simulate:validate:tuning
 
