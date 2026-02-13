@@ -31,6 +31,9 @@ export function hasValidMeta(payload, expectedKind) {
   if (!payload || typeof payload !== 'object') {
     return false;
   }
+  if (!(expectedKind in REPORT_SCHEMA_VERSIONS)) {
+    return false;
+  }
 
   const version = REPORT_SCHEMA_VERSIONS[expectedKind];
   return (

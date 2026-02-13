@@ -39,6 +39,11 @@ test('hasValidMeta rejects non-canonical ISO timestamps', () => {
   assert.equal(hasValidMeta(withInvalidMetaTimestamp, REPORT_KINDS.baselineSuggestions), false);
 });
 
+test('hasValidMeta rejects unknown expected report kind', () => {
+  const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, {});
+  assert.equal(hasValidMeta(payload, 'unknown-kind'), false);
+});
+
 test('withReportMeta rejects unknown report kind', () => {
   assert.throws(() => withReportMeta('unknown-kind', {}), /Unknown report kind/i);
 });
