@@ -19,7 +19,7 @@ import {
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
 import {
   assertNodeDiagnosticsScriptReadFailureScenario,
-  assertOutputHasReadFailureScenarioContract,
+  assertNodeDiagnosticsScriptOutputsReadFailureScenario,
 } from './helpers/reportReadFailureMatrixTestUtils.js';
 import {
   createJsonArtifact,
@@ -36,7 +36,13 @@ test('trend script diagnostics follow contract fixture', async () => {
   const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
   try {
-    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
+    const { stdout, stderr } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
+      scriptPath,
+      scenario: 'missing',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedRunId: RUN_ID,
+      expectedLevel: 'info',
+      expectedPath: baselinePath,
       env: {
         SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
         SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
@@ -45,14 +51,7 @@ test('trend script diagnostics follow contract fixture', async () => {
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
     });
-
-    assertOutputDiagnosticsContract({
-      stdout,
-      stderr,
-      expectedScript: 'simulate:report:tuning:trend',
-      expectedRunId: RUN_ID,
-      expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactMissing],
-    });
+    assert.ok(stdout.includes('Scenario tuning trend generated:'));
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -70,7 +69,12 @@ test('trend script emits invalid-json diagnostic contract for malformed baseline
       rootDirectory: tempDirectory,
       relativePath: 'scenario-tuning-dashboard.baseline.json',
     });
-    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
+    await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
+      scriptPath,
+      scenario: 'invalidJson',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedRunId: RUN_ID,
+      expectedPath: baselinePath,
       env: {
         SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
         SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
@@ -78,15 +82,6 @@ test('trend script emits invalid-json diagnostic contract for malformed baseline
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
-    });
-
-    assertOutputHasReadFailureScenarioContract({
-      stdout,
-      stderr,
-      scenario: 'invalidJson',
-      expectedScript: 'simulate:report:tuning:trend',
-      expectedRunId: RUN_ID,
-      expectedPath: baselinePath,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -105,7 +100,12 @@ test('trend script emits read-error diagnostic contract for unreadable baseline 
       rootDirectory: tempDirectory,
       relativePath: 'scenario-tuning-dashboard.baseline.unreadable.json',
     });
-    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
+    await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
+      scriptPath,
+      scenario: 'unreadable',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedRunId: RUN_ID,
+      expectedPath: unreadableBaselinePath,
       env: {
         SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
         SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
@@ -113,15 +113,6 @@ test('trend script emits read-error diagnostic contract for unreadable baseline 
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
-    });
-
-    assertOutputHasReadFailureScenarioContract({
-      stdout,
-      stderr,
-      scenario: 'unreadable',
-      expectedScript: 'simulate:report:tuning:trend',
-      expectedRunId: RUN_ID,
-      expectedPath: unreadableBaselinePath,
     });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

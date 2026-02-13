@@ -9,6 +9,7 @@ import {
 import {
   assertOutputHasReadFailureScenarioContract,
   assertReadFailureDiagnosticMatchesScenario,
+  assertNodeDiagnosticsScriptOutputsReadFailureScenario,
   assertNodeDiagnosticsScriptReadFailureScenario,
   getReportReadFailureScenarioFromDiagnosticCode,
   getReportReadFailureScenarioContract,
@@ -141,6 +142,41 @@ test('assertOutputHasReadFailureScenarioContract validates read-failure output b
         return true;
       },
     );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('assertNodeDiagnosticsScriptOutputsReadFailureScenario validates non-rejecting script diagnostics', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'read-failure-matrix-output-script-'));
+  const runId = 'read-failure-matrix-output-script-run';
+  const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
+  const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
+  const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
+  const missingBaselinePath = buildMissingArtifactPath({
+    rootDirectory: tempDirectory,
+    relativePath: 'missing-baseline-dashboard.json',
+  });
+
+  try {
+    const { diagnostic } = await assertNodeDiagnosticsScriptOutputsReadFailureScenario({
+      scriptPath,
+      env: {
+        SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
+        SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
+        SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: missingBaselinePath,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+      scenario: 'missing',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedRunId: runId,
+      expectedLevel: 'info',
+      expectedPath: missingBaselinePath,
+    });
+
+    assert.equal(diagnostic.code, REPORT_DIAGNOSTIC_CODES.artifactMissing);
+    assert.equal(diagnostic.context?.baselinePath, missingBaselinePath);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

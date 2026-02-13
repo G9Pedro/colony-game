@@ -6,7 +6,10 @@ import {
   assertOutputHasReadFailureDiagnosticContract,
   assertReadFailureDiagnosticContext,
 } from './reportDiagnosticsTestUtils.js';
-import { assertNodeDiagnosticsScriptRejects } from './reportDiagnosticsScriptTestUtils.js';
+import {
+  assertNodeDiagnosticsScriptRejects,
+  runNodeDiagnosticsScript,
+} from './reportDiagnosticsScriptTestUtils.js';
 
 export const REPORT_READ_FAILURE_SCENARIO_CONTRACTS = Object.freeze({
   missing: Object.freeze({
@@ -148,4 +151,50 @@ export function assertReadFailureDiagnosticMatchesScenario({
     expectedErrorCode: expectedErrorCode ?? scenarioContract.errorCode,
   });
   return diagnostic;
+}
+
+export async function assertNodeDiagnosticsScriptOutputsReadFailureScenario({
+  scriptPath,
+  cwd = undefined,
+  env = {},
+  scenario,
+  expectedScript,
+  expectedRunId = undefined,
+  expectedLevel = undefined,
+  expectedPath,
+  expectedStatus = undefined,
+  expectedErrorCode = undefined,
+  expectedCodes = undefined,
+  assertDiagnostic = undefined,
+}) {
+  const scenarioContract = getReportReadFailureScenarioContract(scenario);
+  const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
+    cwd,
+    env,
+  });
+  const diagnostic = assertOutputHasReadFailureScenarioContract({
+    stdout,
+    stderr,
+    scenario,
+    expectedScript,
+    expectedRunId,
+    expectedLevel,
+    expectedPath,
+    expectedStatus: expectedStatus ?? scenarioContract.status,
+    expectedErrorCode: expectedErrorCode ?? scenarioContract.errorCode,
+    expectedCodes: expectedCodes ?? [scenarioContract.diagnosticCode],
+  });
+  if (assertDiagnostic !== undefined) {
+    assertDiagnostic({
+      stdout,
+      stderr,
+      diagnostic,
+      scenarioContract,
+    });
+  }
+  return {
+    stdout,
+    stderr,
+    diagnostic,
+  };
 }
