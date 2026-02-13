@@ -10,7 +10,11 @@ import {
   getScenarioTuningBaselineChangeSummary,
 } from '../src/content/scenarioTuningBaselineCheck.js';
 import { SCENARIO_DEFINITIONS } from '../src/content/scenarios.js';
-import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
+import {
+  REPORT_KINDS,
+  validateReportPayloadByKind,
+  withReportMeta,
+} from '../src/game/reportPayloadValidators.js';
 
 const outputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
@@ -25,6 +29,16 @@ const suggestionPayload = buildScenarioTuningBaselineSuggestionPayload({
   expectedTotalAbsDelta: EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA,
 });
 const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, suggestionPayload);
+const payloadValidation = validateReportPayloadByKind(
+  REPORT_KINDS.scenarioTuningBaselineSuggestions,
+  payload,
+);
+if (!payloadValidation.ok) {
+  console.error(
+    `Unable to build valid scenario tuning baseline suggestion payload: ${payloadValidation.reason}`,
+  );
+  process.exit(1);
+}
 const summary = getScenarioTuningBaselineChangeSummary(payload);
 const markdown = buildScenarioTuningBaselineSuggestionMarkdown(payload);
 

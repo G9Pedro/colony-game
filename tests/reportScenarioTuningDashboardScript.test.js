@@ -10,29 +10,29 @@ import { isValidScenarioTuningDashboardPayload } from '../src/game/reportPayload
 
 const execFileAsync = promisify(execFile);
 
-test('capture scenario tuning dashboard baseline script writes valid payload', async () => {
-  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-baseline-'));
-  const outputPath = path.join(tempDirectory, 'scenario-tuning-dashboard.baseline.json');
-  const scriptPath = path.resolve('scripts/capture-scenario-tuning-dashboard-baseline.js');
+test('report scenario tuning script writes schema-valid sorted dashboard payload', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-dashboard-script-'));
+  const outputPath = path.join(tempDirectory, 'scenario-tuning-dashboard.json');
+  const markdownPath = path.join(tempDirectory, 'scenario-tuning-dashboard.md');
+  const scriptPath = path.resolve('scripts/report-scenario-tuning.js');
 
   try {
-    await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout } = await execFileAsync(process.execPath, [scriptPath], {
       env: {
         ...process.env,
-        SIM_SCENARIO_TUNING_DASHBOARD_BASELINE_PATH: outputPath,
+        SIM_SCENARIO_TUNING_DASHBOARD_PATH: outputPath,
+        SIM_SCENARIO_TUNING_DASHBOARD_MD_PATH: markdownPath,
       },
     });
 
     const payload = JSON.parse(await readFile(outputPath, 'utf-8'));
     assert.equal(payload.meta.kind, REPORT_KINDS.scenarioTuningDashboard);
-    assert.equal(typeof payload.scenarioCount, 'number');
-    assert.equal(typeof payload.activeScenarioCount, 'number');
-    assert.ok(Array.isArray(payload.scenarios));
     assert.equal(isValidScenarioTuningDashboardPayload(payload), true);
     assert.deepEqual(
       payload.scenarios.map((scenario) => scenario.id),
       [...payload.scenarios.map((scenario) => scenario.id)].sort((a, b) => a.localeCompare(b)),
     );
+    assert.match(stdout, /Scenario tuning dashboard generated: scenarios=\d+, active=\d+/);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
