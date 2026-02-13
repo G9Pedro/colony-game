@@ -3,8 +3,6 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { buildBaselineSuggestionPayload } from '../scripts/reportDiagnosticsFixtures.js';
 import {
@@ -12,8 +10,10 @@ import {
   assertOutputHasDiagnostic,
   assertOutputHasReadFailureDiagnosticContract,
 } from './helpers/reportDiagnosticsTestUtils.js';
-
-const execFileAsync = promisify(execFile);
+import {
+  assertNodeDiagnosticsScriptRejects,
+  runNodeDiagnosticsScript,
+} from './helpers/reportDiagnosticsScriptTestUtils.js';
 
 test('suggest-baselines-check passes with no drift and emits summary diagnostic', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'suggest-baselines-check-'));
@@ -28,9 +28,8 @@ test('suggest-baselines-check passes with no drift and emits summary diagnostic'
       'utf-8',
     );
 
-    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         SIM_BASELINE_SUGGEST_PATH: payloadPath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
@@ -74,17 +73,14 @@ test('suggest-baselines-check fails on drift and emits drift diagnostic', async 
       'utf-8',
     );
 
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          env: {
-            ...process.env,
-            SIM_BASELINE_SUGGEST_PATH: payloadPath,
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: runId,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        SIM_BASELINE_SUGGEST_PATH: payloadPath,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+      assertion: (error) => {
         assert.equal(error.code, 1);
         assert.ok(error.stderr.includes('Baseline drift detected'));
         assertOutputDiagnosticsContract({
@@ -113,7 +109,7 @@ test('suggest-baselines-check fails on drift and emits drift diagnostic', async 
         );
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -125,17 +121,14 @@ test('suggest-baselines-check emits read-error diagnostic for unreadable cache p
   const runId = 'suggest-baseline-check-read-error-run';
 
   try {
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          env: {
-            ...process.env,
-            SIM_BASELINE_SUGGEST_PATH: tempDirectory,
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: runId,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        SIM_BASELINE_SUGGEST_PATH: tempDirectory,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+      assertion: (error) => {
         assert.equal(error.code, 1);
         assert.ok(error.stderr.includes('Unable to read baseline suggestion cache payload'));
         assertOutputHasReadFailureDiagnosticContract({
@@ -151,7 +144,7 @@ test('suggest-baselines-check emits read-error diagnostic for unreadable cache p
         });
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

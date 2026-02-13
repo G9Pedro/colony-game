@@ -1,20 +1,17 @@
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import {
   assertOutputHasReadFailureDiagnostic,
   findDiagnosticByCodeFromOutput,
 } from './reportDiagnosticsTestUtils.js';
+import {
+  assertNodeDiagnosticsScriptRejects,
+  runNodeDiagnosticsScript,
+} from './reportDiagnosticsScriptTestUtils.js';
 import { VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH } from './validateReportDiagnosticsSmokeTestUtils.js';
 
-const execFileAsync = promisify(execFile);
-
 export function runValidateReportDiagnosticsSmoke(envOverrides = {}) {
-  return execFileAsync(process.execPath, [VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH], {
-    env: {
-      ...process.env,
-      ...envOverrides,
-    },
+  return runNodeDiagnosticsScript(VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH, {
+    env: envOverrides,
   });
 }
 
@@ -26,9 +23,10 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
   expectedStatus = 'error',
   expectedErrorCode = undefined,
 }) {
-  await assert.rejects(
-    () => runValidateReportDiagnosticsSmoke(envOverrides),
-    (error) => {
+  await assertNodeDiagnosticsScriptRejects({
+    scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
+    env: envOverrides,
+    assertion: (error) => {
       const diagnostic = findDiagnosticByCodeFromOutput(
         { stdout: error.stdout, stderr: error.stderr },
         diagnosticCode,
@@ -50,5 +48,5 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
       }
       return true;
     },
-  );
+  });
 }

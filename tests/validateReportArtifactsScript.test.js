@@ -1,25 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { REPORT_ARTIFACT_TARGETS } from '../src/game/reportArtifactsValidation.js';
 import { assertOutputHasReadFailureDiagnosticContract } from './helpers/reportDiagnosticsTestUtils.js';
-
-const execFileAsync = promisify(execFile);
-
-async function runNodeScript(scriptPath, { cwd, env = {} }) {
-  return execFileAsync(process.execPath, [scriptPath], {
-    cwd,
-    env: {
-      ...process.env,
-      ...env,
-    },
-  });
-}
+import {
+  runNodeDiagnosticsScript,
+} from './helpers/reportDiagnosticsScriptTestUtils.js';
 
 test('validate-report-artifacts script emits validation report for invalid/missing artifacts', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
@@ -37,10 +26,9 @@ test('validate-report-artifacts script emits validation report for invalid/missi
 
     await assert.rejects(
       () =>
-        execFileAsync(process.execPath, [scriptPath], {
+        runNodeDiagnosticsScript(scriptPath, {
           cwd: tempDirectory,
           env: {
-            ...process.env,
             REPORTS_VALIDATE_OUTPUT_PATH: outputPath,
             REPORTS_VALIDATE_OUTPUT_MD_PATH: markdownOutputPath,
           },
@@ -95,10 +83,9 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
 
     await assert.rejects(
       () =>
-        execFileAsync(process.execPath, [scriptPath], {
+        runNodeDiagnosticsScript(scriptPath, {
           cwd: tempDirectory,
           env: {
-            ...process.env,
             REPORT_DIAGNOSTICS_JSON: '1',
             REPORT_DIAGNOSTICS_RUN_ID: runId,
           },
@@ -138,10 +125,9 @@ test('validate-report-artifacts emits read-error diagnostic for unreadable artif
 
     await assert.rejects(
       () =>
-        execFileAsync(process.execPath, [scriptPath], {
+        runNodeDiagnosticsScript(scriptPath, {
           cwd: tempDirectory,
           env: {
-            ...process.env,
             REPORT_DIAGNOSTICS_JSON: '1',
             REPORT_DIAGNOSTICS_RUN_ID: runId,
           },
@@ -181,18 +167,18 @@ test('validate-report-artifacts script passes after generating all target artifa
   const suggestBaselineScriptPath = path.resolve('scripts/suggest-baselines.js');
 
   try {
-    await runNodeScript(validateTuningScriptPath, { cwd: tempDirectory });
-    await runNodeScript(reportTuningScriptPath, { cwd: tempDirectory });
-    await runNodeScript(reportTrendScriptPath, { cwd: tempDirectory });
-    await runNodeScript(suggestTuningBaselineScriptPath, { cwd: tempDirectory });
-    await runNodeScript(suggestBaselineScriptPath, {
+    await runNodeDiagnosticsScript(validateTuningScriptPath, { cwd: tempDirectory });
+    await runNodeDiagnosticsScript(reportTuningScriptPath, { cwd: tempDirectory });
+    await runNodeDiagnosticsScript(reportTrendScriptPath, { cwd: tempDirectory });
+    await runNodeDiagnosticsScript(suggestTuningBaselineScriptPath, { cwd: tempDirectory });
+    await runNodeDiagnosticsScript(suggestBaselineScriptPath, {
       cwd: tempDirectory,
       env: {
         SIM_BASELINE_SUGGEST_RUNS: '2',
       },
     });
 
-    const { stdout } = await runNodeScript(validateArtifactsScriptPath, {
+    const { stdout } = await runNodeDiagnosticsScript(validateArtifactsScriptPath, {
       cwd: tempDirectory,
     });
     assert.match(stdout, /failed=0/i);
