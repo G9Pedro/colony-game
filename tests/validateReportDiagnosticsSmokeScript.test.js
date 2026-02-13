@@ -296,6 +296,40 @@ test('validate-report-diagnostics-smoke can skip markdown validation when disabl
   }
 });
 
+test('validate-report-diagnostics-smoke emits summary diagnostic context for markdown-disabled mode', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
+  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const markdownPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.md');
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+  const runId = 'validate-smoke-json-markdown-disabled-run';
+
+  try {
+    const summary = createPassingSummary();
+    await writeFile(reportPath, JSON.stringify(summary, null, 2), 'utf-8');
+
+    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+      env: {
+        ...process.env,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
+        REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownPath,
+        REPORT_DIAGNOSTICS_SMOKE_VALIDATE_MARKDOWN: '0',
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+    });
+
+    const diagnostics = collectReportDiagnostics(stdout, stderr);
+    const summaryDiagnostic = diagnostics.find(
+      (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary,
+    );
+    assert.ok(summaryDiagnostic);
+    assert.equal(summaryDiagnostic.context.markdownValidationEnabled, false);
+    assert.equal(summaryDiagnostic.context.markdownPath, null);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test('validate-report-diagnostics-smoke fails when report indicates failed scenarios', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
   const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
@@ -374,6 +408,39 @@ test('validate-report-diagnostics-smoke fails when report file is missing', asyn
       (error) =>
         error.code === 1 &&
         error.stderr.includes('Missing diagnostics smoke report'),
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for missing summary when diagnostics are enabled', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
+  const reportPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.json');
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+  const runId = 'validate-smoke-json-missing-summary-run';
+
+  try {
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          env: {
+            ...process.env,
+            REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
+            REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: runId,
+          },
+        }),
+      (error) => {
+        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
+        const missingDiagnostic = diagnostics.find(
+          (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.artifactMissing,
+        );
+        assert.ok(missingDiagnostic);
+        assert.equal(missingDiagnostic.script, 'diagnostics:smoke:validate');
+        assert.equal(missingDiagnostic.runId, runId);
+        return true;
+      },
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
