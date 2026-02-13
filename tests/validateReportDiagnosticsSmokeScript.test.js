@@ -6,7 +6,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { buildDiagnosticsSmokeSummary } from '../scripts/reportDiagnosticsSmokeSummary.js';
-import { buildReportDiagnostic } from '../scripts/reportDiagnostics.js';
+import { buildReportDiagnostic, REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
+import { collectReportDiagnostics } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -71,6 +72,36 @@ test('validate-report-diagnostics-smoke passes for valid and passing summary', a
   }
 });
 
+test('validate-report-diagnostics-smoke emits summary diagnostic when json diagnostics are enabled', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
+  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+  const runId = 'validate-smoke-json-success-run';
+
+  try {
+    await writeFile(reportPath, JSON.stringify(createPassingSummary(), null, 2), 'utf-8');
+
+    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+      env: {
+        ...process.env,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+      },
+    });
+
+    const diagnostics = collectReportDiagnostics(stdout, stderr);
+    const summaryDiagnostic = diagnostics.find(
+      (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary,
+    );
+    assert.ok(summaryDiagnostic);
+    assert.equal(summaryDiagnostic.script, 'diagnostics:smoke:validate');
+    assert.equal(summaryDiagnostic.runId, runId);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test('validate-report-diagnostics-smoke fails when report payload is invalid', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
   const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
@@ -115,6 +146,42 @@ test('validate-report-diagnostics-smoke fails when report indicates failed scena
       (error) =>
         error.code === 1 &&
         error.stderr.includes('failed scenario'),
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('validate-report-diagnostics-smoke emits failed-scenarios diagnostic when json diagnostics are enabled', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
+  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+  const runId = 'validate-smoke-json-failure-run';
+
+  try {
+    await writeFile(reportPath, JSON.stringify(createFailingSummary(), null, 2), 'utf-8');
+
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          env: {
+            ...process.env,
+            REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: reportPath,
+            REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: runId,
+          },
+        }),
+      (error) => {
+        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
+        const failedDiagnostic = diagnostics.find(
+          (diagnostic) =>
+            diagnostic.code === REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeFailedScenarios,
+        );
+        assert.ok(failedDiagnostic);
+        assert.equal(failedDiagnostic.script, 'diagnostics:smoke:validate');
+        assert.equal(failedDiagnostic.runId, runId);
+        return true;
+      },
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

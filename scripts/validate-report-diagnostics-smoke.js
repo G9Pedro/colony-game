@@ -1,8 +1,10 @@
 import { isValidDiagnosticsSmokeSummaryPayload } from './reportDiagnosticsSmokeSummary.js';
 import { readJsonArtifact } from './reportPayloadInput.js';
+import { createScriptDiagnosticEmitter, REPORT_DIAGNOSTIC_CODES } from './reportDiagnostics.js';
 
 const outputPath =
   process.env.REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH ?? 'reports/report-diagnostics-smoke.json';
+const emitDiagnostic = createScriptDiagnosticEmitter('diagnostics:smoke:validate');
 
 function formatReadFailure(readResult) {
   if (readResult.status === 'missing') {
@@ -17,11 +19,35 @@ function formatReadFailure(readResult) {
 async function main() {
   const readResult = await readJsonArtifact(outputPath);
   if (!readResult.ok) {
+    const diagnosticCode =
+      readResult.status === 'missing'
+        ? REPORT_DIAGNOSTIC_CODES.artifactMissing
+        : readResult.status === 'invalid-json'
+          ? REPORT_DIAGNOSTIC_CODES.artifactInvalidJson
+          : REPORT_DIAGNOSTIC_CODES.artifactReadError;
+    emitDiagnostic({
+      level: 'error',
+      code: diagnosticCode,
+      message: `Diagnostics smoke report read failed (${readResult.status}).`,
+      context: {
+        path: readResult.path,
+        status: readResult.status,
+        errorCode: readResult.errorCode ?? null,
+      },
+    });
     console.error(formatReadFailure(readResult));
     process.exit(1);
   }
 
   if (!isValidDiagnosticsSmokeSummaryPayload(readResult.payload)) {
+    emitDiagnostic({
+      level: 'error',
+      code: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
+      message: 'Diagnostics smoke summary payload failed validation.',
+      context: {
+        path: outputPath,
+      },
+    });
     console.error(
       `Diagnostics smoke report at "${outputPath}" failed contract validation (type/schema/count invariants).`,
     );
@@ -29,11 +55,32 @@ async function main() {
   }
 
   if (readResult.payload.failedScenarioCount > 0) {
+    emitDiagnostic({
+      level: 'error',
+      code: REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeFailedScenarios,
+      message: 'Diagnostics smoke summary reported failed scenarios.',
+      context: {
+        path: outputPath,
+        failedScenarioCount: readResult.payload.failedScenarioCount,
+        scenarioCount: readResult.payload.scenarioCount,
+      },
+    });
     console.error(
       `Diagnostics smoke report indicates ${readResult.payload.failedScenarioCount} failed scenario(s).`,
     );
     process.exit(1);
   }
+
+  emitDiagnostic({
+    level: 'info',
+    code: REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary,
+    message: 'Diagnostics smoke summary validated successfully.',
+    context: {
+      path: outputPath,
+      scenarioCount: readResult.payload.scenarioCount,
+      diagnosticsCount: readResult.payload.diagnosticsCount,
+    },
+  });
 
   console.log(
     `Diagnostics smoke report is valid and passing: scenarios=${readResult.payload.scenarioCount}, diagnostics=${readResult.payload.diagnosticsCount}`,

@@ -9,6 +9,7 @@ import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidator
 import {
   REPORT_DIAGNOSTIC_CODES,
 } from '../scripts/reportDiagnostics.js';
+import { buildDiagnosticsSmokeSummary } from '../scripts/reportDiagnosticsSmokeSummary.js';
 import {
   assertReportDiagnosticsContract,
   collectReportDiagnostics,
@@ -244,6 +245,38 @@ test('baseline suggestion check diagnostics follow contract fixture', async () =
         return true;
       },
     );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('diagnostics smoke validation script diagnostics follow contract fixture', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-'));
+  const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+
+  try {
+    const summary = buildDiagnosticsSmokeSummary({
+      runId: RUN_ID,
+      generatedAt: '2026-02-13T12:00:00.000Z',
+      scenarioResults: [],
+    });
+    await writeFile(outputPath, JSON.stringify(summary, null, 2), 'utf-8');
+
+    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+      env: {
+        ...process.env,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
+      },
+    });
+    assertReportDiagnosticsContract({
+      diagnostics: collectReportDiagnostics(stdout, stderr),
+      expectedScript: 'diagnostics:smoke:validate',
+      expectedRunId: RUN_ID,
+      expectedCodes: [REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary],
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

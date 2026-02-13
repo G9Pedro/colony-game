@@ -185,6 +185,7 @@ Optional machine-readable diagnostics mode:
   - `npm run simulate:check:tuning-baseline`
   - `npm run simulate:baseline:check`
   - `npm run diagnostics:smoke`
+  - `npm run diagnostics:smoke:validate`
 - `npm run diagnostics:smoke` executes a lightweight end-to-end diagnostics contract check, then writes consolidated JSON + Markdown reports (`reports/report-diagnostics-smoke.json/.md` by default) with counts by script/level/code plus per-scenario pass/fail details.
 - optional: set `REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH=<path>` to control where the consolidated smoke report is written.
 - optional: set `REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH=<path>` to control where the markdown smoke report is written.
@@ -205,6 +206,9 @@ Common diagnostic codes:
   - `scenario-tuning-intensity-drift`
   - `scenario-tuning-intensity-drift-strict`
   - `baseline-signature-drift`
+- diagnostics smoke validation:
+  - `diagnostics-smoke-validation-summary`
+  - `diagnostics-smoke-failed-scenarios`
 
 Diagnostic JSON line format:
 
