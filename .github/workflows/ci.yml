@@ -75,6 +75,12 @@ jobs:
       - name: Enforce scenario tuning baseline signatures
         run: npm run simulate:check:tuning-baseline
 
+      - name: Enforce scenario tuning baseline intensity (optional strict mode)
+        if: ${{ vars.SIM_SCENARIO_TUNING_ENFORCE_INTENSITY == '1' }}
+        env:
+          SIM_SCENARIO_TUNING_ENFORCE_INTENSITY: '1'
+        run: npm run simulate:check:tuning-baseline
+
       - name: Generate simulation regression report
         run: npm run simulate:report
 

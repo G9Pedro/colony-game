@@ -202,6 +202,7 @@ CI now runs:
 - `npm run simulate:report:tuning:trend` (uploaded as artifact)
 - `npm run simulate:suggest:tuning-baseline` (uploaded as artifact)
 - `npm run simulate:check:tuning-baseline` (enforced)
+- optional strict intensity enforcement when repo/org variable `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1` is set
 - `npm run simulate:assert`
 - `npm run simulate:report` (uploaded as artifact)
 - `npm run simulate:drift` (uploaded as artifact)
