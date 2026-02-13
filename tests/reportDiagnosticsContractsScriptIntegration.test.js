@@ -22,6 +22,28 @@ import {
 const execFileAsync = promisify(execFile);
 const RUN_ID = 'diagnostic-contract-fixture-run';
 
+function runNodeDiagnosticsScript(scriptPath, { cwd = undefined, env = {} } = {}) {
+  return execFileAsync(process.execPath, [scriptPath], {
+    cwd,
+    env: {
+      ...process.env,
+      ...env,
+    },
+  });
+}
+
+async function assertNodeDiagnosticsScriptRejects({
+  scriptPath,
+  cwd = undefined,
+  env = {},
+  assertion,
+}) {
+  await assert.rejects(
+    () => runNodeDiagnosticsScript(scriptPath, { cwd, env }),
+    assertion,
+  );
+}
+
 test('trend script diagnostics follow contract fixture', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-trend-'));
   const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
@@ -30,9 +52,8 @@ test('trend script diagnostics follow contract fixture', async () => {
   const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
   try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
         SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
         SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: baselinePath,
@@ -62,9 +83,8 @@ test('trend script emits invalid-json diagnostic contract for malformed baseline
 
   try {
     await writeFile(baselinePath, '{"broken": ', 'utf-8');
-    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
         SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
         SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: baselinePath,
@@ -101,9 +121,8 @@ test('trend script emits read-error diagnostic contract for unreadable baseline 
   const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
 
   try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
         SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
         SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: tempDirectory,
@@ -145,17 +164,14 @@ test('validate-report-artifacts diagnostics follow contract fixture', async () =
       'utf-8',
     );
 
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          cwd: tempDirectory,
-          env: {
-            ...process.env,
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      cwd: tempDirectory,
+      env: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+      },
+      assertion: (error) => {
         assertOutputDiagnosticsContract({
           stdout: error.stdout,
           stderr: error.stderr,
@@ -168,7 +184,7 @@ test('validate-report-artifacts diagnostics follow contract fixture', async () =
         });
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -184,17 +200,14 @@ test('validate-report-artifacts emits read-error diagnostics for unreadable repo
       recursive: true,
     });
 
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          cwd: tempDirectory,
-          env: {
-            ...process.env,
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      cwd: tempDirectory,
+      env: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+      },
+      assertion: (error) => {
         assertOutputDiagnosticsContract({
           stdout: error.stdout,
           stderr: error.stderr,
@@ -213,7 +226,7 @@ test('validate-report-artifacts emits read-error diagnostics for unreadable repo
         });
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -230,9 +243,8 @@ test('scenario tuning baseline check diagnostics follow contract fixture', async
       JSON.stringify(buildScenarioTuningIntensityOnlyDriftPayload(), null, 2),
       'utf-8',
     );
-    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: payloadPath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
@@ -267,17 +279,14 @@ test('baseline suggestion check diagnostics follow contract fixture', async () =
       'utf-8',
     );
 
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          env: {
-            ...process.env,
-            SIM_BASELINE_SUGGEST_PATH: payloadPath,
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        SIM_BASELINE_SUGGEST_PATH: payloadPath,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+      },
+      assertion: (error) => {
         assertOutputDiagnosticsContract({
           stdout: error.stdout,
           stderr: error.stderr,
@@ -290,7 +299,7 @@ test('baseline suggestion check diagnostics follow contract fixture', async () =
         });
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -301,17 +310,14 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
   const scriptPath = path.resolve('scripts/suggest-baselines-check.js');
 
   try {
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          env: {
-            ...process.env,
-            SIM_BASELINE_SUGGEST_PATH: tempDirectory,
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        SIM_BASELINE_SUGGEST_PATH: tempDirectory,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+      },
+      assertion: (error) => {
         assertOutputDiagnosticsContract({
           stdout: error.stdout,
           stderr: error.stderr,
@@ -330,7 +336,7 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
         });
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -343,9 +349,8 @@ test('diagnostics smoke script diagnostics follow contract fixture', async () =>
   const scriptPath = path.resolve('scripts/report-diagnostics-smoke.js');
 
   try {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
@@ -369,17 +374,14 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
   const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
 
   try {
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          env: {
-            ...process.env,
-            SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: tempDirectory,
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: tempDirectory,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+      },
+      assertion: (error) => {
         assertOutputDiagnosticsContract({
           stdout: error.stdout,
           stderr: error.stderr,
@@ -398,7 +400,7 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
         });
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -419,9 +421,8 @@ test('diagnostics smoke validation script diagnostics follow contract fixture', 
     await writeFile(outputPath, JSON.stringify(summary, null, 2), 'utf-8');
     await writeFile(markdownOutputPath, buildDiagnosticsSmokeMarkdown(summary), 'utf-8');
 
-    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+    const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
-        ...process.env,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
@@ -446,17 +447,14 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
   const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
 
   try {
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          env: {
-            ...process.env,
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
-            REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: missingOutputPath,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: missingOutputPath,
+      },
+      assertion: (error) => {
         assertOutputDiagnosticsContract({
           stdout: error.stdout,
           stderr: error.stderr,
@@ -475,7 +473,7 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
         });
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -486,17 +484,14 @@ test('diagnostics smoke validation emits read-error diagnostic for unreadable su
   const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
 
   try {
-    await assert.rejects(
-      () =>
-        execFileAsync(process.execPath, [scriptPath], {
-          env: {
-            ...process.env,
-            REPORT_DIAGNOSTICS_JSON: '1',
-            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
-            REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: tempDirectory,
-          },
-        }),
-      (error) => {
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: tempDirectory,
+      },
+      assertion: (error) => {
         assertOutputDiagnosticsContract({
           stdout: error.stdout,
           stderr: error.stderr,
@@ -515,7 +510,7 @@ test('diagnostics smoke validation emits read-error diagnostic for unreadable su
         });
         return true;
       },
-    );
+    });
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
