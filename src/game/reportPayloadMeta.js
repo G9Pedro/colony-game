@@ -16,6 +16,17 @@ export const REPORT_SCHEMA_VERSIONS = {
   [REPORT_KINDS.reportArtifactsValidation]: 1,
 };
 
+function isCanonicalIsoTimestamp(value) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) {
+    return false;
+  }
+  return new Date(timestamp).toISOString() === value;
+}
+
 export function hasValidMeta(payload, expectedKind) {
   if (!payload || typeof payload !== 'object') {
     return false;
@@ -23,11 +34,11 @@ export function hasValidMeta(payload, expectedKind) {
 
   const version = REPORT_SCHEMA_VERSIONS[expectedKind];
   return (
-    typeof payload.generatedAt === 'string' &&
+    isCanonicalIsoTimestamp(payload.generatedAt) &&
     payload.meta &&
     payload.meta.kind === expectedKind &&
     payload.meta.schemaVersion === version &&
-    typeof payload.meta.generatedAt === 'string' &&
+    isCanonicalIsoTimestamp(payload.meta.generatedAt) &&
     payload.meta.generatedAt === payload.generatedAt
   );
 }

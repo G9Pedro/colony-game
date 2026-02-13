@@ -27,6 +27,18 @@ test('hasValidMeta validates expected kind and generatedAt parity', () => {
   assert.equal(hasValidMeta(mismatched, REPORT_KINDS.baselineSuggestions), false);
 });
 
+test('hasValidMeta rejects non-canonical ISO timestamps', () => {
+  const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, {});
+  const withInvalidRootTimestamp = { ...payload, generatedAt: '2026-01-01' };
+  assert.equal(hasValidMeta(withInvalidRootTimestamp, REPORT_KINDS.baselineSuggestions), false);
+
+  const withInvalidMetaTimestamp = {
+    ...payload,
+    meta: { ...payload.meta, generatedAt: 'invalid-date' },
+  };
+  assert.equal(hasValidMeta(withInvalidMetaTimestamp, REPORT_KINDS.baselineSuggestions), false);
+});
+
 test('withReportMeta rejects unknown report kind', () => {
   assert.throws(() => withReportMeta('unknown-kind', {}), /Unknown report kind/i);
 });
