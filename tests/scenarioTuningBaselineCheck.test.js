@@ -153,6 +153,8 @@ test('buildScenarioTuningBaselineSuggestionMarkdown renders changed scenarios', 
   assert.ok(markdown.includes('frontier: aaaa1111 -> bbbb2222'));
   assert.ok(markdown.includes('EXPECTED_SCENARIO_TUNING_SIGNATURES'));
   assert.ok(markdown.includes('EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA'));
+  assert.ok(markdown.includes('## Enforcement Guidance'));
+  assert.ok(markdown.includes('SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1'));
 });
 
 test('getScenarioTuningBaselineChangeSummary counts changes', () => {
