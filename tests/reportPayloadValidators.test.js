@@ -59,6 +59,58 @@ function buildValidBaselineSuggestionPayload(kind = REPORT_KINDS.baselineSuggest
   });
 }
 
+function buildValidScenarioTuningTrendPayload(
+  kind = REPORT_KINDS.scenarioTuningTrend,
+  overrides = {},
+) {
+  const basePayload = {
+    comparisonSource: 'signature-baseline',
+    baselineReference: 'src/content/scenarioTuningBaseline.js',
+    hasBaselineDashboard: false,
+    baselineScenarioCount: 0,
+    scenarioCount: 2,
+    changedCount: 1,
+    unchangedCount: 1,
+    hasChanges: true,
+    statusCounts: {
+      added: 1,
+      changed: 0,
+      removed: 0,
+      unchanged: 1,
+    },
+    scenarios: [
+      {
+        scenarioId: 'frontier',
+        status: 'unchanged',
+        changed: false,
+        signatureChanged: false,
+        currentSignature: 'aaaa1111',
+        baselineSignature: 'aaaa1111',
+        currentTotalAbsDeltaPercent: 0,
+        baselineTotalAbsDeltaPercent: 0,
+        deltaTotalAbsDeltaPercent: 0,
+      },
+      {
+        scenarioId: 'new',
+        status: 'added',
+        changed: true,
+        signatureChanged: true,
+        currentSignature: 'bbbb2222',
+        baselineSignature: null,
+        currentTotalAbsDeltaPercent: 10,
+        baselineTotalAbsDeltaPercent: null,
+        deltaTotalAbsDeltaPercent: null,
+      },
+    ],
+    changedScenarioIds: ['new'],
+  };
+
+  return withReportMeta(kind, {
+    ...basePayload,
+    ...overrides,
+  });
+}
+
 test('withReportMeta stamps kind, schema version, and timestamps', () => {
   const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, { value: 1 });
   assert.equal(payload.meta.kind, REPORT_KINDS.baselineSuggestions);
@@ -481,53 +533,23 @@ test('isValidScenarioTuningDashboardPayload rejects ranking/signature inconsiste
 });
 
 test('isValidScenarioTuningTrendPayload accepts trend report payload', () => {
-  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
-    comparisonSource: 'signature-baseline',
-    baselineReference: 'src/content/scenarioTuningBaseline.js',
-    hasBaselineDashboard: false,
-    baselineScenarioCount: 0,
-    scenarioCount: 3,
-    changedCount: 0,
-    unchangedCount: 3,
-    hasChanges: false,
-    statusCounts: {
-      added: 0,
-      changed: 0,
-      removed: 0,
-      unchanged: 3,
-    },
-    scenarios: [{ scenarioId: 'a' }, { scenarioId: 'b' }, { scenarioId: 'c' }],
-    changedScenarioIds: [],
-  });
+  const payload = buildValidScenarioTuningTrendPayload();
   assert.equal(isValidScenarioTuningTrendPayload(payload), true);
 });
 
 test('isValidScenarioTuningTrendPayload rejects unknown comparison source', () => {
-  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
+  const payload = buildValidScenarioTuningTrendPayload(REPORT_KINDS.scenarioTuningTrend, {
     comparisonSource: 'unknown',
-    baselineReference: null,
-    hasBaselineDashboard: false,
-    baselineScenarioCount: 0,
-    scenarioCount: 1,
-    changedCount: 1,
-    unchangedCount: 0,
-    hasChanges: true,
-    statusCounts: {
-      added: 1,
-      changed: 0,
-      removed: 0,
-      unchanged: 0,
-    },
-    scenarios: [{ scenarioId: 'new' }],
-    changedScenarioIds: ['new'],
   });
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });
 
 test('isValidScenarioTuningTrendPayload rejects missing baseline dashboard metadata', () => {
-  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
+  const payload = buildValidScenarioTuningTrendPayload(REPORT_KINDS.scenarioTuningTrend, {
     comparisonSource: 'dashboard',
     baselineReference: 'reports/scenario-tuning-dashboard.baseline.json',
+    hasBaselineDashboard: true,
+    baselineScenarioCount: 1,
     scenarioCount: 1,
     changedCount: 0,
     unchangedCount: 1,
@@ -538,50 +560,50 @@ test('isValidScenarioTuningTrendPayload rejects missing baseline dashboard metad
       removed: 0,
       unchanged: 1,
     },
-    scenarios: [{ scenarioId: 'frontier' }],
+    scenarios: [
+      {
+        scenarioId: 'frontier',
+        status: 'unchanged',
+        changed: false,
+        signatureChanged: false,
+        currentSignature: 'aaaa1111',
+        baselineSignature: 'aaaa1111',
+        currentTotalAbsDeltaPercent: 0,
+        baselineTotalAbsDeltaPercent: 0,
+        deltaTotalAbsDeltaPercent: 0,
+      },
+    ],
     changedScenarioIds: [],
   });
+  delete payload.hasBaselineDashboard;
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });
 
 test('isValidScenarioTuningTrendPayload rejects invalid status counts', () => {
-  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
-    comparisonSource: 'signature-baseline',
-    baselineReference: null,
-    hasBaselineDashboard: false,
-    baselineScenarioCount: 0,
-    scenarioCount: 2,
-    changedCount: 1,
-    unchangedCount: 1,
-    hasChanges: true,
+  const payload = buildValidScenarioTuningTrendPayload(REPORT_KINDS.scenarioTuningTrend, {
     statusCounts: {
       changed: 1,
       unchanged: 1,
     },
-    scenarios: [{ scenarioId: 'changed' }, { scenarioId: 'unchanged' }],
-    changedScenarioIds: ['changed'],
   });
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });
 
 test('isValidScenarioTuningTrendPayload rejects arithmetic count inconsistencies', () => {
-  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
-    comparisonSource: 'dashboard',
-    baselineReference: 'reports/scenario-tuning-dashboard.baseline.json',
-    hasBaselineDashboard: true,
-    baselineScenarioCount: 2,
-    scenarioCount: 2,
-    changedCount: 1,
-    unchangedCount: 1,
-    hasChanges: true,
+  const payload = buildValidScenarioTuningTrendPayload(REPORT_KINDS.scenarioTuningTrend, {
     statusCounts: {
       added: 0,
       changed: 0,
       removed: 0,
       unchanged: 2,
     },
-    scenarios: [{ scenarioId: 'frontier' }, { scenarioId: 'prosperous' }],
-    changedScenarioIds: ['prosperous'],
+  });
+  assert.equal(isValidScenarioTuningTrendPayload(payload), false);
+});
+
+test('isValidScenarioTuningTrendPayload rejects changedScenarioIds mismatch with scenario rows', () => {
+  const payload = buildValidScenarioTuningTrendPayload(REPORT_KINDS.scenarioTuningTrend, {
+    changedScenarioIds: ['frontier'],
   });
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });
