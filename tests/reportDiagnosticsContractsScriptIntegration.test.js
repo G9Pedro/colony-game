@@ -250,6 +250,33 @@ test('baseline suggestion check diagnostics follow contract fixture', async () =
   }
 });
 
+test('diagnostics smoke script diagnostics follow contract fixture', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-run-'));
+  const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const markdownOutputPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
+  const scriptPath = path.resolve('scripts/report-diagnostics-smoke.js');
+
+  try {
+    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+      env: {
+        ...process.env,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
+        REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
+      },
+    });
+    assertReportDiagnosticsContract({
+      diagnostics: collectReportDiagnostics(stdout, stderr),
+      expectedScript: 'diagnostics:smoke',
+      expectedRunId: RUN_ID,
+      expectedCodes: [REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeRunSummary],
+    });
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test('diagnostics smoke validation script diagnostics follow contract fixture', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-'));
   const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');

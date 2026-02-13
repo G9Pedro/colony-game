@@ -9,6 +9,8 @@ import {
   REPORT_DIAGNOSTICS_SMOKE_SCHEMA_VERSION,
   REPORT_DIAGNOSTICS_SMOKE_SUMMARY_TYPE,
 } from '../scripts/reportDiagnosticsSmokeSummary.js';
+import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
+import { collectReportDiagnostics } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -52,6 +54,36 @@ test('report diagnostics smoke script emits passing diagnostics summary report',
     assert.match(markdown, /## Scenario results/);
     assert.match(markdown, /\| trend-missing-baseline \| simulate:report:tuning:trend \|/);
     assert.match(markdown, /## Failures\s+All diagnostics smoke scenarios passed\./s);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('report diagnostics smoke script emits structured diagnostics when enabled', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'report-diagnostics-smoke-'));
+  const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const markdownOutputPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
+  const runId = 'smoke-script-diagnostic-run';
+  const scriptPath = path.resolve('scripts/report-diagnostics-smoke.js');
+
+  try {
+    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
+      env: {
+        ...process.env,
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: runId,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
+        REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
+      },
+    });
+
+    const diagnostics = collectReportDiagnostics(stdout, stderr);
+    const summaryDiagnostic = diagnostics.find(
+      (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeRunSummary,
+    );
+    assert.ok(summaryDiagnostic);
+    assert.equal(summaryDiagnostic.script, 'diagnostics:smoke');
+    assert.equal(summaryDiagnostic.runId, runId);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

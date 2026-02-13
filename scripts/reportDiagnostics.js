@@ -25,6 +25,7 @@ export const REPORT_DIAGNOSTIC_CODES = Object.freeze({
   scenarioTuningIntensityEnforcementTip: 'scenario-tuning-intensity-enforcement-tip',
   baselineSuggestionSummary: 'baseline-suggestion-summary',
   baselineSignatureDrift: 'baseline-signature-drift',
+  diagnosticsSmokeRunSummary: 'diagnostics-smoke-run-summary',
   diagnosticsSmokeValidationSummary: 'diagnostics-smoke-validation-summary',
   diagnosticsSmokeFailedScenarios: 'diagnostics-smoke-failed-scenarios',
 });

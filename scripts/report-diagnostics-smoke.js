@@ -6,6 +6,8 @@ import { promisify } from 'node:util';
 import {
   isValidReportDiagnosticPayload,
   parseReportDiagnosticsFromText,
+  createScriptDiagnosticEmitter,
+  REPORT_DIAGNOSTIC_CODES,
 } from './reportDiagnostics.js';
 import { writeJsonArtifact, writeTextArtifact } from './reportPayloadOutput.js';
 import {
@@ -25,6 +27,7 @@ const outputPath =
 const markdownOutputPath =
   process.env.REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH ?? 'reports/report-diagnostics-smoke.md';
 const runId = process.env.REPORT_DIAGNOSTICS_RUN_ID ?? `report-diagnostics-smoke-${Date.now()}`;
+const emitDiagnostic = createScriptDiagnosticEmitter('diagnostics:smoke');
 
 function collectDiagnostics(stdout = '', stderr = '') {
   return [...parseReportDiagnosticsFromText(stdout), ...parseReportDiagnosticsFromText(stderr)];
@@ -139,6 +142,19 @@ async function main() {
     if (!isValidDiagnosticsSmokeSummaryPayload(summary)) {
       throw new Error('Diagnostics smoke summary payload failed validation.');
     }
+
+    emitDiagnostic({
+      level: summary.failedScenarioCount > 0 ? 'error' : 'info',
+      code: REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeRunSummary,
+      message: 'Diagnostics smoke run completed.',
+      context: {
+        scenarioCount: summary.scenarioCount,
+        failedScenarioCount: summary.failedScenarioCount,
+        diagnosticsCount: summary.diagnosticsCount,
+        outputPath,
+        markdownOutputPath,
+      },
+    });
 
     await writeJsonArtifact(outputPath, summary);
     await writeTextArtifact(markdownOutputPath, buildDiagnosticsSmokeMarkdown(summary));

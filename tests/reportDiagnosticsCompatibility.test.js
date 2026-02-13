@@ -18,6 +18,7 @@ const EXPECTED_DIAGNOSTIC_CODES = [
   'baseline-signature-drift',
   'baseline-suggestion-summary',
   'diagnostics-smoke-failed-scenarios',
+  'diagnostics-smoke-run-summary',
   'diagnostics-smoke-validation-summary',
   'scenario-tuning-baseline-summary',
   'scenario-tuning-intensity-drift',

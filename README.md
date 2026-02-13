@@ -207,6 +207,7 @@ Common diagnostic codes:
   - `scenario-tuning-intensity-drift-strict`
   - `baseline-signature-drift`
 - diagnostics smoke validation:
+  - `diagnostics-smoke-run-summary`
   - `diagnostics-smoke-validation-summary`
   - `diagnostics-smoke-failed-scenarios`
 
