@@ -125,14 +125,16 @@ test('isValidBaselineSuggestionPayload rejects snippet mismatch against suggeste
 });
 
 test('isValidScenarioTuningSuggestionPayload accepts fully shaped payload', () => {
+  const signatures = { frontier: 'aaaa1111' };
+  const totalAbsDelta = { frontier: 0 };
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
     overallPassed: true,
     changedCount: 0,
     intensityChangedCount: 0,
-    currentSignatures: {},
-    expectedSignatures: {},
-    currentTotalAbsDelta: {},
-    expectedTotalAbsDelta: {},
+    currentSignatures: signatures,
+    expectedSignatures: signatures,
+    currentTotalAbsDelta: totalAbsDelta,
+    expectedTotalAbsDelta: totalAbsDelta,
     results: [
       {
         scenarioId: 'frontier',
@@ -155,9 +157,9 @@ test('isValidScenarioTuningSuggestionPayload accepts fully shaped payload', () =
     strictIntensityCommand:
       'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
     snippets: {
-      scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};',
+      scenarioTuningBaseline: `export const EXPECTED_SCENARIO_TUNING_SIGNATURES = ${JSON.stringify(signatures)};\n`,
       scenarioTuningTotalAbsDeltaBaseline:
-        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {};',
+        `export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = ${JSON.stringify(totalAbsDelta)};\n`,
     },
   });
   assert.equal(isValidScenarioTuningSuggestionPayload(payload), true);
@@ -207,14 +209,17 @@ test('isValidScenarioTuningSuggestionPayload rejects missing strict enforcement 
 });
 
 test('isValidScenarioTuningSuggestionPayload rejects inconsistent changed counters', () => {
+  const currentSignatures = { frontier: 'aaaa1111' };
+  const expectedSignatures = { frontier: 'bbbb2222' };
+  const totalAbsDelta = { frontier: 0 };
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
     overallPassed: true,
     changedCount: 0,
     intensityChangedCount: 0,
-    currentSignatures: {},
-    expectedSignatures: {},
-    currentTotalAbsDelta: {},
-    expectedTotalAbsDelta: {},
+    currentSignatures,
+    expectedSignatures,
+    currentTotalAbsDelta: totalAbsDelta,
+    expectedTotalAbsDelta: totalAbsDelta,
     results: [
       {
         scenarioId: 'frontier',
@@ -229,9 +234,51 @@ test('isValidScenarioTuningSuggestionPayload rejects inconsistent changed counte
     strictIntensityCommand:
       'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
     snippets: {
-      scenarioTuningBaseline: 'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {};',
+      scenarioTuningBaseline: `export const EXPECTED_SCENARIO_TUNING_SIGNATURES = ${JSON.stringify(currentSignatures)};\n`,
       scenarioTuningTotalAbsDeltaBaseline:
-        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {};',
+        `export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = ${JSON.stringify(totalAbsDelta)};\n`,
+    },
+  });
+  assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
+});
+
+test('isValidScenarioTuningSuggestionPayload rejects results mismatched to map values', () => {
+  const currentSignatures = { frontier: 'aaaa1111' };
+  const expectedSignatures = { frontier: 'aaaa1111' };
+  const totalAbsDelta = { frontier: 0 };
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
+    overallPassed: true,
+    changedCount: 0,
+    intensityChangedCount: 0,
+    currentSignatures,
+    expectedSignatures,
+    currentTotalAbsDelta: totalAbsDelta,
+    expectedTotalAbsDelta: totalAbsDelta,
+    results: [
+      {
+        scenarioId: 'frontier',
+        currentSignature: 'cccc3333',
+        expectedSignature: 'aaaa1111',
+        changed: true,
+        message: 'expected aaaa1111 but got cccc3333',
+      },
+    ],
+    intensityResults: [
+      {
+        scenarioId: 'frontier',
+        currentTotalAbsDeltaPercent: 0,
+        expectedTotalAbsDeltaPercent: 0,
+        changed: false,
+        message: null,
+      },
+    ],
+    strictIntensityRecommended: false,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
+    snippets: {
+      scenarioTuningBaseline: `export const EXPECTED_SCENARIO_TUNING_SIGNATURES = ${JSON.stringify(currentSignatures)};\n`,
+      scenarioTuningTotalAbsDeltaBaseline:
+        `export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = ${JSON.stringify(totalAbsDelta)};\n`,
     },
   });
   assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);

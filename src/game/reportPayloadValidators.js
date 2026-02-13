@@ -117,6 +117,20 @@ function isRecordOfNullableStrings(value) {
   return Object.values(value).every((entry) => isNullableString(entry));
 }
 
+function isRecordOfStrings(value) {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+  return Object.values(value).every((entry) => typeof entry === 'string' && entry.length > 0);
+}
+
+function isRecordOfNonNegativeFiniteNumbers(value) {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+  return Object.values(value).every((entry) => Number.isFinite(entry) && entry >= 0);
+}
+
 function isValidBoundsEntry(value) {
   return Boolean(
     isPlainRecord(value) &&
@@ -563,6 +577,79 @@ function isValidScenarioTuningValidationIssue(entry, severity) {
   );
 }
 
+function hasValidScenarioTuningSignatureResultConsistency(payload) {
+  const currentSignatures = payload?.currentSignatures ?? {};
+  const expectedSignatures = payload?.expectedSignatures ?? {};
+  const results = payload?.results ?? [];
+  const scenarioIds = new Set([...Object.keys(currentSignatures), ...Object.keys(expectedSignatures)]);
+
+  if (results.length !== scenarioIds.size) {
+    return false;
+  }
+
+  const resultsByScenarioId = new Map();
+  for (const result of results) {
+    if (resultsByScenarioId.has(result.scenarioId)) {
+      return false;
+    }
+    resultsByScenarioId.set(result.scenarioId, result);
+  }
+
+  for (const scenarioId of scenarioIds) {
+    const result = resultsByScenarioId.get(scenarioId);
+    if (!result) {
+      return false;
+    }
+    const currentSignature = currentSignatures[scenarioId] ?? null;
+    const expectedSignature = expectedSignatures[scenarioId] ?? null;
+    if (result.currentSignature !== currentSignature || result.expectedSignature !== expectedSignature) {
+      return false;
+    }
+    if (result.changed !== (currentSignature !== expectedSignature)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function hasValidScenarioTuningIntensityResultConsistency(payload) {
+  const currentTotalAbsDelta = payload?.currentTotalAbsDelta ?? {};
+  const expectedTotalAbsDelta = payload?.expectedTotalAbsDelta ?? {};
+  const intensityResults = payload?.intensityResults ?? [];
+  const scenarioIds = new Set([...Object.keys(currentTotalAbsDelta), ...Object.keys(expectedTotalAbsDelta)]);
+
+  if (intensityResults.length !== scenarioIds.size) {
+    return false;
+  }
+
+  const resultsByScenarioId = new Map();
+  for (const result of intensityResults) {
+    if (resultsByScenarioId.has(result.scenarioId)) {
+      return false;
+    }
+    resultsByScenarioId.set(result.scenarioId, result);
+  }
+
+  for (const scenarioId of scenarioIds) {
+    const result = resultsByScenarioId.get(scenarioId);
+    if (!result) {
+      return false;
+    }
+    const currentIntensity = currentTotalAbsDelta[scenarioId] ?? null;
+    const expectedIntensity = expectedTotalAbsDelta[scenarioId] ?? null;
+    if (
+      result.currentTotalAbsDeltaPercent !== currentIntensity ||
+      result.expectedTotalAbsDeltaPercent !== expectedIntensity
+    ) {
+      return false;
+    }
+    if (result.changed !== (currentIntensity !== expectedIntensity)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function isValidScenarioTuningSuggestionPayload(payload) {
   if (
     !Boolean(
@@ -572,10 +659,10 @@ export function isValidScenarioTuningSuggestionPayload(payload) {
         typeof payload.overallPassed === 'boolean' &&
         Array.isArray(payload.results) &&
         Array.isArray(payload.intensityResults) &&
-        isPlainRecord(payload.currentSignatures) &&
-        isPlainRecord(payload.expectedSignatures) &&
-        isPlainRecord(payload.currentTotalAbsDelta) &&
-        isPlainRecord(payload.expectedTotalAbsDelta) &&
+        isRecordOfStrings(payload.currentSignatures) &&
+        isRecordOfStrings(payload.expectedSignatures) &&
+        isRecordOfNonNegativeFiniteNumbers(payload.currentTotalAbsDelta) &&
+        isRecordOfNonNegativeFiniteNumbers(payload.expectedTotalAbsDelta) &&
         typeof payload.strictIntensityRecommended === 'boolean' &&
         typeof payload.strictIntensityCommand === 'string' &&
         payload.strictIntensityCommand.length > 0 &&
@@ -597,6 +684,8 @@ export function isValidScenarioTuningSuggestionPayload(payload) {
   const changedCount = payload.results.filter((result) => result.changed).length;
   const intensityChangedCount = payload.intensityResults.filter((result) => result.changed).length;
   return Boolean(
+    hasValidScenarioTuningSignatureResultConsistency(payload) &&
+      hasValidScenarioTuningIntensityResultConsistency(payload) &&
     payload.changedCount === changedCount &&
       payload.intensityChangedCount === intensityChangedCount &&
       payload.overallPassed === (changedCount === 0 && intensityChangedCount === 0) &&
