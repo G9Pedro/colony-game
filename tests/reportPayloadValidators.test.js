@@ -365,6 +365,120 @@ test('isValidScenarioTuningSuggestionPayload rejects results mismatched to map v
   assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
 });
 
+test('isValidScenarioTuningSuggestionPayload rejects unsorted signature result rows', () => {
+  const currentSignatures = { alpha: 'aaaa1111', zeta: 'bbbb2222' };
+  const expectedSignatures = { alpha: 'aaaa1111', zeta: 'bbbb2222' };
+  const totalAbsDelta = { alpha: 0, zeta: 0 };
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
+    overallPassed: true,
+    changedCount: 0,
+    intensityChangedCount: 0,
+    currentSignatures,
+    expectedSignatures,
+    currentTotalAbsDelta: totalAbsDelta,
+    expectedTotalAbsDelta: totalAbsDelta,
+    results: [
+      {
+        scenarioId: 'zeta',
+        currentSignature: 'bbbb2222',
+        expectedSignature: 'bbbb2222',
+        changed: false,
+        message: null,
+      },
+      {
+        scenarioId: 'alpha',
+        currentSignature: 'aaaa1111',
+        expectedSignature: 'aaaa1111',
+        changed: false,
+        message: null,
+      },
+    ],
+    intensityResults: [
+      {
+        scenarioId: 'alpha',
+        currentTotalAbsDeltaPercent: 0,
+        expectedTotalAbsDeltaPercent: 0,
+        changed: false,
+        message: null,
+      },
+      {
+        scenarioId: 'zeta',
+        currentTotalAbsDeltaPercent: 0,
+        expectedTotalAbsDeltaPercent: 0,
+        changed: false,
+        message: null,
+      },
+    ],
+    strictIntensityRecommended: false,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
+    snippets: {
+      scenarioTuningBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {"alpha":"aaaa1111","zeta":"bbbb2222"};\n',
+      scenarioTuningTotalAbsDeltaBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {"alpha":0,"zeta":0};\n',
+    },
+  });
+  assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
+});
+
+test('isValidScenarioTuningSuggestionPayload rejects unsorted intensity result rows', () => {
+  const currentSignatures = { alpha: 'aaaa1111', zeta: 'bbbb2222' };
+  const expectedSignatures = { alpha: 'aaaa1111', zeta: 'bbbb2222' };
+  const totalAbsDelta = { alpha: 0, zeta: 0 };
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
+    overallPassed: true,
+    changedCount: 0,
+    intensityChangedCount: 0,
+    currentSignatures,
+    expectedSignatures,
+    currentTotalAbsDelta: totalAbsDelta,
+    expectedTotalAbsDelta: totalAbsDelta,
+    results: [
+      {
+        scenarioId: 'alpha',
+        currentSignature: 'aaaa1111',
+        expectedSignature: 'aaaa1111',
+        changed: false,
+        message: null,
+      },
+      {
+        scenarioId: 'zeta',
+        currentSignature: 'bbbb2222',
+        expectedSignature: 'bbbb2222',
+        changed: false,
+        message: null,
+      },
+    ],
+    intensityResults: [
+      {
+        scenarioId: 'zeta',
+        currentTotalAbsDeltaPercent: 0,
+        expectedTotalAbsDeltaPercent: 0,
+        changed: false,
+        message: null,
+      },
+      {
+        scenarioId: 'alpha',
+        currentTotalAbsDeltaPercent: 0,
+        expectedTotalAbsDeltaPercent: 0,
+        changed: false,
+        message: null,
+      },
+    ],
+    strictIntensityRecommended: false,
+    strictIntensityCommand:
+      'SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline',
+    snippets: {
+      scenarioTuningBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {"alpha":"aaaa1111","zeta":"bbbb2222"};\n',
+      scenarioTuningTotalAbsDeltaBaseline:
+        'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {"alpha":0,"zeta":0};\n',
+    },
+  });
+  assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
+});
+
 test('isValidScenarioTuningSuggestionPayload rejects snippet mismatch against current maps', () => {
   const payload = withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
     overallPassed: true,

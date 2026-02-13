@@ -192,3 +192,49 @@ test('scenario tuning module trend validator rejects unsorted scenario rows', ()
 
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });
+
+test('scenario tuning module suggestion validator rejects unsorted rows', () => {
+  const payload = buildSuggestionPayload();
+  payload.currentSignatures = { alpha: 'aaaa1111', zeta: 'bbbb2222' };
+  payload.expectedSignatures = { alpha: 'aaaa1111', zeta: 'bbbb2222' };
+  payload.currentTotalAbsDelta = { alpha: 0, zeta: 0 };
+  payload.expectedTotalAbsDelta = { alpha: 0, zeta: 0 };
+  payload.results = [
+    {
+      scenarioId: 'zeta',
+      currentSignature: 'bbbb2222',
+      expectedSignature: 'bbbb2222',
+      changed: false,
+      message: null,
+    },
+    {
+      scenarioId: 'alpha',
+      currentSignature: 'aaaa1111',
+      expectedSignature: 'aaaa1111',
+      changed: false,
+      message: null,
+    },
+  ];
+  payload.intensityResults = [
+    {
+      scenarioId: 'alpha',
+      currentTotalAbsDeltaPercent: 0,
+      expectedTotalAbsDeltaPercent: 0,
+      changed: false,
+      message: null,
+    },
+    {
+      scenarioId: 'zeta',
+      currentTotalAbsDeltaPercent: 0,
+      expectedTotalAbsDeltaPercent: 0,
+      changed: false,
+      message: null,
+    },
+  ];
+  payload.snippets.scenarioTuningBaseline =
+    'export const EXPECTED_SCENARIO_TUNING_SIGNATURES = {"alpha":"aaaa1111","zeta":"bbbb2222"};\n';
+  payload.snippets.scenarioTuningTotalAbsDeltaBaseline =
+    'export const EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA = {"alpha":0,"zeta":0};\n';
+
+  assert.equal(isValidScenarioTuningSuggestionPayload(payload), false);
+});

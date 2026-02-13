@@ -48,7 +48,12 @@ function hasValidScenarioTuningSignatureResultConsistency(payload) {
   }
 
   const resultsByScenarioId = new Map();
+  let previousScenarioId = null;
   for (const result of results) {
+    if (previousScenarioId !== null && previousScenarioId.localeCompare(result.scenarioId) > 0) {
+      return false;
+    }
+    previousScenarioId = result.scenarioId;
     if (resultsByScenarioId.has(result.scenarioId)) {
       return false;
     }
@@ -83,7 +88,12 @@ function hasValidScenarioTuningIntensityResultConsistency(payload) {
   }
 
   const resultsByScenarioId = new Map();
+  let previousScenarioId = null;
   for (const result of intensityResults) {
+    if (previousScenarioId !== null && previousScenarioId.localeCompare(result.scenarioId) > 0) {
+      return false;
+    }
+    previousScenarioId = result.scenarioId;
     if (resultsByScenarioId.has(result.scenarioId)) {
       return false;
     }
