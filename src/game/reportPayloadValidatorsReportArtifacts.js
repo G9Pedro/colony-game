@@ -1,4 +1,4 @@
-import { REPORT_KINDS, REPORT_SCHEMA_VERSIONS, hasValidMeta } from './reportPayloadMeta.js';
+import { REPORT_KINDS, hasValidMeta } from './reportPayloadMeta.js';
 import {
   areReportArtifactResultsSortedByPath,
   areRecommendedActionsEqual,
@@ -11,6 +11,7 @@ import {
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
 } from './reportArtifactValidationPayloadHelpers.js';
+import { isKnownReportArtifactTargetKind } from './reportArtifactsManifest.js';
 
 export function isValidReportArtifactsValidationPayload(payload) {
   const results = Array.isArray(payload?.results) ? payload.results : [];
@@ -36,9 +37,7 @@ export function isValidReportArtifactsValidationPayload(payload) {
   if (!validResults) {
     return false;
   }
-  const hasKnownResultKinds = results.every((result) =>
-    Object.prototype.hasOwnProperty.call(REPORT_SCHEMA_VERSIONS, result.kind),
-  );
+  const hasKnownResultKinds = results.every((result) => isKnownReportArtifactTargetKind(result.kind));
   const hasUniqueResultPaths = hasUniqueReportArtifactResultPaths(results);
   const hasSortedResultPaths = areReportArtifactResultsSortedByPath(results);
 

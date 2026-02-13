@@ -1,4 +1,4 @@
-import { REPORT_KINDS, validateReportPayloadByKind } from './reportPayloadValidators.js';
+import { validateReportPayloadByKind } from './reportPayloadValidators.js';
 import {
   buildReportArtifactResultStatistics,
   buildRecommendedActionsFromResults,
@@ -6,35 +6,18 @@ import {
   REPORT_ARTIFACT_ENTRY_ERROR_TYPES,
   REPORT_ARTIFACT_STATUSES,
 } from './reportArtifactValidationPayloadHelpers.js';
+import {
+  getReportArtifactRegenerationCommand,
+  REPORT_ARTIFACT_TARGETS,
+} from './reportArtifactsManifest.js';
 
-export const REPORT_ARTIFACT_TARGETS = [
-  { path: 'reports/scenario-tuning-validation.json', kind: REPORT_KINDS.scenarioTuningValidation },
-  { path: 'reports/scenario-tuning-dashboard.json', kind: REPORT_KINDS.scenarioTuningDashboard },
-  { path: 'reports/scenario-tuning-trend.json', kind: REPORT_KINDS.scenarioTuningTrend },
-  {
-    path: 'reports/scenario-tuning-baseline-suggestions.json',
-    kind: REPORT_KINDS.scenarioTuningBaselineSuggestions,
-  },
-  { path: 'reports/baseline-suggestions.json', kind: REPORT_KINDS.baselineSuggestions },
-];
-
-const REPORT_ARTIFACT_REGEN_COMMANDS = {
-  'reports/scenario-tuning-validation.json': 'npm run simulate:validate:tuning',
-  'reports/scenario-tuning-dashboard.json': 'npm run simulate:report:tuning',
-  'reports/scenario-tuning-trend.json': 'npm run simulate:report:tuning:trend',
-  'reports/scenario-tuning-baseline-suggestions.json': 'npm run simulate:suggest:tuning-baseline',
-  'reports/baseline-suggestions.json': 'npm run simulate:baseline:suggest',
-};
+export { REPORT_ARTIFACT_TARGETS, getReportArtifactRegenerationCommand };
 
 function escapeMarkdownTableValue(value) {
   if (typeof value !== 'string') {
     return value ?? '';
   }
   return value.replaceAll('|', '\\|');
-}
-
-export function getReportArtifactRegenerationCommand(path) {
-  return REPORT_ARTIFACT_REGEN_COMMANDS[path] ?? 'npm run verify';
 }
 
 function buildRecommendedActions(results) {
