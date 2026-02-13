@@ -59,6 +59,7 @@ engine.on('game-over', notify);
 engine.on('game-reset', notify);
 engine.on('state-loaded', notify);
 engine.on('scenario-change', notify);
+engine.on('state-invalid', notify);
 
 ui.setPersistenceCallbacks({
   onSave: () => {

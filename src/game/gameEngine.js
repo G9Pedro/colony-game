@@ -11,6 +11,7 @@ import { runObjectiveSystem } from '../systems/objectiveSystem.js';
 import { runOutcomeSystem } from '../systems/outcomeSystem.js';
 import { nextRandom, seedFromString } from './random.js';
 import { getScenarioDefinition } from '../content/scenarios.js';
+import { validateRuntimeState } from './stateInvariant.js';
 
 const HIRE_COST_FOOD = 20;
 
@@ -98,6 +99,18 @@ export class GameEngine {
     runResearchSystem(context);
     runObjectiveSystem(context);
     runOutcomeSystem(context);
+
+    if (this.state.status === 'playing') {
+      const invariants = validateRuntimeState(this.state);
+      if (invariants.length > 0) {
+        this.state.paused = true;
+        this.emit('state-invalid', {
+          kind: 'error',
+          message: `State invariant violation: ${invariants[0]}`,
+          details: invariants,
+        });
+      }
+    }
   }
 
   queueBuilding(buildingId, x, z) {

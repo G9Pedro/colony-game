@@ -12,6 +12,7 @@ You build structures, manage colonists and resources, research technologies, and
 - **Research tree** with prerequisites and unlocks.
 - **Objective tracker** with milestone rewards and progression guidance.
 - **Run analytics**: track peak population, completions, deaths, and run outcomes.
+- **Runtime state invariants** to detect and pause on simulation corruption.
 - **Scenario presets**: Frontier, Prosperous, and Harsh start conditions.
 - **Deterministic seeded simulation** support for reproducible runs.
 - **Save/Load/Reset** controls backed by `localStorage`.
