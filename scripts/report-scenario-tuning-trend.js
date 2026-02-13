@@ -16,6 +16,7 @@ import {
   REPORT_DIAGNOSTIC_CODES,
 } from './reportDiagnostics.js';
 import {
+  buildReadArtifactFailureContext,
   buildReadArtifactDiagnostic,
   buildReadArtifactFailureLabel,
   readValidatedReportArtifact,
@@ -59,11 +60,10 @@ try {
       level: 'warn',
       code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
       message: 'Baseline dashboard payload is invalid; falling back to signature baseline.',
-      context: {
+      context: buildReadArtifactFailureContext(baselineDashboardResult, {
         baselinePath: baselineDashboardPath,
-        reason: baselineDashboardResult.message,
         remediationCommand: BASELINE_CAPTURE_COMMAND,
-      },
+      }),
     });
   } else if (baselineDashboardResult.status === 'missing') {
     const diagnostic = buildReadArtifactDiagnostic(baselineDashboardResult);
@@ -74,10 +74,10 @@ try {
       level: 'info',
       code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactMissing,
       message: 'Baseline dashboard not found; using signature baseline comparison.',
-      context: {
+      context: buildReadArtifactFailureContext(baselineDashboardResult, {
         baselinePath: baselineDashboardPath,
         remediationCommand: BASELINE_CAPTURE_COMMAND,
-      },
+      }),
     });
   } else {
     const diagnostic = buildReadArtifactDiagnostic(baselineDashboardResult);
@@ -89,11 +89,10 @@ try {
       level: 'warn',
       code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
       message: 'Unable to read baseline dashboard; falling back to signature baseline.',
-      context: {
+      context: buildReadArtifactFailureContext(baselineDashboardResult, {
         baselinePath: baselineDashboardPath,
-        reason: baselineDashboardResult.message,
         remediationCommand: BASELINE_CAPTURE_COMMAND,
-      },
+      }),
     });
   }
 } catch (error) {

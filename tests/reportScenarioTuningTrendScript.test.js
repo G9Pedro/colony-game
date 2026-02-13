@@ -82,6 +82,7 @@ test('trend script emits JSON diagnostics when enabled', async () => {
     assert.equal(diagnostic.code, 'artifact-missing');
     assert.equal(diagnostic.script, 'simulate:report:tuning:trend');
     assert.equal(diagnostic.context?.baselinePath, missingBaselinePath);
+    assert.equal(diagnostic.context?.status, 'missing');
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
