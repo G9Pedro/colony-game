@@ -6,20 +6,21 @@ import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPa
 import { getReportArtifactRegenerationCommand } from '../src/game/reportArtifactsManifest.js';
 import {
   buildReportArtifactValidationResults,
+  buildReportArtifactsValidationPayloadFixture,
   buildValidReportArtifactsValidationPayload,
 } from './helpers/reportArtifactsValidationFixtures.js';
 
 function buildReportArtifactsPayload() {
   const invalidTargetPath = 'reports/scenario-tuning-trend.json';
-  return buildValidReportArtifactsValidationPayload({
-    results: buildReportArtifactValidationResults({
+  return buildReportArtifactsValidationPayloadFixture({
+    resultOverridesByPath: {
       [invalidTargetPath]: {
         status: REPORT_ARTIFACT_STATUSES.invalid,
         ok: false,
         message: 'payload schema mismatch',
         recommendedCommand: getReportArtifactRegenerationCommand(invalidTargetPath),
       },
-    }),
+    },
   });
 }
 
@@ -34,27 +35,38 @@ test('report artifacts module validator rejects action/result parity mismatch', 
 });
 
 test('report artifacts module validator rejects unknown report kind rows', () => {
-  const payload = buildReportArtifactsPayload();
-  payload.results[1].kind = 'unknown-kind';
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    resultOverridesByPath: {
+      'reports/scenario-tuning-trend.json': { kind: 'unknown-kind' },
+    },
+  });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('report artifacts module validator rejects known non-target report kind rows', () => {
-  const payload = buildReportArtifactsPayload();
-  payload.results[1].kind = REPORT_KINDS.reportArtifactsValidation;
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    resultOverridesByPath: {
+      'reports/scenario-tuning-trend.json': { kind: REPORT_KINDS.reportArtifactsValidation },
+    },
+  });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('report artifacts module validator rejects known path with mismatched known kind', () => {
-  const payload = buildReportArtifactsPayload();
-  const target = payload.results.find((result) => result.path === 'reports/scenario-tuning-trend.json');
-  target.kind = REPORT_KINDS.scenarioTuningDashboard;
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    resultOverridesByPath: {
+      'reports/scenario-tuning-trend.json': { kind: REPORT_KINDS.scenarioTuningDashboard },
+    },
+  });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
 test('report artifacts module validator rejects unknown path with known target kind', () => {
-  const payload = buildReportArtifactsPayload();
-  payload.results[1].path = 'reports/non-target.json';
+  const payload = buildReportArtifactsValidationPayloadFixture({
+    resultOverridesByPath: {
+      'reports/scenario-tuning-trend.json': { path: 'reports/non-target.json' },
+    },
+  });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 

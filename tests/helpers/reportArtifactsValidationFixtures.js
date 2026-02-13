@@ -37,3 +37,13 @@ export function buildValidReportArtifactsValidationPayload(overrides = {}) {
     ...overrides,
   });
 }
+
+export function buildReportArtifactsValidationPayloadFixture({
+  resultOverridesByPath = {},
+  payloadOverrides = {},
+} = {}) {
+  return buildValidReportArtifactsValidationPayload({
+    results: buildReportArtifactValidationResults(resultOverridesByPath),
+    ...payloadOverrides,
+  });
+}
