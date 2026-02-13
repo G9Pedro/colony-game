@@ -135,3 +135,59 @@ export function formatSnapshotSignaturesSnippet(signatures) {
   const sorted = sortObjectKeys(signatures);
   return `export const EXPECTED_SUMMARY_SIGNATURES = ${JSON.stringify(sorted, null, 2)};\n`;
 }
+
+export function buildBaselineSuggestionPayload({
+  currentAggregateBounds,
+  currentSnapshotSignatures,
+  aggregateReport,
+  snapshotReport,
+  driftRuns,
+}) {
+  const suggestedAggregateBounds = buildSuggestedAggregateBounds(aggregateReport);
+  const suggestedSnapshotSignatures = buildSnapshotSignatureMap(snapshotReport);
+  const aggregateDelta = buildAggregateBoundsDelta(
+    currentAggregateBounds,
+    suggestedAggregateBounds,
+  );
+  const snapshotDelta = buildSnapshotSignatureDelta(
+    currentSnapshotSignatures,
+    suggestedSnapshotSignatures,
+  );
+
+  return {
+    generatedAt: new Date().toISOString(),
+    driftRuns,
+    suggestedAggregateBounds,
+    suggestedSnapshotSignatures,
+    currentAggregateBounds,
+    currentSnapshotSignatures,
+    aggregateDelta,
+    snapshotDelta,
+    snippets: {
+      regressionBaseline: formatAggregateBoundsSnippet(suggestedAggregateBounds),
+      regressionSnapshots: formatSnapshotSignaturesSnippet(suggestedSnapshotSignatures),
+    },
+  };
+}
+
+export function buildBaselineSuggestionMarkdown(payload) {
+  const changedSnapshotCount = payload.snapshotDelta.filter((item) => item.changed).length;
+  return `# Baseline Suggestions
+
+- Generated At: ${payload.generatedAt}
+- Drift Runs: ${payload.driftRuns}
+- Changed Snapshot Signatures: ${changedSnapshotCount}
+
+## Suggested Aggregate Bounds
+
+\`\`\`js
+${payload.snippets.regressionBaseline.trim()}
+\`\`\`
+
+## Suggested Snapshot Signatures
+
+\`\`\`js
+${payload.snippets.regressionSnapshots.trim()}
+\`\`\`
+`;
+}

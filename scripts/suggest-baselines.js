@@ -6,12 +6,8 @@ import {
   SNAPSHOT_CASES,
 } from '../src/content/regressionSnapshots.js';
 import {
-  buildAggregateBoundsDelta,
-  buildSnapshotSignatureDelta,
-  buildSuggestedAggregateBounds,
-  buildSnapshotSignatureMap,
-  formatAggregateBoundsSnippet,
-  formatSnapshotSignaturesSnippet,
+  buildBaselineSuggestionMarkdown,
+  buildBaselineSuggestionPayload,
 } from '../src/game/baselineSuggestion.js';
 import {
   buildAggregateRegressionReport,
@@ -47,57 +43,21 @@ const snapshotReport = buildSnapshotRegressionReport({
   expectedSignatures: {},
 });
 
-const suggestions = {
-  generatedAt: new Date().toISOString(),
-  driftRuns,
-  suggestedAggregateBounds: buildSuggestedAggregateBounds(aggregateReport),
-  suggestedSnapshotSignatures: buildSnapshotSignatureMap(snapshotReport),
-};
-
-const aggregateDelta = buildAggregateBoundsDelta(
-  AGGREGATE_BASELINE_BOUNDS,
-  suggestions.suggestedAggregateBounds,
-);
-const snapshotDelta = buildSnapshotSignatureDelta(
-  EXPECTED_SUMMARY_SIGNATURES,
-  suggestions.suggestedSnapshotSignatures,
-);
-
-const payload = {
-  ...suggestions,
+const payload = buildBaselineSuggestionPayload({
   currentAggregateBounds: AGGREGATE_BASELINE_BOUNDS,
   currentSnapshotSignatures: EXPECTED_SUMMARY_SIGNATURES,
-  aggregateDelta,
-  snapshotDelta,
-  snippets: {
-    regressionBaseline: formatAggregateBoundsSnippet(suggestions.suggestedAggregateBounds),
-    regressionSnapshots: formatSnapshotSignaturesSnippet(suggestions.suggestedSnapshotSignatures),
-  },
-};
+  aggregateReport,
+  snapshotReport,
+  driftRuns,
+});
 
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, JSON.stringify(payload, null, 2), 'utf-8');
 
-const changedSnapshotCount = snapshotDelta.filter((item) => item.changed).length;
-const markdown = `# Baseline Suggestions
-
-- Generated At: ${payload.generatedAt}
-- Drift Runs: ${payload.driftRuns}
-- Changed Snapshot Signatures: ${changedSnapshotCount}
-
-## Suggested Aggregate Bounds
-
-\`\`\`js
-${payload.snippets.regressionBaseline.trim()}
-\`\`\`
-
-## Suggested Snapshot Signatures
-
-\`\`\`js
-${payload.snippets.regressionSnapshots.trim()}
-\`\`\`
-`;
+const markdown = buildBaselineSuggestionMarkdown(payload);
 await writeFile(markdownOutputPath, markdown, 'utf-8');
 
 console.log(`Baseline suggestions written to: ${outputPath}`);
 console.log(`Baseline suggestions markdown written to: ${markdownOutputPath}`);
+const changedCount = payload.snapshotDelta.filter((item) => item.changed).length;
+console.log(`Changed snapshot signatures detected: ${changedCount}`);

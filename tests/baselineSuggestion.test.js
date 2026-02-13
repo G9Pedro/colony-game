@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildBaselineSuggestionMarkdown,
+  buildBaselineSuggestionPayload,
   buildAggregateBoundsDelta,
   buildSnapshotSignatureDelta,
   buildSnapshotSignatureMap,
@@ -105,4 +107,56 @@ test('snippet formatters emit copy-ready export statements', () => {
   assert.ok(boundsSnippet.includes('"frontier"'));
   assert.ok(signatureSnippet.startsWith('export const EXPECTED_SUMMARY_SIGNATURES ='));
   assert.ok(signatureSnippet.includes('"frontier:standard"'));
+});
+
+test('buildBaselineSuggestionPayload composes deltas and snippets', () => {
+  const payload = buildBaselineSuggestionPayload({
+    currentAggregateBounds: {
+      frontier: { alivePopulationMean: { min: 7.9, max: 8.1 } },
+    },
+    currentSnapshotSignatures: {
+      'frontier:standard': 'aaaa1111',
+    },
+    aggregateReport: {
+      scenarioResults: [
+        {
+          scenarioId: 'frontier',
+          metrics: {
+            runCount: 8,
+            alivePopulationMean: 8,
+            buildingsMean: 9,
+            dayMean: 8,
+            survivalRate: 1,
+            masonryCompletionRate: 0,
+          },
+        },
+      ],
+    },
+    snapshotReport: {
+      results: [{ key: 'frontier:standard', signature: 'bbbb2222' }],
+    },
+    driftRuns: 8,
+  });
+
+  assert.equal(payload.driftRuns, 8);
+  assert.ok(payload.suggestedAggregateBounds.frontier);
+  assert.equal(payload.snapshotDelta[0].changed, true);
+  assert.ok(payload.snippets.regressionBaseline.includes('AGGREGATE_BASELINE_BOUNDS'));
+  assert.ok(payload.snippets.regressionSnapshots.includes('EXPECTED_SUMMARY_SIGNATURES'));
+});
+
+test('buildBaselineSuggestionMarkdown emits readable sections', () => {
+  const markdown = buildBaselineSuggestionMarkdown({
+    generatedAt: '2026-01-01T00:00:00.000Z',
+    driftRuns: 8,
+    snapshotDelta: [{ changed: true }],
+    snippets: {
+      regressionBaseline: 'export const AGGREGATE_BASELINE_BOUNDS = {};\n',
+      regressionSnapshots: 'export const EXPECTED_SUMMARY_SIGNATURES = {};\n',
+    },
+  });
+
+  assert.ok(markdown.includes('# Baseline Suggestions'));
+  assert.ok(markdown.includes('Suggested Aggregate Bounds'));
+  assert.ok(markdown.includes('EXPECTED_SUMMARY_SIGNATURES'));
 });
