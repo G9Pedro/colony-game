@@ -1,12 +1,17 @@
 {
   "name": "colony-game",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test",
+    "start": "python3 -m http.server 8000"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "Complete colony simulation game",
+  "dependencies": {
+    "three": "^0.182.0"
+  }
 }
