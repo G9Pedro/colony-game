@@ -95,12 +95,17 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
       paths: ['reports/broken.json', 'reports/missing.json'],
     },
   ]);
-  assert.equal(report.results[0].status, 'ok');
-  assert.equal(report.results[0].recommendedCommand, null);
-  assert.equal(report.results[1].status, 'error');
-  assert.equal(report.results[1].recommendedCommand, 'npm run verify');
-  assert.equal(report.results[2].status, 'invalid-json');
-  assert.equal(report.results[2].recommendedCommand, 'npm run verify');
+  assert.deepEqual(
+    report.results.map((result) => result.path),
+    ['reports/baseline-suggestions.json', 'reports/broken.json', 'reports/missing.json'],
+  );
+  const resultByPath = new Map(report.results.map((result) => [result.path, result]));
+  assert.equal(resultByPath.get('reports/baseline-suggestions.json')?.status, 'ok');
+  assert.equal(resultByPath.get('reports/baseline-suggestions.json')?.recommendedCommand, null);
+  assert.equal(resultByPath.get('reports/missing.json')?.status, 'error');
+  assert.equal(resultByPath.get('reports/missing.json')?.recommendedCommand, 'npm run verify');
+  assert.equal(resultByPath.get('reports/broken.json')?.status, 'invalid-json');
+  assert.equal(resultByPath.get('reports/broken.json')?.recommendedCommand, 'npm run verify');
 });
 
 test('evaluateReportArtifactEntries flags schema-invalid payloads', () => {

@@ -36,6 +36,9 @@ export function isValidReportArtifactsValidationPayload(payload) {
     Object.prototype.hasOwnProperty.call(REPORT_SCHEMA_VERSIONS, result.kind),
   );
   const hasUniqueResultPaths = new Set(results.map((result) => result.path)).size === results.length;
+  const hasSortedResultPaths = results.every(
+    (result, index) => index === 0 || results[index - 1].path.localeCompare(result.path) <= 0,
+  );
 
   const failureCount = results.filter((result) => !result.ok).length;
   const computedStatusCounts = results.reduce((acc, result) => {
@@ -68,6 +71,7 @@ export function isValidReportArtifactsValidationPayload(payload) {
       statusCountsMatch &&
       hasKnownResultKinds &&
       hasUniqueResultPaths &&
+      hasSortedResultPaths &&
       recommendedActionsMatch,
   );
 }

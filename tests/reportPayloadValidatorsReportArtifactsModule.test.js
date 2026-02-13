@@ -51,3 +51,9 @@ test('report artifacts module validator rejects unknown report kind rows', () =>
   payload.results[1].kind = 'unknown-kind';
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
+
+test('report artifacts module validator rejects unsorted result rows', () => {
+  const payload = buildReportArtifactsPayload();
+  payload.results = [...payload.results].reverse();
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
+});

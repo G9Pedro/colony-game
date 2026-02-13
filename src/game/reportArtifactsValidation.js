@@ -52,51 +52,53 @@ function buildRecommendedActions(results) {
 }
 
 export function evaluateReportArtifactEntries(entries) {
-  const results = entries.map((entry) => {
-    const recommendedCommand = getReportArtifactRegenerationCommand(entry.path);
-    if (entry.errorType === 'invalid-json') {
+  const results = entries
+    .map((entry) => {
+      const recommendedCommand = getReportArtifactRegenerationCommand(entry.path);
+      if (entry.errorType === 'invalid-json') {
+        return {
+          path: entry.path,
+          kind: entry.kind,
+          status: 'invalid-json',
+          ok: false,
+          message: entry.message ?? 'Invalid JSON payload.',
+          recommendedCommand,
+        };
+      }
+
+      if (entry.errorType) {
+        return {
+          path: entry.path,
+          kind: entry.kind,
+          status: 'error',
+          ok: false,
+          message: entry.message ?? 'Failed to read report artifact.',
+          recommendedCommand,
+        };
+      }
+
+      const validation = validateReportPayloadByKind(entry.kind, entry.payload);
+      if (!validation.ok) {
+        return {
+          path: entry.path,
+          kind: entry.kind,
+          status: 'invalid',
+          ok: false,
+          message: validation.reason,
+          recommendedCommand,
+        };
+      }
+
       return {
         path: entry.path,
         kind: entry.kind,
-        status: 'invalid-json',
-        ok: false,
-        message: entry.message ?? 'Invalid JSON payload.',
-        recommendedCommand,
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
       };
-    }
-
-    if (entry.errorType) {
-      return {
-        path: entry.path,
-        kind: entry.kind,
-        status: 'error',
-        ok: false,
-        message: entry.message ?? 'Failed to read report artifact.',
-        recommendedCommand,
-      };
-    }
-
-    const validation = validateReportPayloadByKind(entry.kind, entry.payload);
-    if (!validation.ok) {
-      return {
-        path: entry.path,
-        kind: entry.kind,
-        status: 'invalid',
-        ok: false,
-        message: validation.reason,
-        recommendedCommand,
-      };
-    }
-
-    return {
-      path: entry.path,
-      kind: entry.kind,
-      status: 'ok',
-      ok: true,
-      message: null,
-      recommendedCommand: null,
-    };
-  });
+    })
+    .sort((left, right) => left.path.localeCompare(right.path));
 
   const failureCount = results.filter((result) => !result.ok).length;
   const statusCounts = results.reduce((acc, result) => {
