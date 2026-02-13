@@ -1,5 +1,6 @@
 import { IsometricRenderer } from './isometricRenderer.js';
 import { LegacyThreeRenderer } from './legacyThreeRenderer.js';
+import { normalizeCameraState } from './cameraState.js';
 import { normalizeDebugStats } from './debugStats.js';
 
 const RENDERER_MODE_STORAGE_KEY = 'colony-frontier-renderer-mode';
@@ -152,7 +153,11 @@ export class SceneRenderer {
   }
 
   getCameraState() {
-    return this.activeRenderer?.getCameraState?.() ?? null;
+    const rawCameraState = this.activeRenderer?.getCameraState?.();
+    return normalizeCameraState(rawCameraState, {
+      mode: this.mode,
+      projection: this.mode === 'three' ? 'perspective' : 'isometric',
+    });
   }
 
   getDebugStats() {

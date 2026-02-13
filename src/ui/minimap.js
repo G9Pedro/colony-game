@@ -30,7 +30,7 @@ export class Minimap {
   }
 
   drawViewport(cameraState) {
-    if (!cameraState || !cameraState.width || !cameraState.height || !cameraState.tileWidth || !cameraState.tileHeight) {
+    if (!cameraState || cameraState.projection !== 'isometric') {
       return;
     }
     const corners = [
@@ -93,6 +93,27 @@ export class Minimap {
     this.ctx.restore();
   }
 
+  drawCameraCenter(cameraState) {
+    if (!cameraState) {
+      return;
+    }
+    const x = this.toMinimapX(clamp(cameraState.centerX ?? 0, -this.worldRadius, this.worldRadius));
+    const y = this.toMinimapY(clamp(cameraState.centerZ ?? 0, -this.worldRadius, this.worldRadius));
+    this.ctx.save();
+    this.ctx.strokeStyle = 'rgba(244, 223, 173, 0.85)';
+    this.ctx.lineWidth = 1.2;
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, 4.4, 0, Math.PI * 2);
+    this.ctx.stroke();
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 2.2, y);
+    this.ctx.lineTo(x + 2.2, y);
+    this.ctx.moveTo(x, y - 2.2);
+    this.ctx.lineTo(x, y + 2.2);
+    this.ctx.stroke();
+    this.ctx.restore();
+  }
+
   render(state, cameraState, selectedEntity = null) {
     this.worldRadius = state.maxWorldRadius ?? 30;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -142,7 +163,11 @@ export class Minimap {
       this.ctx.stroke();
     }
 
-    this.drawViewport(cameraState);
+    if (cameraState?.projection === 'isometric') {
+      this.drawViewport(cameraState);
+    } else {
+      this.drawCameraCenter(cameraState);
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 import * as THREE from '../../node_modules/three/build/three.module.js';
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
+import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 
 const BUILDING_Y_BASE = 0.01;
@@ -333,15 +334,19 @@ export class LegacyThreeRenderer {
   }
 
   getCameraState() {
-    return {
+    return normalizeCameraState({
       mode: 'three',
+      projection: 'perspective',
       centerX: this.cameraTarget.x,
       centerZ: this.cameraTarget.z,
       zoom: 1,
       width: this.rootElement.clientWidth,
       height: this.rootElement.clientHeight,
       worldRadius: 30,
-    };
+    }, {
+      mode: 'three',
+      projection: 'perspective',
+    });
   }
 
   getDebugStats() {

@@ -5,6 +5,7 @@ import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
+import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { InteractionController } from './interactionController.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
@@ -155,7 +156,10 @@ export class IsometricRenderer {
   }
 
   getCameraState() {
-    return this.camera.getState();
+    return normalizeCameraState(this.camera.getState(), {
+      mode: 'isometric',
+      projection: 'isometric',
+    });
   }
 
   getDebugStats() {
