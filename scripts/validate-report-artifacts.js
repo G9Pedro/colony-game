@@ -9,6 +9,8 @@ import {
   REPORT_DIAGNOSTIC_CODES,
 } from './reportDiagnostics.js';
 import {
+  buildReadArtifactFailureContext,
+  formatReadArtifactFailureMessage,
   getReportArtifactStatusDiagnosticCode,
   readJsonArtifact,
   toArtifactValidationEntry,
@@ -27,8 +29,10 @@ const DIAGNOSTIC_SCRIPT = 'reports:validate';
 const emitDiagnostic = createScriptDiagnosticEmitter(DIAGNOSTIC_SCRIPT);
 
 const entries = [];
+const readResultsByPath = new Map();
 for (const target of REPORT_ARTIFACT_TARGETS) {
   const readResult = await readJsonArtifact(target.path);
+  readResultsByPath.set(target.path, readResult);
   entries.push(
     toArtifactValidationEntry({
       path: target.path,
@@ -53,19 +57,35 @@ report.results.forEach((result) => {
     console.log(`[ok] ${result.path}: kind=${result.kind}`);
     return;
   }
+  const readResult = readResultsByPath.get(result.path);
+  const hasReadFailure = Boolean(readResult && !readResult.ok);
+  const message = hasReadFailure
+    ? formatReadArtifactFailureMessage({
+        readResult,
+        artifactLabel: 'report artifact',
+      })
+    : result.message;
   const diagnosticCode = getReportArtifactStatusDiagnosticCode(result.status);
   const diagnosticSuffix = diagnosticCode ? ` (code=${diagnosticCode})` : '';
-  console.error(`[${result.status}] ${result.path}: ${result.message}${diagnosticSuffix}`);
+  console.error(`[${result.status}] ${result.path}: ${message}${diagnosticSuffix}`);
   emitDiagnostic({
     level: 'error',
     code: diagnosticCode ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
-    message: result.message,
-    context: {
-      path: result.path,
-      kind: result.kind,
-      status: result.status,
-      recommendedCommand: result.recommendedCommand ?? null,
-    },
+    message: hasReadFailure ? `Report artifact read failed (${readResult.status}).` : result.message,
+    context:
+      hasReadFailure
+        ? buildReadArtifactFailureContext(readResult, {
+            kind: result.kind,
+            recommendedCommand: result.recommendedCommand ?? null,
+          })
+        : {
+            path: result.path,
+            kind: result.kind,
+            status: result.status,
+            reason: result.message ?? null,
+            errorCode: null,
+            recommendedCommand: result.recommendedCommand ?? null,
+          },
   });
   if (result.recommendedCommand) {
     console.error(`  remediation: run "${result.recommendedCommand}"`);

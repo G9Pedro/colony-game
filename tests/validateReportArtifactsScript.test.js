@@ -48,6 +48,10 @@ test('validate-report-artifacts script emits validation report for invalid/missi
       (error) => {
         assert.equal(error.code, 1);
         assert.match(error.stderr, /\[invalid-json\] reports\/scenario-tuning-dashboard\.json/i);
+        assert.match(
+          error.stderr,
+          /report artifact at "reports\/scenario-tuning-dashboard\.json" is not valid JSON/i,
+        );
         assert.match(error.stderr, /code=artifact-invalid-json/i);
         assert.match(error.stderr, /code=artifact-read-error/i);
         return true;
@@ -107,6 +111,9 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
           invalidJsonDiagnostic.context?.path,
           'reports/scenario-tuning-dashboard.json',
         );
+        assert.equal(invalidJsonDiagnostic.context?.status, 'invalid-json');
+        assert.equal(invalidJsonDiagnostic.context?.errorCode, null);
+        assert.equal(typeof invalidJsonDiagnostic.context?.reason, 'string');
         return true;
       },
     );
