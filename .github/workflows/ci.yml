@@ -1,0 +1,31 @@
+name: colony-ci
+
+on:
+  push:
+    branches:
+      - main
+      - cursor/**
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run simulation regression assertions
+        run: npm run simulate:assert

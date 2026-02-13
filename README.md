@@ -80,6 +80,16 @@ Run a deterministic scenario simulation matrix from CLI:
 npm run simulate
 ```
 
+Run deterministic regression assertions (fails on balance regressions):
+
+```bash
+npm run simulate:assert
+```
+
+CI now runs:
+- `npm test`
+- `npm run simulate:assert`
+
 ## Gameplay Notes
 
 ### Controls

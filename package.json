@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "start": "python3 -m http.server 8000",
-    "simulate": "node scripts/simulate.js"
+    "simulate": "node scripts/simulate.js",
+    "simulate:assert": "node scripts/simulate-assert.js"
   },
   "keywords": [],
   "author": "",
