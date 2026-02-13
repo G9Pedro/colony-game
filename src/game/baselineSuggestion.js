@@ -191,3 +191,21 @@ ${payload.snippets.regressionSnapshots.trim()}
 \`\`\`
 `;
 }
+
+export function getBaselineChangeSummary(payload) {
+  let aggregateChangedMetrics = 0;
+  for (const scenarioEntry of Object.values(payload.aggregateDelta ?? {})) {
+    for (const metricEntry of Object.values(scenarioEntry ?? {})) {
+      if (metricEntry?.changed) {
+        aggregateChangedMetrics += 1;
+      }
+    }
+  }
+
+  const snapshotChangedKeys = (payload.snapshotDelta ?? []).filter((item) => item.changed).length;
+  return {
+    aggregateChangedMetrics,
+    snapshotChangedKeys,
+    hasChanges: aggregateChangedMetrics > 0 || snapshotChangedKeys > 0,
+  };
+}

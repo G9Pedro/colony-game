@@ -127,6 +127,12 @@ This produces:
 - `reports/baseline-suggestions.json` (structured data + deltas + snippets)
 - `reports/baseline-suggestions.md` (human-readable summary with copy-ready snippets)
 
+Fail CI/local checks if suggested baselines diverge from committed baselines:
+
+```bash
+npm run simulate:baseline:check
+```
+
 CI now runs:
 - `npm test`
 - `npm run simulate:assert`
@@ -135,6 +141,7 @@ CI now runs:
 - `npm run simulate:snapshot` (uploaded as artifact, enforced)
 - `npm run simulate:balance` (uploaded as artifact)
 - `npm run simulate:baseline:suggest` (uploaded as artifact)
+- `npm run simulate:baseline:check` (enforced)
 
 One-command local verification:
 
@@ -149,6 +156,7 @@ npm run verify
 - `SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot`
 - `npm run simulate:balance`
 - `npm run simulate:baseline:suggest`
+- `npm run simulate:baseline:check`
 
 ## Gameplay Notes
 

@@ -10,6 +10,7 @@ import {
   buildSuggestedBoundsFromMetrics,
   formatAggregateBoundsSnippet,
   formatSnapshotSignaturesSnippet,
+  getBaselineChangeSummary,
 } from '../src/game/baselineSuggestion.js';
 
 test('buildSuggestedBoundsFromMetrics creates min/max envelope', () => {
@@ -159,4 +160,23 @@ test('buildBaselineSuggestionMarkdown emits readable sections', () => {
   assert.ok(markdown.includes('# Baseline Suggestions'));
   assert.ok(markdown.includes('Suggested Aggregate Bounds'));
   assert.ok(markdown.includes('EXPECTED_SUMMARY_SIGNATURES'));
+});
+
+test('getBaselineChangeSummary counts changed entries', () => {
+  const summary = getBaselineChangeSummary({
+    aggregateDelta: {
+      frontier: {
+        alivePopulationMean: { changed: false },
+        buildingsMean: { changed: true },
+      },
+      harsh: {
+        survivalRate: { changed: true },
+      },
+    },
+    snapshotDelta: [{ changed: false }, { changed: true }],
+  });
+
+  assert.equal(summary.aggregateChangedMetrics, 2);
+  assert.equal(summary.snapshotChangedKeys, 1);
+  assert.equal(summary.hasChanges, true);
 });
