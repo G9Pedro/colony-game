@@ -5,7 +5,10 @@ import {
 } from '../src/game/reportPayloadValidators.js';
 import { buildBaselineSuggestionPayloadFromSimulations } from './baselineSuggestionRuntime.js';
 import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
-import { emitJsonDiagnostic } from './reportDiagnostics.js';
+import {
+  emitJsonDiagnostic,
+  REPORT_DIAGNOSTIC_CODES,
+} from './reportDiagnostics.js';
 import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 
 const inputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-suggestions.json';
@@ -34,7 +37,7 @@ console.log(
 );
 emitJsonDiagnostic({
   level: 'info',
-  code: 'baseline-suggestion-summary',
+  code: REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary,
   message: 'Baseline suggestion check summary.',
   context: {
     aggregateChangedMetrics: summary.aggregateChangedMetrics,
@@ -47,7 +50,7 @@ if (summary.hasChanges) {
   const changedSnapshots = (payload.snapshotDelta ?? []).filter((item) => item.changed);
   emitJsonDiagnostic({
     level: 'error',
-    code: 'baseline-signature-drift',
+    code: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
     message: 'Baseline drift detected.',
     context: {
       aggregateChangedMetrics: summary.aggregateChangedMetrics,

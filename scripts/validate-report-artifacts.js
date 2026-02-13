@@ -4,7 +4,10 @@ import {
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
-import { emitJsonDiagnostic } from './reportDiagnostics.js';
+import {
+  emitJsonDiagnostic,
+  REPORT_DIAGNOSTIC_CODES,
+} from './reportDiagnostics.js';
 import {
   getReportArtifactStatusDiagnosticCode,
   readJsonArtifact,
@@ -53,7 +56,7 @@ report.results.forEach((result) => {
   console.error(`[${result.status}] ${result.path}: ${result.message}${diagnosticSuffix}`);
   emitJsonDiagnostic({
     level: 'error',
-    code: diagnosticCode ?? 'artifact-read-error',
+    code: diagnosticCode ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
     message: result.message,
     context: {
       path: result.path,

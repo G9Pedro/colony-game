@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emitJsonDiagnostic, isJsonDiagnosticsEnabled } from '../scripts/reportDiagnostics.js';
+import {
+  buildReportDiagnostic,
+  emitJsonDiagnostic,
+  isJsonDiagnosticsEnabled,
+  isKnownReportDiagnosticCode,
+  REPORT_DIAGNOSTIC_CODES,
+} from '../scripts/reportDiagnostics.js';
 
 function withEnv(name, value, callback) {
   const previous = process.env[name];
@@ -47,7 +53,7 @@ test('emitJsonDiagnostic is a no-op when JSON diagnostics disabled', () => {
     captureConsole('log', (lines) => {
       emitJsonDiagnostic({
         level: 'info',
-        code: 'example',
+        code: REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary,
         message: 'hello',
       });
       assert.equal(lines.length, 0);
@@ -60,7 +66,7 @@ test('emitJsonDiagnostic writes structured JSON line to matching stream', () => 
     captureConsole('warn', (lines) => {
       emitJsonDiagnostic({
         level: 'warn',
-        code: 'artifact-read-error',
+        code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
         message: 'fallback',
         context: { path: 'reports/a.json' },
       });
@@ -68,8 +74,61 @@ test('emitJsonDiagnostic writes structured JSON line to matching stream', () => 
       const payload = JSON.parse(lines[0]);
       assert.equal(payload.type, 'report-diagnostic');
       assert.equal(payload.level, 'warn');
-      assert.equal(payload.code, 'artifact-read-error');
+      assert.equal(payload.code, REPORT_DIAGNOSTIC_CODES.artifactReadError);
       assert.deepEqual(payload.context, { path: 'reports/a.json' });
     });
   });
+});
+
+test('buildReportDiagnostic validates levels, codes, messages and context', () => {
+  const payload = buildReportDiagnostic({
+    level: 'info',
+    code: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+    message: 'baseline missing',
+    context: { baselinePath: 'reports/scenario-tuning-dashboard.baseline.json' },
+  });
+  assert.equal(payload.type, 'report-diagnostic');
+  assert.equal(payload.code, REPORT_DIAGNOSTIC_CODES.artifactMissing);
+  assert.throws(
+    () =>
+      buildReportDiagnostic({
+        level: 'debug',
+        code: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+        message: 'bad level',
+      }),
+    /invalid report diagnostic level/i,
+  );
+  assert.throws(
+    () =>
+      buildReportDiagnostic({
+        level: 'info',
+        code: 'unknown-code',
+        message: 'bad code',
+      }),
+    /unknown report diagnostic code/i,
+  );
+  assert.throws(
+    () =>
+      buildReportDiagnostic({
+        level: 'info',
+        code: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+        message: '',
+      }),
+    /non-empty string/i,
+  );
+  assert.throws(
+    () =>
+      buildReportDiagnostic({
+        level: 'info',
+        code: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+        message: 'bad context',
+        context: [],
+      }),
+    /context must be an object or null/i,
+  );
+});
+
+test('isKnownReportDiagnosticCode recognizes known code set', () => {
+  assert.equal(isKnownReportDiagnosticCode(REPORT_DIAGNOSTIC_CODES.artifactInvalidJson), true);
+  assert.equal(isKnownReportDiagnosticCode('random-diagnostic'), false);
 });

@@ -1,11 +1,12 @@
 import { readFile } from 'node:fs/promises';
 import { validateReportPayloadByKind } from '../src/game/reportPayloadValidators.js';
+import { REPORT_DIAGNOSTIC_CODES } from './reportDiagnostics.js';
 
 export const READ_ARTIFACT_DIAGNOSTIC_CODES = Object.freeze({
-  missing: 'artifact-missing',
-  invalidJson: 'artifact-invalid-json',
-  invalidPayload: 'artifact-invalid-payload',
-  readError: 'artifact-read-error',
+  missing: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+  invalidJson: REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
+  invalidPayload: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
+  readError: REPORT_DIAGNOSTIC_CODES.artifactReadError,
 });
 
 export async function readJsonArtifact(path) {

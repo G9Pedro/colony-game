@@ -11,7 +11,10 @@ import {
 import {
   REPORT_KINDS,
 } from '../src/game/reportPayloadValidators.js';
-import { emitJsonDiagnostic } from './reportDiagnostics.js';
+import {
+  emitJsonDiagnostic,
+  REPORT_DIAGNOSTIC_CODES,
+} from './reportDiagnostics.js';
 import {
   buildReadArtifactDiagnostic,
   buildReadArtifactFailureLabel,
@@ -52,7 +55,7 @@ try {
     );
     emitJsonDiagnostic({
       level: 'warn',
-      code: diagnostic?.code ?? 'artifact-read-error',
+      code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
       message: 'Baseline dashboard payload is invalid; falling back to signature baseline.',
       context: {
         baselinePath: baselineDashboardPath,
@@ -67,7 +70,7 @@ try {
     );
     emitJsonDiagnostic({
       level: 'info',
-      code: diagnostic?.code ?? 'artifact-missing',
+      code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactMissing,
       message: 'Baseline dashboard not found; using signature baseline comparison.',
       context: {
         baselinePath: baselineDashboardPath,
@@ -82,7 +85,7 @@ try {
     );
     emitJsonDiagnostic({
       level: 'warn',
-      code: diagnostic?.code ?? 'artifact-read-error',
+      code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
       message: 'Unable to read baseline dashboard; falling back to signature baseline.',
       context: {
         baselinePath: baselineDashboardPath,
@@ -97,7 +100,7 @@ try {
   );
   emitJsonDiagnostic({
     level: 'warn',
-    code: 'artifact-read-error',
+    code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
     message: 'Unexpected baseline dashboard handling failure; falling back to signature baseline.',
     context: {
       baselinePath: baselineDashboardPath,
