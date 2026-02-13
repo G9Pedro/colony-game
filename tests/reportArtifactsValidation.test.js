@@ -7,6 +7,7 @@ import {
   getReportArtifactRegenerationCommand,
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
+import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
 
 test('REPORT_ARTIFACT_TARGETS includes expected report kinds', () => {
   const kinds = new Set(REPORT_ARTIFACT_TARGETS.map((target) => target.kind));
@@ -85,10 +86,10 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
   assert.equal(report.failureCount, 2);
   assert.equal(report.overallPassed, false);
   assert.deepEqual(report.statusCounts, {
-    ok: 1,
-    error: 1,
-    invalid: 0,
-    'invalid-json': 1,
+    [REPORT_ARTIFACT_STATUSES.ok]: 1,
+    [REPORT_ARTIFACT_STATUSES.error]: 1,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 0,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 1,
   });
   assert.deepEqual(report.recommendedActions, [
     {
@@ -101,11 +102,17 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
     ['reports/baseline-suggestions.json', 'reports/broken.json', 'reports/missing.json'],
   );
   const resultByPath = new Map(report.results.map((result) => [result.path, result]));
-  assert.equal(resultByPath.get('reports/baseline-suggestions.json')?.status, 'ok');
+  assert.equal(
+    resultByPath.get('reports/baseline-suggestions.json')?.status,
+    REPORT_ARTIFACT_STATUSES.ok,
+  );
   assert.equal(resultByPath.get('reports/baseline-suggestions.json')?.recommendedCommand, null);
-  assert.equal(resultByPath.get('reports/missing.json')?.status, 'error');
+  assert.equal(resultByPath.get('reports/missing.json')?.status, REPORT_ARTIFACT_STATUSES.error);
   assert.equal(resultByPath.get('reports/missing.json')?.recommendedCommand, 'npm run verify');
-  assert.equal(resultByPath.get('reports/broken.json')?.status, 'invalid-json');
+  assert.equal(
+    resultByPath.get('reports/broken.json')?.status,
+    REPORT_ARTIFACT_STATUSES.invalidJson,
+  );
   assert.equal(resultByPath.get('reports/broken.json')?.recommendedCommand, 'npm run verify');
 });
 
@@ -119,10 +126,10 @@ test('evaluateReportArtifactEntries reports canonical zeroed status keys', () =>
   ]);
 
   assert.deepEqual(report.statusCounts, {
-    ok: 0,
-    error: 1,
-    invalid: 0,
-    'invalid-json': 0,
+    [REPORT_ARTIFACT_STATUSES.ok]: 0,
+    [REPORT_ARTIFACT_STATUSES.error]: 1,
+    [REPORT_ARTIFACT_STATUSES.invalid]: 0,
+    [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
   });
 });
 
@@ -137,7 +144,7 @@ test('evaluateReportArtifactEntries flags schema-invalid payloads', () => {
 
   assert.equal(report.overallPassed, false);
   assert.equal(report.failureCount, 1);
-  assert.equal(report.results[0].status, 'invalid');
+  assert.equal(report.results[0].status, REPORT_ARTIFACT_STATUSES.invalid);
   assert.ok(report.results[0].message?.includes('failed validation'));
 });
 
@@ -172,13 +179,24 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
     overallPassed: false,
     totalChecked: 2,
     failureCount: 1,
-    statusCounts: { ok: 1, error: 0, invalid: 1, 'invalid-json': 0 },
+    statusCounts: {
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 1,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+    },
     results: [
-      { path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null, recommendedCommand: null },
+      {
+        path: 'reports/a.json',
+        kind: 'kind-a',
+        status: REPORT_ARTIFACT_STATUSES.ok,
+        message: null,
+        recommendedCommand: null,
+      },
       {
         path: 'reports/b.json',
         kind: 'kind-b',
-        status: 'invalid',
+        status: REPORT_ARTIFACT_STATUSES.invalid,
         message: 'bad payload',
         recommendedCommand: 'npm run custom:regen',
       },
@@ -200,8 +218,21 @@ test('buildReportArtifactsValidationMarkdown includes no-op remediation on pass'
     overallPassed: true,
     totalChecked: 1,
     failureCount: 0,
-    statusCounts: { ok: 1, error: 0, invalid: 0, 'invalid-json': 0 },
-    results: [{ path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null, ok: true }],
+    statusCounts: {
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+    },
+    results: [
+      {
+        path: 'reports/a.json',
+        kind: 'kind-a',
+        status: REPORT_ARTIFACT_STATUSES.ok,
+        message: null,
+        ok: true,
+      },
+    ],
   });
   assert.ok(markdown.includes('No remediation needed. All artifacts are valid.'));
 });

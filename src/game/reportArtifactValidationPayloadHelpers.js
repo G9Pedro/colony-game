@@ -1,6 +1,18 @@
 import { areNormalizedJsonValuesEqual } from './reportPayloadValidatorUtils.js';
 
-export const REPORT_ARTIFACT_STATUS_ORDER = ['ok', 'error', 'invalid', 'invalid-json'];
+export const REPORT_ARTIFACT_STATUSES = Object.freeze({
+  ok: 'ok',
+  error: 'error',
+  invalid: 'invalid',
+  invalidJson: 'invalid-json',
+});
+
+export const REPORT_ARTIFACT_STATUS_ORDER = [
+  REPORT_ARTIFACT_STATUSES.ok,
+  REPORT_ARTIFACT_STATUSES.error,
+  REPORT_ARTIFACT_STATUSES.invalid,
+  REPORT_ARTIFACT_STATUSES.invalidJson,
+];
 export const KNOWN_REPORT_ARTIFACT_STATUSES = new Set(REPORT_ARTIFACT_STATUS_ORDER);
 
 export function isValidRecommendedActions(value) {
@@ -38,11 +50,15 @@ export function isValidReportArtifactResultEntry(result) {
   }
 
   if (result.ok) {
-    return result.status === 'ok' && result.message === null && result.recommendedCommand === null;
+    return (
+      result.status === REPORT_ARTIFACT_STATUSES.ok &&
+      result.message === null &&
+      result.recommendedCommand === null
+    );
   }
 
   return (
-    result.status !== 'ok' &&
+    result.status !== REPORT_ARTIFACT_STATUSES.ok &&
     typeof result.message === 'string' &&
     result.message.length > 0 &&
     typeof result.recommendedCommand === 'string' &&

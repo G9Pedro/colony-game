@@ -6,6 +6,7 @@ import path from 'node:path';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { REPORT_ARTIFACT_TARGETS } from '../src/game/reportArtifactsValidation.js';
+import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
 import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
@@ -63,13 +64,13 @@ test('validate-report-artifacts script emits validation report for invalid/missi
     assert.equal(summary.meta.kind, REPORT_KINDS.reportArtifactsValidation);
     assert.equal(summary.totalChecked, REPORT_ARTIFACT_TARGETS.length);
     assert.equal(summary.overallPassed, false);
-    assert.equal(summary.statusCounts['invalid-json'], 1);
+    assert.equal(summary.statusCounts[REPORT_ARTIFACT_STATUSES.invalidJson], 1);
     assert.ok(summary.failureCount >= 1);
 
     const dashboardRow = summary.results.find(
       (row) => row.path === 'reports/scenario-tuning-dashboard.json',
     );
-    assert.equal(dashboardRow.status, 'invalid-json');
+    assert.equal(dashboardRow.status, REPORT_ARTIFACT_STATUSES.invalidJson);
     assert.equal(
       dashboardRow.message,
       'report artifact at "reports/scenario-tuning-dashboard.json" is not valid JSON.',

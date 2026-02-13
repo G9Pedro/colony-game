@@ -2,18 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReportMeta, REPORT_KINDS } from '../src/game/reportPayloadMeta.js';
 import { isValidReportArtifactsValidationPayload } from '../src/game/reportPayloadValidatorsReportArtifacts.js';
+import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
 
 function buildReportArtifactsPayload() {
   return withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
     overallPassed: false,
     failureCount: 1,
     totalChecked: 2,
-    statusCounts: { ok: 1, error: 0, invalid: 1, 'invalid-json': 0 },
+    statusCounts: {
+      [REPORT_ARTIFACT_STATUSES.ok]: 1,
+      [REPORT_ARTIFACT_STATUSES.error]: 0,
+      [REPORT_ARTIFACT_STATUSES.invalid]: 1,
+      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
+    },
     results: [
       {
         path: 'reports/scenario-tuning-dashboard.json',
         kind: REPORT_KINDS.scenarioTuningDashboard,
-        status: 'ok',
+        status: REPORT_ARTIFACT_STATUSES.ok,
         ok: true,
         message: null,
         recommendedCommand: null,
@@ -21,7 +27,7 @@ function buildReportArtifactsPayload() {
       {
         path: 'reports/scenario-tuning-trend.json',
         kind: REPORT_KINDS.scenarioTuningTrend,
-        status: 'invalid',
+        status: REPORT_ARTIFACT_STATUSES.invalid,
         ok: false,
         message: 'payload schema mismatch',
         recommendedCommand: 'npm run simulate:report:tuning:trend',

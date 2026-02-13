@@ -1,5 +1,8 @@
 import { REPORT_KINDS, validateReportPayloadByKind } from './reportPayloadValidators.js';
-import { REPORT_ARTIFACT_STATUS_ORDER } from './reportArtifactValidationPayloadHelpers.js';
+import {
+  REPORT_ARTIFACT_STATUSES,
+  REPORT_ARTIFACT_STATUS_ORDER,
+} from './reportArtifactValidationPayloadHelpers.js';
 
 export const REPORT_ARTIFACT_TARGETS = [
   { path: 'reports/scenario-tuning-validation.json', kind: REPORT_KINDS.scenarioTuningValidation },
@@ -60,7 +63,7 @@ export function evaluateReportArtifactEntries(entries) {
         return {
           path: entry.path,
           kind: entry.kind,
-          status: 'invalid-json',
+          status: REPORT_ARTIFACT_STATUSES.invalidJson,
           ok: false,
           message: entry.message ?? 'Invalid JSON payload.',
           recommendedCommand,
@@ -71,7 +74,7 @@ export function evaluateReportArtifactEntries(entries) {
         return {
           path: entry.path,
           kind: entry.kind,
-          status: 'error',
+          status: REPORT_ARTIFACT_STATUSES.error,
           ok: false,
           message: entry.message ?? 'Failed to read report artifact.',
           recommendedCommand,
@@ -83,7 +86,7 @@ export function evaluateReportArtifactEntries(entries) {
         return {
           path: entry.path,
           kind: entry.kind,
-          status: 'invalid',
+          status: REPORT_ARTIFACT_STATUSES.invalid,
           ok: false,
           message: validation.reason,
           recommendedCommand,
@@ -93,7 +96,7 @@ export function evaluateReportArtifactEntries(entries) {
       return {
         path: entry.path,
         kind: entry.kind,
-        status: 'ok',
+        status: REPORT_ARTIFACT_STATUSES.ok,
         ok: true,
         message: null,
         recommendedCommand: null,

@@ -6,13 +6,14 @@ import {
   isValidRecommendedActions,
   isValidReportArtifactResultEntry,
   KNOWN_REPORT_ARTIFACT_STATUSES,
+  REPORT_ARTIFACT_STATUSES,
   normalizeRecommendedActions,
 } from '../src/game/reportArtifactValidationPayloadHelpers.js';
 
 test('KNOWN_REPORT_ARTIFACT_STATUSES contains expected statuses', () => {
   assert.deepEqual(
     Array.from(KNOWN_REPORT_ARTIFACT_STATUSES).sort((a, b) => a.localeCompare(b)),
-    ['error', 'invalid', 'invalid-json', 'ok'],
+    Object.values(REPORT_ARTIFACT_STATUSES).sort((a, b) => a.localeCompare(b)),
   );
 });
 
@@ -30,7 +31,7 @@ test('isValidReportArtifactResultEntry enforces ok/failure semantics', () => {
     isValidReportArtifactResultEntry({
       path: 'reports/a.json',
       kind: 'baseline-suggestions',
-      status: 'ok',
+      status: REPORT_ARTIFACT_STATUSES.ok,
       ok: true,
       message: null,
       recommendedCommand: null,
@@ -42,7 +43,7 @@ test('isValidReportArtifactResultEntry enforces ok/failure semantics', () => {
     isValidReportArtifactResultEntry({
       path: 'reports/b.json',
       kind: 'scenario-tuning-dashboard',
-      status: 'error',
+      status: REPORT_ARTIFACT_STATUSES.error,
       ok: false,
       message: 'read failure',
       recommendedCommand: 'npm run verify',
@@ -54,7 +55,7 @@ test('isValidReportArtifactResultEntry enforces ok/failure semantics', () => {
     isValidReportArtifactResultEntry({
       path: 'reports/c.json',
       kind: 'scenario-tuning-dashboard',
-      status: 'error',
+      status: REPORT_ARTIFACT_STATUSES.error,
       ok: true,
       message: null,
       recommendedCommand: null,
