@@ -44,3 +44,18 @@ test('objective completions are emitted once', () => {
   assert.ok(!remaining.includes('food-security'));
   assert.equal(emitCount, 1);
 });
+
+test('current objective list shrinks as objectives complete', () => {
+  const state = createInitialState({ seed: 'objective-seed' });
+  const before = getCurrentObjectiveIds(state);
+  state.research.completed.push('masonry');
+  runObjectiveSystem({
+    state,
+    emit: () => {},
+  });
+  const after = getCurrentObjectiveIds(state);
+
+  assert.ok(before.includes('research-masonry'));
+  assert.ok(!after.includes('research-masonry'));
+  assert.ok(after.length < before.length);
+});

@@ -1,6 +1,6 @@
 import { BUILDING_CATEGORIES } from '../content/buildings.js';
 import { getAvailableResearch, getAverageMorale, getPopulationCapacity, getStorageCapacity, getUsedStorage, isBuildingUnlocked } from '../game/selectors.js';
-import { getObjectiveDefinitions } from '../systems/objectiveSystem.js';
+import { getCurrentObjectiveIds, getObjectiveDefinitions } from '../systems/objectiveSystem.js';
 
 function formatCost(cost) {
   return Object.entries(cost)
@@ -58,6 +58,7 @@ export class UIController {
       colonistList: document.getElementById('colonist-list'),
       notifications: document.getElementById('notifications'),
       messageBanner: document.getElementById('message-banner'),
+      hintBadge: document.getElementById('hint-badge'),
     };
 
     this.callbacks = {
@@ -238,6 +239,14 @@ export class UIController {
       }
       this.el.objectivesList.appendChild(card);
     }
+
+    const remainingObjectiveIds = getCurrentObjectiveIds(state);
+    if (remainingObjectiveIds.length === 0) {
+      this.el.hintBadge.textContent = 'All objectives completed. Push for charter victory!';
+      return;
+    }
+    const nextObjective = objectives.find((objective) => objective.id === remainingObjectiveIds[0]);
+    this.el.hintBadge.textContent = `Current objective: ${nextObjective.title}`;
   }
 
   renderConstructionQueue(state) {
