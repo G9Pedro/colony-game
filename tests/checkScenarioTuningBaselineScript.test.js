@@ -10,7 +10,7 @@ import { buildScenarioTuningIntensityOnlyDriftPayload } from '../scripts/reportD
 import {
   assertOutputDiagnosticsContract,
   assertOutputHasDiagnostic,
-  assertOutputHasReadFailureDiagnostic,
+  assertOutputHasReadFailureDiagnosticContract,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
@@ -130,6 +130,7 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
 test('check-scenario-tuning-baseline emits read-error diagnostic for unreadable cache path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'check-tuning-baseline-'));
   const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
+  const runId = 'tuning-baseline-check-read-error-run';
 
   try {
     await assert.rejects(
@@ -139,16 +140,19 @@ test('check-scenario-tuning-baseline emits read-error diagnostic for unreadable 
             ...process.env,
             SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: tempDirectory,
             REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: runId,
           },
         }),
       (error) => {
         assert.equal(error.code, 1);
         assert.ok(error.stderr.includes('Unable to read scenario tuning baseline cache payload'));
-        assertOutputHasReadFailureDiagnostic({
+        assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
+          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'simulate:check:tuning-baseline',
+          expectedRunId: runId,
           expectedPath: tempDirectory,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',

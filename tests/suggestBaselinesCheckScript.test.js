@@ -10,7 +10,7 @@ import { buildBaselineSuggestionPayload } from '../scripts/reportDiagnosticsFixt
 import {
   assertOutputDiagnosticsContract,
   assertOutputHasDiagnostic,
-  assertOutputHasReadFailureDiagnostic,
+  assertOutputHasReadFailureDiagnosticContract,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
@@ -122,6 +122,7 @@ test('suggest-baselines-check fails on drift and emits drift diagnostic', async 
 test('suggest-baselines-check emits read-error diagnostic for unreadable cache path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'suggest-baselines-check-'));
   const scriptPath = path.resolve('scripts/suggest-baselines-check.js');
+  const runId = 'suggest-baseline-check-read-error-run';
 
   try {
     await assert.rejects(
@@ -131,16 +132,19 @@ test('suggest-baselines-check emits read-error diagnostic for unreadable cache p
             ...process.env,
             SIM_BASELINE_SUGGEST_PATH: tempDirectory,
             REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: runId,
           },
         }),
       (error) => {
         assert.equal(error.code, 1);
         assert.ok(error.stderr.includes('Unable to read baseline suggestion cache payload'));
-        assertOutputHasReadFailureDiagnostic({
+        assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
+          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'simulate:baseline:check',
+          expectedRunId: runId,
           expectedPath: tempDirectory,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',

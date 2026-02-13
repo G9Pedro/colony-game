@@ -7,7 +7,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { REPORT_ARTIFACT_TARGETS } from '../src/game/reportArtifactsValidation.js';
-import { assertOutputHasReadFailureDiagnostic } from './helpers/reportDiagnosticsTestUtils.js';
+import { assertOutputHasReadFailureDiagnosticContract } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -83,6 +83,7 @@ test('validate-report-artifacts script emits validation report for invalid/missi
 test('validate-report-artifacts emits JSON diagnostics when enabled', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
   const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
+  const runId = 'validate-report-artifacts-invalid-json-run';
 
   try {
     await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
@@ -99,14 +100,17 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
           env: {
             ...process.env,
             REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: runId,
           },
         }),
       (error) => {
-        const invalidJsonDiagnostic = assertOutputHasReadFailureDiagnostic({
+        const invalidJsonDiagnostic = assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
+          expectedCodes: ['artifact-invalid-json'],
           diagnosticCode: 'artifact-invalid-json',
           expectedScript: 'reports:validate',
+          expectedRunId: runId,
           expectedPath: 'reports/scenario-tuning-dashboard.json',
           expectedStatus: 'invalid-json',
           expectedErrorCode: null,
@@ -124,6 +128,7 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
 test('validate-report-artifacts emits read-error diagnostic for unreadable artifact path', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
   const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
+  const runId = 'validate-report-artifacts-read-error-run';
 
   try {
     await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
@@ -138,6 +143,7 @@ test('validate-report-artifacts emits read-error diagnostic for unreadable artif
           env: {
             ...process.env,
             REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: runId,
           },
         }),
       (error) => {
@@ -146,11 +152,13 @@ test('validate-report-artifacts emits read-error diagnostic for unreadable artif
           error.stderr,
           /Unable to read report artifact at "reports\/scenario-tuning-dashboard\.json"/i,
         );
-        assertOutputHasReadFailureDiagnostic({
+        assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
+          expectedCodes: ['artifact-read-error'],
           diagnosticCode: 'artifact-read-error',
           expectedScript: 'reports:validate',
+          expectedRunId: runId,
           expectedPath: 'reports/scenario-tuning-dashboard.json',
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
