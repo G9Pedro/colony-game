@@ -8,20 +8,38 @@
   </head>
   <body>
     <div id="app">
-      <header class="topbar">
-        <div class="title-wrap">
+      <header class="hud-top">
+        <div class="branding">
           <h1>Colony Frontier</h1>
-          <p class="subtitle">Build, research, survive, and prosper.</p>
+          <p class="subtitle">A warm isometric settlement simulation.</p>
         </div>
-        <div class="control-row">
+        <div class="status-strip">
+          <div class="status-pill"><span>State</span><strong id="status-label">playing</strong></div>
+          <div class="status-pill"><span>Day</span><strong id="day-label">1</strong></div>
+          <div class="status-pill"><span>Pop</span><strong id="population-label">0 / 0</strong></div>
+          <div class="status-pill"><span>Morale</span><strong id="morale-label">0</strong></div>
+          <div class="status-pill"><span>Storage</span><strong id="storage-label">0 / 0</strong></div>
+          <div class="status-pill clock"><span>Clock</span><strong id="clock-label">Day 1 · 1x</strong></div>
+        </div>
+      </header>
+
+      <section id="resource-list" class="resource-bar"></section>
+
+      <section class="top-controls">
+        <div class="control-group">
           <label class="compact-label" for="scenario-select">Scenario</label>
           <select id="scenario-select"></select>
           <label class="compact-label" for="balance-profile-select">Balance</label>
           <select id="balance-profile-select"></select>
-          <button id="pause-btn">Pause</button>
+          <label class="compact-label" for="renderer-mode-select">Renderer</label>
+          <select id="renderer-mode-select"></select>
+        </div>
+        <div class="control-group">
+          <button id="pause-btn">⏸ Pause</button>
           <button id="speed-1-btn" class="active">1x</button>
           <button id="speed-2-btn">2x</button>
           <button id="speed-4-btn">4x</button>
+          <button id="hire-btn">Hire Colonist (20 food)</button>
           <button id="save-btn">Save</button>
           <button id="load-btn">Load</button>
           <button id="export-btn">Export</button>
@@ -29,28 +47,13 @@
           <input id="import-file-input" type="file" accept="application/json" hidden />
           <button id="reset-btn" class="danger">Reset</button>
         </div>
-      </header>
+      </section>
 
       <main class="layout">
-        <aside class="panel left">
-          <section>
-            <h2>Colony</h2>
-            <div class="kv"><span>Status</span><strong id="status-label">Playing</strong></div>
-            <div class="kv"><span>Day</span><strong id="day-label">1</strong></div>
-            <div class="kv"><span>Population</span><strong id="population-label">0 / 0</strong></div>
-            <div class="kv"><span>Avg Morale</span><strong id="morale-label">0</strong></div>
-            <button id="hire-btn">Hire Colonist (20 food)</button>
-          </section>
-
-          <section>
-            <h2>Resources</h2>
-            <div id="resource-list" class="resource-list"></div>
-            <div class="kv"><span>Storage</span><strong id="storage-label">0 / 0</strong></div>
-          </section>
-
+        <aside class="panel panel-left">
           <section>
             <h2>Research</h2>
-            <div id="research-current" class="research-current">No active research</div>
+            <div id="research-current" class="research-current"></div>
             <div id="research-list" class="research-list"></div>
           </section>
 
@@ -58,14 +61,29 @@
             <h2>Objectives</h2>
             <div id="objectives-list" class="objective-list"></div>
           </section>
+
+          <section>
+            <h2>Info</h2>
+            <div id="info-panel" class="panel-card">
+              <h3 id="info-panel-title">Selection</h3>
+              <div id="info-panel-body">
+                <small>Tap a building or colonist to inspect details.</small>
+              </div>
+            </div>
+          </section>
         </aside>
 
-        <section id="scene-root" class="scene-root">
-          <div id="message-banner" class="message-banner hidden"></div>
-          <div id="hint-badge" class="hint-badge">Select a building, then tap terrain to place it.</div>
+        <section class="scene-shell">
+          <section id="scene-root" class="scene-root">
+            <div id="message-banner" class="message-banner hidden"></div>
+            <div id="hint-badge" class="hint-badge">Select a building, then tap terrain to place it.</div>
+          </section>
+          <div class="minimap-wrap">
+            <canvas id="minimap-canvas" width="200" height="130"></canvas>
+          </div>
         </section>
 
-        <aside class="panel right">
+        <aside class="panel panel-right">
           <section>
             <h2>Build</h2>
             <div id="build-categories" class="category-row"></div>

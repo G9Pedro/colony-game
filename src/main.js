@@ -35,6 +35,8 @@ const ui = new UIController({
   researchDefinitions: RESEARCH_DEFINITIONS,
   resourceDefinitions: RESOURCE_DEFINITIONS,
 });
+ui.attachRenderer(renderer);
+ui.setRendererModeOptions(renderer.getAvailableModes?.() ?? ['isometric'], renderer.getRendererMode?.() ?? 'isometric');
 ui.setScenarioOptions(Object.values(SCENARIO_DEFINITIONS), engine.state.scenarioId);
 ui.setBalanceProfileOptions(Object.values(BALANCE_PROFILE_DEFINITIONS), engine.state.balanceProfileId);
 
@@ -125,6 +127,11 @@ ui.setPersistenceCallbacks({
     engine.setBalanceProfile(balanceProfileId);
     ui.setSelectedBuildType(null);
   },
+  onRendererModeChange: (mode) => {
+    const switched = renderer.setRendererMode?.(mode) ?? false;
+    ui.attachRenderer(renderer);
+    return switched;
+  },
 });
 
 renderer.setGroundClickHandler((point) => {
@@ -159,6 +166,9 @@ renderer.setPlacementPreviewHandler((point) => {
   }
   const placement = isPlacementValid(engine.state, buildingType, point.x, point.z);
   renderer.updatePlacementMarker(point, placement.valid);
+});
+renderer.setEntitySelectHandler((entity) => {
+  ui.setSelectedEntity(entity);
 });
 
 let lastFrame = performance.now();
