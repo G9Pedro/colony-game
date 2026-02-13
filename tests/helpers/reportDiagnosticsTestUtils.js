@@ -96,7 +96,12 @@ export function assertOutputHasReadFailureDiagnostic({
   expectedErrorCode = undefined,
 }) {
   const diagnostics = collectReportDiagnostics(stdout, stderr);
-  const diagnostic = findDiagnosticByCode(diagnostics, diagnosticCode);
+  const diagnostic =
+    diagnostics.find(
+      (entry) =>
+        entry.code === diagnosticCode &&
+        (expectedPath === undefined || entry.context?.path === expectedPath),
+    ) ?? findDiagnosticByCode(diagnostics, diagnosticCode);
   if (expectedScript !== undefined) {
     assert.equal(diagnostic.script, expectedScript);
   }

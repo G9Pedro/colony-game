@@ -174,6 +174,51 @@ test('validate-report-artifacts diagnostics follow contract fixture', async () =
   }
 });
 
+test('validate-report-artifacts emits read-error diagnostics for unreadable report artifact path', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-artifacts-read-error-'));
+  const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
+
+  try {
+    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
+    await mkdir(path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'), {
+      recursive: true,
+    });
+
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          cwd: tempDirectory,
+          env: {
+            ...process.env,
+            REPORT_DIAGNOSTICS_JSON: '1',
+            REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+          },
+        }),
+      (error) => {
+        assertOutputDiagnosticsContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          expectedScript: 'reports:validate',
+          expectedRunId: RUN_ID,
+          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
+        });
+        assertOutputHasReadFailureDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+          expectedScript: 'reports:validate',
+          expectedPath: 'reports/scenario-tuning-dashboard.json',
+          expectedStatus: 'error',
+          expectedErrorCode: 'EISDIR',
+        });
+        return true;
+      },
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test('scenario tuning baseline check diagnostics follow contract fixture', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-tuning-check-'));
   const payloadPath = path.join(tempDirectory, 'scenario-tuning-baseline-suggestions.json');

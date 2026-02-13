@@ -121,6 +121,48 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
   }
 });
 
+test('validate-report-artifacts emits read-error diagnostic for unreadable artifact path', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
+  const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
+
+  try {
+    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
+    await mkdir(path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'), {
+      recursive: true,
+    });
+
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          cwd: tempDirectory,
+          env: {
+            ...process.env,
+            REPORT_DIAGNOSTICS_JSON: '1',
+          },
+        }),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(
+          error.stderr,
+          /Unable to read report artifact at "reports\/scenario-tuning-dashboard\.json"/i,
+        );
+        assertOutputHasReadFailureDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: 'artifact-read-error',
+          expectedScript: 'reports:validate',
+          expectedPath: 'reports/scenario-tuning-dashboard.json',
+          expectedStatus: 'error',
+          expectedErrorCode: 'EISDIR',
+        });
+        return true;
+      },
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test('validate-report-artifacts script passes after generating all target artifacts', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
   const validateArtifactsScriptPath = path.resolve('scripts/validate-report-artifacts.js');
