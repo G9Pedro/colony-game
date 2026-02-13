@@ -71,10 +71,15 @@ export function evaluateReportArtifactEntries(entries) {
   });
 
   const failureCount = results.filter((result) => !result.ok).length;
+  const statusCounts = results.reduce((acc, result) => {
+    acc[result.status] = (acc[result.status] ?? 0) + 1;
+    return acc;
+  }, {});
   return {
     overallPassed: failureCount === 0,
     failureCount,
     totalChecked: results.length,
+    statusCounts,
     results,
   };
 }
@@ -87,6 +92,9 @@ export function buildReportArtifactsValidationMarkdown(report) {
     `- Status: ${statusLabel}`,
     `- Total Checked: ${report.totalChecked}`,
     `- Failed: ${report.failureCount}`,
+    `- Status Counts: ${Object.entries(report.statusCounts ?? {})
+      .map(([status, count]) => `${status}=${count}`)
+      .join(', ')}`,
     '',
     '## Results',
     '',

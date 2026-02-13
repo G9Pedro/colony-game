@@ -49,6 +49,11 @@ test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
   assert.equal(report.totalChecked, 3);
   assert.equal(report.failureCount, 2);
   assert.equal(report.overallPassed, false);
+  assert.deepEqual(report.statusCounts, {
+    ok: 1,
+    error: 1,
+    'invalid-json': 1,
+  });
   assert.equal(report.results[0].status, 'ok');
   assert.equal(report.results[1].status, 'error');
   assert.equal(report.results[2].status, 'invalid-json');
@@ -74,6 +79,7 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
     overallPassed: false,
     totalChecked: 2,
     failureCount: 1,
+    statusCounts: { ok: 1, invalid: 1 },
     results: [
       { path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null },
       { path: 'reports/b.json', kind: 'kind-b', status: 'invalid', message: 'bad payload' },
@@ -81,6 +87,7 @@ test('buildReportArtifactsValidationMarkdown renders table rows', () => {
   });
 
   assert.ok(markdown.includes('# Report Artifacts Validation'));
+  assert.ok(markdown.includes('Status Counts: ok=1, invalid=1'));
   assert.ok(markdown.includes('| reports/a.json | kind-a | ok |  |'));
   assert.ok(markdown.includes('| reports/b.json | kind-b | invalid | bad payload |'));
   assert.ok(markdown.includes('## Remediation Hints'));
@@ -92,6 +99,7 @@ test('buildReportArtifactsValidationMarkdown includes no-op remediation on pass'
     overallPassed: true,
     totalChecked: 1,
     failureCount: 0,
+    statusCounts: { ok: 1 },
     results: [{ path: 'reports/a.json', kind: 'kind-a', status: 'ok', message: null, ok: true }],
   });
   assert.ok(markdown.includes('No remediation needed. All artifacts are valid.'));
