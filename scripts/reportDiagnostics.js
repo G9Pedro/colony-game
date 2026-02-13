@@ -1,4 +1,6 @@
 export const REPORT_DIAGNOSTIC_LEVELS = Object.freeze(['info', 'warn', 'error']);
+export const REPORT_DIAGNOSTICS_SCHEMA_VERSION = 1;
+export const REPORT_DIAGNOSTIC_TYPE = 'report-diagnostic';
 
 export const REPORT_DIAGNOSTIC_CODES = Object.freeze({
   artifactMissing: 'artifact-missing',
@@ -29,6 +31,10 @@ export function buildReportDiagnostic({
   code,
   message,
   context = null,
+  script = null,
+  runId = null,
+  generatedAt = new Date().toISOString(),
+  schemaVersion = REPORT_DIAGNOSTICS_SCHEMA_VERSION,
 }) {
   if (!REPORT_DIAGNOSTIC_LEVELS.includes(level)) {
     throw new TypeError(`Invalid report diagnostic level "${level}".`);
@@ -42,9 +48,38 @@ export function buildReportDiagnostic({
   if (context !== null && (typeof context !== 'object' || Array.isArray(context))) {
     throw new TypeError('Report diagnostic context must be an object or null.');
   }
+  if (
+    script !== null &&
+    (typeof script !== 'string' || script.trim().length === 0)
+  ) {
+    throw new TypeError('Report diagnostic script must be a non-empty string or null.');
+  }
+  if (
+    runId !== null &&
+    (typeof runId !== 'string' || runId.trim().length === 0)
+  ) {
+    throw new TypeError('Report diagnostic runId must be a non-empty string or null.');
+  }
+  if (!Number.isInteger(schemaVersion) || schemaVersion < 1) {
+    throw new TypeError('Report diagnostic schemaVersion must be an integer >= 1.');
+  }
+  if (
+    typeof generatedAt !== 'string' ||
+    generatedAt.length === 0 ||
+    Number.isNaN(Date.parse(generatedAt))
+  ) {
+    throw new TypeError('Report diagnostic generatedAt must be a valid ISO timestamp string.');
+  }
+  if (new Date(generatedAt).toISOString() !== generatedAt) {
+    throw new TypeError('Report diagnostic generatedAt must be a canonical ISO timestamp string.');
+  }
 
   return {
-    type: 'report-diagnostic',
+    type: REPORT_DIAGNOSTIC_TYPE,
+    schemaVersion,
+    generatedAt,
+    script,
+    runId,
     level,
     code,
     message,
@@ -57,12 +92,18 @@ export function emitJsonDiagnostic({
   code,
   message,
   context = null,
+  script = null,
+  runId = undefined,
 }) {
+  const effectiveRunId =
+    runId === undefined ? process.env.REPORT_DIAGNOSTICS_RUN_ID ?? null : runId;
   const payload = buildReportDiagnostic({
     level,
     code,
     message,
     context,
+    script,
+    runId: effectiveRunId,
   });
 
   if (!isJsonDiagnosticsEnabled()) {
@@ -82,12 +123,24 @@ export function emitJsonDiagnostic({
 }
 
 export function isValidReportDiagnosticPayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return false;
+  }
   try {
-    buildReportDiagnostic(payload);
-    return true;
+    buildReportDiagnostic({
+      level: payload.level,
+      code: payload.code,
+      message: payload.message,
+      context: payload.context ?? null,
+      script: payload.script ?? null,
+      runId: payload.runId ?? null,
+      generatedAt: payload.generatedAt,
+      schemaVersion: payload.schemaVersion,
+    });
   } catch {
     return false;
   }
+  return payload.type === REPORT_DIAGNOSTIC_TYPE;
 }
 
 export function parseReportDiagnosticsFromText(text) {

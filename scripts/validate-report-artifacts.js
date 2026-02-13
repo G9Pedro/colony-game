@@ -23,6 +23,7 @@ const outputPath =
   process.env.REPORTS_VALIDATE_OUTPUT_PATH ?? 'reports/report-artifacts-validation.json';
 const markdownOutputPath =
   process.env.REPORTS_VALIDATE_OUTPUT_MD_PATH ?? 'reports/report-artifacts-validation.md';
+const DIAGNOSTIC_SCRIPT = 'reports:validate';
 
 const entries = [];
 for (const target of REPORT_ARTIFACT_TARGETS) {
@@ -57,6 +58,7 @@ report.results.forEach((result) => {
   emitJsonDiagnostic({
     level: 'error',
     code: diagnosticCode ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
+    script: DIAGNOSTIC_SCRIPT,
     message: result.message,
     context: {
       path: result.path,

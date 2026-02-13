@@ -65,6 +65,7 @@ test('check-scenario-tuning-baseline allows intensity drift when strict mode is 
     assert.ok(stderr.includes('SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1'));
     assert.ok(stderr.includes('"code":"scenario-tuning-intensity-drift"'));
     assert.ok(stderr.includes('"code":"scenario-tuning-intensity-enforcement-tip"'));
+    assert.ok(stderr.includes('"script":"simulate:check:tuning-baseline"'));
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -91,7 +92,8 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
       (error) =>
         error.code === 1 &&
         error.stderr.includes('strict enforcement enabled') &&
-        error.stderr.includes('"code":"scenario-tuning-intensity-drift-strict"'),
+        error.stderr.includes('"code":"scenario-tuning-intensity-drift-strict"') &&
+        error.stderr.includes('"script":"simulate:check:tuning-baseline"'),
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

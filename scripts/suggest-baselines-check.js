@@ -14,6 +14,7 @@ import { buildValidatedReportPayload } from './reportPayloadOutput.js';
 const inputPath = process.env.SIM_BASELINE_SUGGEST_PATH ?? 'reports/baseline-suggestions.json';
 const driftRuns = Number(process.env.SIM_BASELINE_SUGGEST_RUNS ?? 8);
 const strategyProfileId = process.env.SIM_STRATEGY_PROFILE ?? 'baseline';
+const DIAGNOSTIC_SCRIPT = 'simulate:baseline:check';
 
 const { source, payload } = await loadJsonPayloadOrCompute({
   path: inputPath,
@@ -38,6 +39,7 @@ console.log(
 emitJsonDiagnostic({
   level: 'info',
   code: REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary,
+  script: DIAGNOSTIC_SCRIPT,
   message: 'Baseline suggestion check summary.',
   context: {
     aggregateChangedMetrics: summary.aggregateChangedMetrics,
@@ -51,6 +53,7 @@ if (summary.hasChanges) {
   emitJsonDiagnostic({
     level: 'error',
     code: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
+    script: DIAGNOSTIC_SCRIPT,
     message: 'Baseline drift detected.',
     context: {
       aggregateChangedMetrics: summary.aggregateChangedMetrics,

@@ -78,6 +78,7 @@ test('suggest-baselines-check passes with no drift and emits summary diagnostic'
     });
     assert.match(stdout, /aggregateChangedMetrics=0/);
     assert.match(stdout, /"code":"baseline-suggestion-summary"/);
+    assert.match(stdout, /"script":"simulate:baseline:check"/);
     assert.equal(stderr.trim(), '');
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
@@ -108,7 +109,8 @@ test('suggest-baselines-check fails on drift and emits drift diagnostic', async 
       (error) =>
         error.code === 1 &&
         error.stderr.includes('Baseline drift detected') &&
-        error.stderr.includes('"code":"baseline-signature-drift"'),
+        error.stderr.includes('"code":"baseline-signature-drift"') &&
+        error.stderr.includes('"script":"simulate:baseline:check"'),
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

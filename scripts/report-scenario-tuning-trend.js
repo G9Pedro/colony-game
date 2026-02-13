@@ -32,6 +32,7 @@ const markdownOutputPath =
 const baselineDashboardPath =
   process.env.SIM_SCENARIO_TUNING_TREND_BASELINE_PATH ?? 'reports/scenario-tuning-dashboard.baseline.json';
 const BASELINE_CAPTURE_COMMAND = 'npm run simulate:capture:tuning-dashboard-baseline';
+const DIAGNOSTIC_SCRIPT = 'simulate:report:tuning:trend';
 
 const currentDashboard = buildScenarioTuningDashboard(SCENARIO_DEFINITIONS);
 
@@ -56,6 +57,7 @@ try {
     emitJsonDiagnostic({
       level: 'warn',
       code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
+      script: DIAGNOSTIC_SCRIPT,
       message: 'Baseline dashboard payload is invalid; falling back to signature baseline.',
       context: {
         baselinePath: baselineDashboardPath,
@@ -71,6 +73,7 @@ try {
     emitJsonDiagnostic({
       level: 'info',
       code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactMissing,
+      script: DIAGNOSTIC_SCRIPT,
       message: 'Baseline dashboard not found; using signature baseline comparison.',
       context: {
         baselinePath: baselineDashboardPath,
@@ -86,6 +89,7 @@ try {
     emitJsonDiagnostic({
       level: 'warn',
       code: diagnostic?.code ?? REPORT_DIAGNOSTIC_CODES.artifactReadError,
+      script: DIAGNOSTIC_SCRIPT,
       message: 'Unable to read baseline dashboard; falling back to signature baseline.',
       context: {
         baselinePath: baselineDashboardPath,
@@ -101,6 +105,7 @@ try {
   emitJsonDiagnostic({
     level: 'warn',
     code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+    script: DIAGNOSTIC_SCRIPT,
     message: 'Unexpected baseline dashboard handling failure; falling back to signature baseline.',
     context: {
       baselinePath: baselineDashboardPath,

@@ -22,6 +22,7 @@ const inputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
   'reports/scenario-tuning-baseline-suggestions.json';
 const enforceIntensityBaseline = process.env.SIM_SCENARIO_TUNING_ENFORCE_INTENSITY === '1';
+const DIAGNOSTIC_SCRIPT = 'simulate:check:tuning-baseline';
 
 const { source, payload } = await loadJsonPayloadOrCompute({
   path: inputPath,
@@ -47,6 +48,7 @@ console.log(
 emitJsonDiagnostic({
   level: 'info',
   code: REPORT_DIAGNOSTIC_CODES.scenarioTuningBaselineSummary,
+  script: DIAGNOSTIC_SCRIPT,
   message: 'Scenario tuning baseline summary calculated.',
   context: {
     changedSignatures: summary.changedSignatures,
@@ -68,6 +70,7 @@ if (summary.hasChanges) {
   emitJsonDiagnostic({
     level: 'error',
     code: REPORT_DIAGNOSTIC_CODES.scenarioTuningSignatureDrift,
+    script: DIAGNOSTIC_SCRIPT,
     message: 'Scenario tuning signature baseline drift detected.',
     context: {
       changedSignatures: summary.changedSignatures,
@@ -90,6 +93,7 @@ if (summary.changedTotalAbsDelta > 0) {
   emitJsonDiagnostic({
     level: 'warn',
     code: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDrift,
+    script: DIAGNOSTIC_SCRIPT,
     message: 'Scenario tuning intensity baseline drift detected.',
     context: {
       changedTotalAbsDelta: summary.changedTotalAbsDelta,
@@ -102,6 +106,7 @@ if (summary.changedTotalAbsDelta > 0) {
     emitJsonDiagnostic({
       level: 'error',
       code: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDriftStrict,
+      script: DIAGNOSTIC_SCRIPT,
       message: 'Strict intensity baseline enforcement triggered failure.',
       context: {
         changedTotalAbsDelta: summary.changedTotalAbsDelta,
@@ -114,6 +119,7 @@ if (summary.changedTotalAbsDelta > 0) {
   emitJsonDiagnostic({
     level: 'warn',
     code: REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityEnforcementTip,
+    script: DIAGNOSTIC_SCRIPT,
     message: 'Intensity drift tip emitted with strict enforcement command.',
     context: {
       command: payload.strictIntensityCommand,

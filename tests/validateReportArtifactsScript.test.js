@@ -102,6 +102,7 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
         );
         assert.ok(invalidJsonDiagnostic);
         assert.equal(invalidJsonDiagnostic.level, 'error');
+        assert.equal(invalidJsonDiagnostic.script, 'reports:validate');
         assert.equal(
           invalidJsonDiagnostic.context?.path,
           'reports/scenario-tuning-dashboard.json',

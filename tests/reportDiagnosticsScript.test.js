@@ -8,6 +8,8 @@ import {
   isValidReportDiagnosticPayload,
   parseReportDiagnosticsFromText,
   REPORT_DIAGNOSTIC_CODES,
+  REPORT_DIAGNOSTICS_SCHEMA_VERSION,
+  REPORT_DIAGNOSTIC_TYPE,
 } from '../scripts/reportDiagnostics.js';
 
 function withEnv(name, value, callback) {
@@ -74,10 +76,30 @@ test('emitJsonDiagnostic writes structured JSON line to matching stream', () => 
       });
       assert.equal(lines.length, 1);
       const payload = JSON.parse(lines[0]);
-      assert.equal(payload.type, 'report-diagnostic');
+      assert.equal(payload.type, REPORT_DIAGNOSTIC_TYPE);
+      assert.equal(payload.schemaVersion, REPORT_DIAGNOSTICS_SCHEMA_VERSION);
+      assert.equal(typeof payload.generatedAt, 'string');
+      assert.equal(payload.script, null);
+      assert.equal(payload.runId, null);
       assert.equal(payload.level, 'warn');
       assert.equal(payload.code, REPORT_DIAGNOSTIC_CODES.artifactReadError);
       assert.deepEqual(payload.context, { path: 'reports/a.json' });
+    });
+  });
+});
+
+test('emitJsonDiagnostic propagates runId from environment when unset', () => {
+  withEnv('REPORT_DIAGNOSTICS_JSON', '1', () => {
+    withEnv('REPORT_DIAGNOSTICS_RUN_ID', 'ci-run-42', () => {
+      captureConsole('log', (lines) => {
+        emitJsonDiagnostic({
+          level: 'info',
+          code: REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary,
+          message: 'summary',
+        });
+        const payload = JSON.parse(lines[0]);
+        assert.equal(payload.runId, 'ci-run-42');
+      });
     });
   });
 });
@@ -90,6 +112,9 @@ test('buildReportDiagnostic validates levels, codes, messages and context', () =
     context: { baselinePath: 'reports/scenario-tuning-dashboard.baseline.json' },
   });
   assert.equal(payload.type, 'report-diagnostic');
+  assert.equal(payload.schemaVersion, REPORT_DIAGNOSTICS_SCHEMA_VERSION);
+  assert.equal(payload.script, null);
+  assert.equal(payload.runId, null);
   assert.equal(payload.code, REPORT_DIAGNOSTIC_CODES.artifactMissing);
   assert.throws(
     () =>
@@ -138,10 +163,12 @@ test('isKnownReportDiagnosticCode recognizes known code set', () => {
 test('isValidReportDiagnosticPayload validates parsed payload shape', () => {
   assert.equal(
     isValidReportDiagnosticPayload({
-      level: 'error',
-      code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-      message: 'failed to read',
-      context: { path: 'reports/a.json' },
+      ...buildReportDiagnostic({
+        level: 'error',
+        code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+        message: 'failed to read',
+        context: { path: 'reports/a.json' },
+      }),
     }),
     true,
   );
@@ -159,13 +186,12 @@ test('isValidReportDiagnosticPayload validates parsed payload shape', () => {
 test('parseReportDiagnosticsFromText extracts and validates diagnostic lines', () => {
   const text = [
     'normal log line',
-    JSON.stringify({
-      type: 'report-diagnostic',
+    JSON.stringify(buildReportDiagnostic({
       level: 'warn',
       code: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
       message: 'drift',
       context: { changed: 2 },
-    }),
+    })),
     '{"type":"report-diagnostic","level":"info","code":"unknown","message":"bad","context":{}}',
     '{"type":"report-diagnostic","level":"warn","code":"artifact-read-error","message":"ok","context":[]}',
   ].join('\n');
