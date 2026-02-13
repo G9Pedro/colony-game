@@ -187,6 +187,10 @@ Optional machine-readable diagnostics mode:
   - `npm run diagnostics:smoke`
 - `npm run diagnostics:smoke` executes a lightweight end-to-end diagnostics contract check, then writes a consolidated report (`reports/report-diagnostics-smoke.json` by default) with counts by script/level/code plus per-scenario pass/fail details.
 - optional: set `REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH=<path>` to control where the consolidated smoke report is written.
+- smoke summary payloads are versioned and tagged for automation:
+  - `type: "report-diagnostics-smoke-summary"`
+  - `schemaVersion: 1`
+  - includes aggregate counters (`diagnosticsByCode`, `diagnosticsByLevel`, `diagnosticsByScript`) and per-scenario contract verdicts.
 
 Common diagnostic codes:
 - artifact/baseline read + validation:
