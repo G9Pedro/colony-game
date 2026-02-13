@@ -30,6 +30,15 @@ jobs:
       - name: Run simulation regression assertions
         run: npm run simulate:assert
 
+      - name: Validate scenario tuning configuration
+        run: npm run simulate:validate:tuning
+
+      - name: Upload scenario tuning validation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-tuning-validation-report
+          path: reports/scenario-tuning-validation.json
+
       - name: Generate simulation regression report
         run: npm run simulate:report
 
