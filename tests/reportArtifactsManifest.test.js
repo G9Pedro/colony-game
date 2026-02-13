@@ -73,3 +73,11 @@ test('getReportArtifactRegenerationCommand uses target-specific defaults', () =>
   );
   assert.equal(getReportArtifactRegenerationCommand('reports/unknown.json'), 'npm run verify');
 });
+
+test('all canonical report artifact targets resolve non-fallback regeneration commands', () => {
+  for (const target of REPORT_ARTIFACT_TARGETS) {
+    const command = getReportArtifactRegenerationCommand(target.path);
+    assert.equal(typeof command, 'string');
+    assert.notEqual(command, 'npm run verify');
+  }
+});
