@@ -5,7 +5,8 @@
   "main": "src/main.js",
   "scripts": {
     "test": "node --test",
-    "start": "python3 -m http.server 8000"
+    "start": "python3 -m http.server 8000",
+    "simulate": "node scripts/simulate.js"
   },
   "keywords": [],
   "author": "",

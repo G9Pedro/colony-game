@@ -65,6 +65,13 @@ Unit tests cover:
 - scenario setup behavior
 - deterministic simulation behavior
 - state serialization validity
+- scripted integration progression milestones
+
+Run a deterministic scenario simulation matrix from CLI:
+
+```bash
+npm run simulate
+```
 
 ## Gameplay Notes
 
