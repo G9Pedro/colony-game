@@ -480,3 +480,90 @@ test('diagnostics smoke validation emits read-error diagnostic for unreadable su
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test('diagnostics smoke validation emits artifact-missing diagnostic for absent markdown', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-missing-markdown-'));
+  const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const markdownOutputPath = path.join(tempDirectory, 'missing-report-diagnostics-smoke.md');
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+
+  try {
+    const summary = buildDiagnosticsSmokeSummary({
+      runId: RUN_ID,
+      generatedAt: '2026-02-13T12:00:00.000Z',
+      scenarioResults: [],
+    });
+    await writeFile(outputPath, JSON.stringify(summary, null, 2), 'utf-8');
+
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
+        REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
+      },
+      assertion: (error) => {
+        const markdownDiagnostic = assertOutputHasReadFailureDiagnosticContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactMissing],
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
+          expectedScript: 'diagnostics:smoke:validate',
+          expectedRunId: RUN_ID,
+          expectedPath: markdownOutputPath,
+          expectedStatus: 'missing',
+          expectedErrorCode: 'ENOENT',
+        });
+        assert.equal(markdownDiagnostic.context?.expectedSummaryPath, outputPath);
+        return true;
+      },
+    });
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('diagnostics smoke validation emits invalid-payload diagnostic for invalid markdown', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'diagnostic-contract-smoke-validate-invalid-markdown-'));
+  const outputPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const markdownOutputPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
+  const scriptPath = path.resolve('scripts/validate-report-diagnostics-smoke.js');
+
+  try {
+    const summary = buildDiagnosticsSmokeSummary({
+      runId: RUN_ID,
+      generatedAt: '2026-02-13T12:00:00.000Z',
+      scenarioResults: [],
+    });
+    await writeFile(outputPath, JSON.stringify(summary, null, 2), 'utf-8');
+    await writeFile(markdownOutputPath, '# invalid markdown payload', 'utf-8');
+
+    await assertNodeDiagnosticsScriptRejects({
+      scriptPath,
+      env: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+        REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
+        REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: outputPath,
+        REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
+      },
+      assertion: (error) => {
+        const markdownDiagnostic = assertOutputHasReadFailureDiagnosticContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload],
+          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
+          expectedScript: 'diagnostics:smoke:validate',
+          expectedRunId: RUN_ID,
+          expectedPath: markdownOutputPath,
+          expectedStatus: 'invalid',
+          expectedErrorCode: null,
+        });
+        assert.equal(markdownDiagnostic.context?.expectedSummaryPath, outputPath);
+        return true;
+      },
+    });
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
