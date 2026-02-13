@@ -90,11 +90,16 @@ function hasValidSnapshotDeltaConsistency(payload) {
     ...Object.keys(suggestedSignatures),
   ]);
   const seenKeys = new Set();
+  let previousKey = null;
 
   for (const entry of snapshotDelta) {
     if (!entry || typeof entry !== 'object' || typeof entry.key !== 'string' || entry.key.length === 0) {
       return false;
     }
+    if (previousKey !== null && previousKey.localeCompare(entry.key) > 0) {
+      return false;
+    }
+    previousKey = entry.key;
     if (seenKeys.has(entry.key)) {
       return false;
     }

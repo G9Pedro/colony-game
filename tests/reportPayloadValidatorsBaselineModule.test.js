@@ -49,3 +49,23 @@ test('baseline module validator rejects aggregate delta inconsistency', () => {
   payload.aggregateDelta.frontier.alivePopulationMean.maxDelta = 0.2;
   assert.equal(isValidBaselineSuggestionPayload(payload), false);
 });
+
+test('baseline module validator rejects unsorted snapshot delta keys', () => {
+  const payload = buildBaselinePayload();
+  payload.currentSnapshotSignatures = {
+    'zeta:standard': 'aaaa1111',
+    'alpha:standard': 'aaaa1111',
+  };
+  payload.suggestedSnapshotSignatures = {
+    'zeta:standard': 'bbbb2222',
+    'alpha:standard': 'bbbb2222',
+  };
+  payload.snapshotDelta = [
+    { key: 'zeta:standard', changed: true, from: 'aaaa1111', to: 'bbbb2222' },
+    { key: 'alpha:standard', changed: true, from: 'aaaa1111', to: 'bbbb2222' },
+  ];
+  payload.snippets.regressionSnapshots =
+    'export const EXPECTED_SUMMARY_SIGNATURES = {"zeta:standard":"bbbb2222","alpha:standard":"bbbb2222"};\n';
+
+  assert.equal(isValidBaselineSuggestionPayload(payload), false);
+});
