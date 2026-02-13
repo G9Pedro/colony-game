@@ -5,6 +5,7 @@ import { RESEARCH_DEFINITIONS } from './content/research.js';
 import { GameEngine } from './game/gameEngine.js';
 import { isBuildingUnlocked } from './game/selectors.js';
 import { loadGameState, saveGameState, isLikelyValidState, clearSavedGame } from './persistence/saveLoad.js';
+import { downloadStateSnapshot, readStateFromFile } from './persistence/fileTransfer.js';
 import { FallbackRenderer } from './render/fallbackRenderer.js';
 import { SceneRenderer } from './render/sceneRenderer.js';
 import { isPlacementValid } from './systems/constructionSystem.js';
@@ -72,6 +73,24 @@ ui.setPersistenceCallbacks({
     }
     engine.loadState(loaded);
     ui.setSelectedBuildType(null);
+  },
+  onExport: () => {
+    downloadStateSnapshot(engine.snapshot());
+    notify({ kind: 'success', message: 'Save exported to file.' });
+  },
+  onImport: async (file) => {
+    try {
+      const loaded = await readStateFromFile(file);
+      if (!isLikelyValidState(loaded)) {
+        notify({ kind: 'error', message: 'Imported file is invalid.' });
+        return;
+      }
+      engine.loadState(loaded);
+      ui.setSelectedBuildType(null);
+      notify({ kind: 'success', message: 'Save imported successfully.' });
+    } catch (error) {
+      notify({ kind: 'error', message: 'Failed to import save file.' });
+    }
   },
   onReset: () => {
     clearSavedGame();

@@ -14,6 +14,7 @@ You build structures, manage colonists and resources, research technologies, and
 - **Scenario presets**: Frontier, Prosperous, and Harsh start conditions.
 - **Deterministic seeded simulation** support for reproducible runs.
 - **Save/Load/Reset** controls backed by `localStorage`.
+- **Save Export/Import** for portable JSON save files.
 - **3D rendering with Three.js**, plus an automatic 2D fallback when WebGL is unavailable.
 - **Responsive UI** that supports both desktop and touch interactions.
 
@@ -84,6 +85,7 @@ npm run simulate
 - **Research**: start technologies from the research panel when enough knowledge is available.
 - **Speed/Pause**: top controls (1x/2x/4x).
 - **Save/Load/Reset**: top controls.
+- **Export/Import**: export current game to JSON or import a previous exported save.
 
 ### Progression
 

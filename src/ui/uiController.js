@@ -38,6 +38,9 @@ export class UIController {
       ],
       saveBtn: document.getElementById('save-btn'),
       loadBtn: document.getElementById('load-btn'),
+      exportBtn: document.getElementById('export-btn'),
+      importBtn: document.getElementById('import-btn'),
+      importFileInput: document.getElementById('import-file-input'),
       resetBtn: document.getElementById('reset-btn'),
       hireBtn: document.getElementById('hire-btn'),
       statusLabel: document.getElementById('status-label'),
@@ -60,6 +63,8 @@ export class UIController {
     this.callbacks = {
       onSave: () => {},
       onLoad: () => {},
+      onExport: () => {},
+      onImport: async () => {},
       onReset: () => {},
       onScenarioChange: () => {},
     };
@@ -80,6 +85,16 @@ export class UIController {
 
     this.el.saveBtn.addEventListener('click', () => this.callbacks.onSave());
     this.el.loadBtn.addEventListener('click', () => this.callbacks.onLoad());
+    this.el.exportBtn.addEventListener('click', () => this.callbacks.onExport());
+    this.el.importBtn.addEventListener('click', () => this.el.importFileInput.click());
+    this.el.importFileInput.addEventListener('change', async (event) => {
+      const [file] = event.target.files;
+      if (!file) {
+        return;
+      }
+      await this.callbacks.onImport(file);
+      event.target.value = '';
+    });
     this.el.resetBtn.addEventListener('click', () => this.callbacks.onReset());
     this.el.scenarioSelect.addEventListener('change', (event) =>
       this.callbacks.onScenarioChange(event.target.value),
