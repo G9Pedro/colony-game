@@ -18,14 +18,25 @@ function assertPayloadShape({ path, payload, validatePayload, sourceLabel }) {
 }
 
 function toReadFailureError({ path, readResult }) {
+  const readFailure = {
+    ok: false,
+    path,
+    status: readResult?.status ?? 'error',
+    message: readResult?.message ?? null,
+    errorCode: readResult?.errorCode ?? null,
+  };
+
   if (readResult?.status === 'invalid-json') {
-    return new SyntaxError(readResult.message);
+    const error = new SyntaxError(readResult.message);
+    error.cacheReadFailure = readFailure;
+    return error;
   }
 
   const error = new Error(`Unable to read cached payload at "${path}": ${readResult?.message ?? 'read error'}`);
   if (readResult?.errorCode) {
     error.code = readResult.errorCode;
   }
+  error.cacheReadFailure = readFailure;
   return error;
 }
 

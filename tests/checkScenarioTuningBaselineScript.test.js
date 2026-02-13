@@ -68,3 +68,28 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test('check-scenario-tuning-baseline emits read-error diagnostic for unreadable cache path', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'check-tuning-baseline-'));
+  const scriptPath = path.resolve('scripts/check-scenario-tuning-baseline.js');
+
+  try {
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          env: {
+            ...process.env,
+            SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: tempDirectory,
+            REPORT_DIAGNOSTICS_JSON: '1',
+          },
+        }),
+      (error) =>
+        error.code === 1 &&
+        error.stderr.includes('Unable to read scenario tuning baseline cache payload') &&
+        error.stderr.includes('"code":"artifact-read-error"') &&
+        error.stderr.includes('"script":"simulate:check:tuning-baseline"'),
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});

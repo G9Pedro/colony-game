@@ -68,3 +68,28 @@ test('suggest-baselines-check fails on drift and emits drift diagnostic', async 
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test('suggest-baselines-check emits read-error diagnostic for unreadable cache path', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'suggest-baselines-check-'));
+  const scriptPath = path.resolve('scripts/suggest-baselines-check.js');
+
+  try {
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          env: {
+            ...process.env,
+            SIM_BASELINE_SUGGEST_PATH: tempDirectory,
+            REPORT_DIAGNOSTICS_JSON: '1',
+          },
+        }),
+      (error) =>
+        error.code === 1 &&
+        error.stderr.includes('Unable to read baseline suggestion cache payload') &&
+        error.stderr.includes('"code":"artifact-read-error"') &&
+        error.stderr.includes('"script":"simulate:baseline:check"'),
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});

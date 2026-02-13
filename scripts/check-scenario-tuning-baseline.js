@@ -17,6 +17,11 @@ import {
 } from './reportDiagnostics.js';
 import { loadJsonPayloadOrCompute } from './jsonPayloadCache.js';
 import { buildValidatedReportPayload } from './reportPayloadOutput.js';
+import {
+  buildReadArtifactFailureContext,
+  formatReadArtifactFailureMessage,
+  getReadArtifactDiagnosticCode,
+} from './reportPayloadInput.js';
 
 const inputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
@@ -25,22 +30,60 @@ const enforceIntensityBaseline = process.env.SIM_SCENARIO_TUNING_ENFORCE_INTENSI
 const DIAGNOSTIC_SCRIPT = 'simulate:check:tuning-baseline';
 const emitDiagnostic = createScriptDiagnosticEmitter(DIAGNOSTIC_SCRIPT);
 
-const { source, payload } = await loadJsonPayloadOrCompute({
-  path: inputPath,
-  recoverOnParseError: true,
-  validatePayload: isValidScenarioTuningSuggestionPayload,
-  recoverOnInvalidPayload: true,
-  computePayload: () =>
-    buildValidatedReportPayload(
-      REPORT_KINDS.scenarioTuningBaselineSuggestions,
-      buildScenarioTuningBaselineSuggestionPayload({
-        scenarios: SCENARIO_DEFINITIONS,
-        expectedSignatures: EXPECTED_SCENARIO_TUNING_SIGNATURES,
-        expectedTotalAbsDelta: EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA,
+let source;
+let payload;
+try {
+  ({ source, payload } = await loadJsonPayloadOrCompute({
+    path: inputPath,
+    recoverOnParseError: true,
+    validatePayload: isValidScenarioTuningSuggestionPayload,
+    recoverOnInvalidPayload: true,
+    computePayload: () =>
+      buildValidatedReportPayload(
+        REPORT_KINDS.scenarioTuningBaselineSuggestions,
+        buildScenarioTuningBaselineSuggestionPayload({
+          scenarios: SCENARIO_DEFINITIONS,
+          expectedSignatures: EXPECTED_SCENARIO_TUNING_SIGNATURES,
+          expectedTotalAbsDelta: EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA,
+        }),
+        'scenario tuning baseline suggestion',
+      ),
+  }));
+} catch (error) {
+  const readFailure = error?.cacheReadFailure;
+  if (readFailure) {
+    const diagnosticCode =
+      getReadArtifactDiagnosticCode(readFailure) ?? REPORT_DIAGNOSTIC_CODES.artifactReadError;
+    emitDiagnostic({
+      level: 'error',
+      code: diagnosticCode,
+      message: 'Scenario tuning baseline cache payload read failed.',
+      context: buildReadArtifactFailureContext(readFailure),
+    });
+    console.error(
+      formatReadArtifactFailureMessage({
+        readResult: readFailure,
+        artifactLabel: 'scenario tuning baseline cache payload',
       }),
-      'scenario tuning baseline suggestion',
-    ),
-});
+    );
+    process.exit(1);
+  }
+
+  emitDiagnostic({
+    level: 'error',
+    code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+    message: 'Scenario tuning baseline check failed before summary evaluation.',
+    context: {
+      path: inputPath,
+      reason: error?.message ?? 'unknown error',
+      errorCode: error?.code ?? null,
+    },
+  });
+  console.error(
+    `Unable to prepare scenario tuning baseline payload at "${inputPath}": ${error?.message ?? 'unknown error'}`,
+  );
+  process.exit(1);
+}
 const summary = getScenarioTuningBaselineChangeSummary(payload);
 
 console.log(
