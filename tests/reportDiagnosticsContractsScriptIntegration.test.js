@@ -7,37 +7,15 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import {
-  isValidReportDiagnosticPayload,
-  parseReportDiagnosticsFromText,
   REPORT_DIAGNOSTIC_CODES,
-  REPORT_DIAGNOSTICS_SCHEMA_VERSION,
 } from '../scripts/reportDiagnostics.js';
+import {
+  assertReportDiagnosticsContract,
+  collectReportDiagnostics,
+} from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
 const RUN_ID = 'diagnostic-contract-fixture-run';
-
-function collectDiagnostics(stdout = '', stderr = '') {
-  return [...parseReportDiagnosticsFromText(stdout), ...parseReportDiagnosticsFromText(stderr)];
-}
-
-function assertDiagnosticsContract({ diagnostics, script, expectedCodes = [] }) {
-  assert.ok(diagnostics.length > 0);
-  const observedCodes = new Set();
-
-  for (const diagnostic of diagnostics) {
-    assert.equal(isValidReportDiagnosticPayload(diagnostic), true);
-    assert.equal(diagnostic.schemaVersion, REPORT_DIAGNOSTICS_SCHEMA_VERSION);
-    assert.equal(diagnostic.script, script);
-    assert.equal(diagnostic.runId, RUN_ID);
-    assert.equal(typeof diagnostic.generatedAt, 'string');
-    assert.equal(new Date(diagnostic.generatedAt).toISOString(), diagnostic.generatedAt);
-    observedCodes.add(diagnostic.code);
-  }
-
-  for (const expectedCode of expectedCodes) {
-    assert.equal(observedCodes.has(expectedCode), true);
-  }
-}
 
 function buildScenarioTuningIntensityOnlyDriftPayload() {
   return withReportMeta(REPORT_KINDS.scenarioTuningBaselineSuggestions, {
@@ -145,9 +123,10 @@ test('trend script diagnostics follow contract fixture', async () => {
       },
     });
 
-    assertDiagnosticsContract({
-      diagnostics: collectDiagnostics(stdout, stderr),
-      script: 'simulate:report:tuning:trend',
+    assertReportDiagnosticsContract({
+      diagnostics: collectReportDiagnostics(stdout, stderr),
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedRunId: RUN_ID,
       expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactMissing],
     });
   } finally {
@@ -178,9 +157,10 @@ test('validate-report-artifacts diagnostics follow contract fixture', async () =
           },
         }),
       (error) => {
-        assertDiagnosticsContract({
-          diagnostics: collectDiagnostics(error.stdout, error.stderr),
-          script: 'reports:validate',
+        assertReportDiagnosticsContract({
+          diagnostics: collectReportDiagnostics(error.stdout, error.stderr),
+          expectedScript: 'reports:validate',
+          expectedRunId: RUN_ID,
           expectedCodes: [
             REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
             REPORT_DIAGNOSTIC_CODES.artifactReadError,
@@ -214,9 +194,10 @@ test('scenario tuning baseline check diagnostics follow contract fixture', async
       },
     });
 
-    assertDiagnosticsContract({
-      diagnostics: collectDiagnostics(stdout, stderr),
-      script: 'simulate:check:tuning-baseline',
+    assertReportDiagnosticsContract({
+      diagnostics: collectReportDiagnostics(stdout, stderr),
+      expectedScript: 'simulate:check:tuning-baseline',
+      expectedRunId: RUN_ID,
       expectedCodes: [
         REPORT_DIAGNOSTIC_CODES.scenarioTuningBaselineSummary,
         REPORT_DIAGNOSTIC_CODES.scenarioTuningIntensityDrift,
@@ -251,9 +232,10 @@ test('baseline suggestion check diagnostics follow contract fixture', async () =
           },
         }),
       (error) => {
-        assertDiagnosticsContract({
-          diagnostics: collectDiagnostics(error.stdout, error.stderr),
-          script: 'simulate:baseline:check',
+        assertReportDiagnosticsContract({
+          diagnostics: collectReportDiagnostics(error.stdout, error.stderr),
+          expectedScript: 'simulate:baseline:check',
+          expectedRunId: RUN_ID,
           expectedCodes: [
             REPORT_DIAGNOSTIC_CODES.baselineSuggestionSummary,
             REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
