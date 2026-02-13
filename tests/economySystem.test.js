@@ -54,3 +54,58 @@ test('economy system trims overflow when storage is exceeded', () => {
   assert.ok(total <= state.rules.baseStorageCapacity + 1);
   assert.equal(emitted, true);
 });
+
+test('economy system applies production resource and job multipliers', () => {
+  const baselineState = createInitialState({ seed: 'economy-multiplier-test' });
+  baselineState.resources.food = 15;
+  baselineState.resources.wood = 20;
+  baselineState.resources.stone = 10;
+  baselineState.resources.iron = 4;
+  baselineState.resources.tools = 2;
+  baselineState.resources.medicine = 1;
+  baselineState.resources.knowledge = 0;
+
+  const boostedState = createInitialState({ seed: 'economy-multiplier-test' });
+  boostedState.resources.food = 15;
+  boostedState.resources.wood = 20;
+  boostedState.resources.stone = 10;
+  boostedState.resources.iron = 4;
+  boostedState.resources.tools = 2;
+  boostedState.resources.medicine = 1;
+  boostedState.resources.knowledge = 0;
+  boostedState.rules.productionResourceMultipliers.food = 1.5;
+  boostedState.rules.productionJobMultipliers.farmer = 2;
+
+  const baselineFarm = baselineState.buildings.find((building) => building.type === 'farm');
+  const boostedFarm = boostedState.buildings.find((building) => building.type === 'farm');
+  const baselineFarmer = baselineState.colonists[0];
+  const boostedFarmer = boostedState.colonists[0];
+
+  baselineFarmer.job = 'farmer';
+  baselineFarmer.task = 'Working';
+  baselineFarmer.assignedBuildingId = baselineFarm.id;
+  baselineFarmer.skills.farmer = 1.2;
+
+  boostedFarmer.job = 'farmer';
+  boostedFarmer.task = 'Working';
+  boostedFarmer.assignedBuildingId = boostedFarm.id;
+  boostedFarmer.skills.farmer = 1.2;
+
+  const baselineBefore = baselineState.resources.food;
+  const boostedBefore = boostedState.resources.food;
+
+  runEconomySystem({
+    state: baselineState,
+    deltaSeconds: 5,
+    emit: () => {},
+  });
+  runEconomySystem({
+    state: boostedState,
+    deltaSeconds: 5,
+    emit: () => {},
+  });
+
+  const baselineGain = baselineState.resources.food - baselineBefore;
+  const boostedGain = boostedState.resources.food - boostedBefore;
+  assert.ok(Math.abs(boostedGain - baselineGain * 3) < 1e-9);
+});

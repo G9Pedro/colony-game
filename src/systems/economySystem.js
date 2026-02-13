@@ -22,9 +22,32 @@ function consumeInputs(state, inputPerWorker, workers, deltaSeconds) {
   }
 }
 
-function produceOutputs(state, outputPerWorker, workers, deltaSeconds, efficiency = 1) {
+function getMultiplier(map, key) {
+  const multiplier = map?.[key];
+  if (typeof multiplier !== 'number' || !Number.isFinite(multiplier) || multiplier <= 0) {
+    return 1;
+  }
+  return multiplier;
+}
+
+function getNormalizedMultiplierValue(multiplier) {
+  if (typeof multiplier !== 'number' || !Number.isFinite(multiplier) || multiplier <= 0) {
+    return 1;
+  }
+  return multiplier;
+}
+
+function produceOutputs(
+  state,
+  outputPerWorker,
+  workers,
+  deltaSeconds,
+  { efficiency = 1, resourceMultipliers = {}, jobMultiplier = 1 } = {},
+) {
   for (const [resource, amount] of Object.entries(outputPerWorker)) {
-    const delta = amount * workers * deltaSeconds * efficiency;
+    const resourceMultiplier = getMultiplier(resourceMultipliers, resource);
+    const effectiveMultiplier = resourceMultiplier * getNormalizedMultiplierValue(jobMultiplier);
+    const delta = amount * workers * deltaSeconds * efficiency * effectiveMultiplier;
     applyResourceDelta(state, resource, delta);
   }
 }
@@ -58,6 +81,8 @@ function trimToStorageCapacity(state, emit) {
 
 export function runEconomySystem(context) {
   const { state, deltaSeconds, emit } = context;
+  const resourceMultipliers = state.rules?.productionResourceMultipliers ?? {};
+  const jobMultipliers = state.rules?.productionJobMultipliers ?? {};
   const assignmentMap = new Map();
 
   for (const colonist of state.colonists) {
@@ -101,7 +126,13 @@ export function runEconomySystem(context) {
         return sum + (worker.skills[skillKey] ?? 1);
       }, 0) / activeWorkers.length;
 
-    produceOutputs(state, definition.outputPerWorker, activeWorkers.length, deltaSeconds, efficiency);
+    const preferredJob = definition.preferredJob;
+    const jobMultiplier = preferredJob ? getMultiplier(jobMultipliers, preferredJob) : 1;
+    produceOutputs(state, definition.outputPerWorker, activeWorkers.length, deltaSeconds, {
+      efficiency,
+      resourceMultipliers,
+      jobMultiplier,
+    });
   }
 
   trimToStorageCapacity(state, emit);

@@ -56,3 +56,46 @@ test('idle colonists forage small emergency resources', () => {
   assert.ok(state.resources.food > 0);
   assert.ok(state.resources.wood > 0);
 });
+
+test('job priority multipliers influence assignment decisions', () => {
+  const baselineState = createInitialState({ seed: 'job-priority-baseline' });
+  const boostedState = createInitialState({ seed: 'job-priority-boosted' });
+
+  const configureState = (state) => {
+    state.resources.food = 200;
+    state.resources.wood = 200;
+    state.resources.stone = 100;
+    state.resources.iron = 80;
+    state.resources.medicine = 20;
+    state.resources.knowledge = 0;
+    state.constructionQueue = [];
+    state.colonists.forEach((colonist, index) => {
+      colonist.alive = index === 0;
+      colonist.job = 'laborer';
+      colonist.task = 'Idle';
+      colonist.assignedBuildingId = null;
+      colonist.needs.hunger = 100;
+      colonist.needs.rest = 100;
+      colonist.needs.health = 100;
+    });
+  };
+
+  configureState(baselineState);
+  configureState(boostedState);
+  boostedState.rules.jobPriorityMultipliers.farmer = 2;
+  boostedState.rules.jobPriorityMultipliers.scholar = 0.5;
+
+  runColonistSystem({
+    state: baselineState,
+    deltaSeconds: 0.2,
+    emit: () => {},
+  });
+  runColonistSystem({
+    state: boostedState,
+    deltaSeconds: 0.2,
+    emit: () => {},
+  });
+
+  assert.equal(baselineState.colonists[0].job, 'scholar');
+  assert.equal(boostedState.colonists[0].job, 'farmer');
+});

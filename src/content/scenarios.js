@@ -19,6 +19,11 @@ export const SCENARIO_DEFINITIONS = {
       storageCap: 0,
     },
     objectiveRewardMultiplier: 1,
+    productionMultipliers: {
+      resource: {},
+      job: {},
+    },
+    jobPriorityMultipliers: {},
   },
   prosperous: {
     id: 'prosperous',
@@ -40,6 +45,11 @@ export const SCENARIO_DEFINITIONS = {
       storageCap: 120,
     },
     objectiveRewardMultiplier: 0.85,
+    productionMultipliers: {
+      resource: {},
+      job: {},
+    },
+    jobPriorityMultipliers: {},
   },
   harsh: {
     id: 'harsh',
@@ -61,6 +71,11 @@ export const SCENARIO_DEFINITIONS = {
       storageCap: -60,
     },
     objectiveRewardMultiplier: 1.25,
+    productionMultipliers: {
+      resource: {},
+      job: {},
+    },
+    jobPriorityMultipliers: {},
   },
 };
 

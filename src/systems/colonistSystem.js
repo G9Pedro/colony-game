@@ -25,7 +25,12 @@ function getJobPriority(state, job) {
     priorities.builder = 3;
   }
 
-  return priorities[job] ?? 1;
+  const basePriority = priorities[job] ?? 1;
+  const multiplier = state.rules?.jobPriorityMultipliers?.[job];
+  if (typeof multiplier !== 'number' || !Number.isFinite(multiplier) || multiplier <= 0) {
+    return basePriority;
+  }
+  return basePriority * multiplier;
 }
 
 function reassignJobs(state) {

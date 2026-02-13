@@ -62,6 +62,58 @@ export const JOB_TYPES = [
   'laborer',
 ];
 
+const DEFAULT_PRODUCTION_RESOURCE_MULTIPLIERS = RESOURCE_KEYS.reduce((acc, key) => {
+  acc[key] = 1;
+  return acc;
+}, {});
+
+const DEFAULT_PRODUCTION_JOB_MULTIPLIERS = JOB_TYPES.reduce((acc, key) => {
+  acc[key] = 1;
+  return acc;
+}, {});
+
+const DEFAULT_JOB_PRIORITY_MULTIPLIERS = JOB_TYPES.reduce((acc, key) => {
+  acc[key] = 1;
+  return acc;
+}, {});
+
+function normalizeMultiplierValue(value, fallback = 1) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+  return value;
+}
+
+export function normalizeMultiplierMap(defaults, overrides = {}) {
+  const normalized = { ...defaults };
+  if (!overrides || typeof overrides !== 'object') {
+    return normalized;
+  }
+
+  for (const key of Object.keys(defaults)) {
+    normalized[key] = normalizeMultiplierValue(overrides[key], defaults[key]);
+  }
+  return normalized;
+}
+
+export function buildScenarioRuleMultipliers(scenario = {}) {
+  const resourceMultipliers = scenario.productionMultipliers?.resource ?? {};
+  const jobMultipliers = scenario.productionMultipliers?.job ?? {};
+  const jobPriorityMultipliers = scenario.jobPriorityMultipliers ?? {};
+
+  return {
+    productionResourceMultipliers: normalizeMultiplierMap(
+      DEFAULT_PRODUCTION_RESOURCE_MULTIPLIERS,
+      resourceMultipliers,
+    ),
+    productionJobMultipliers: normalizeMultiplierMap(DEFAULT_PRODUCTION_JOB_MULTIPLIERS, jobMultipliers),
+    jobPriorityMultipliers: normalizeMultiplierMap(
+      DEFAULT_JOB_PRIORITY_MULTIPLIERS,
+      jobPriorityMultipliers,
+    ),
+  };
+}
+
 export function createBaseResources(multipliers = {}) {
   return RESOURCE_KEYS.reduce((acc, key) => {
     const multiplier = multipliers[key] ?? 1;
@@ -135,6 +187,7 @@ export function createInitialState(options = {}) {
   const { buildings, nextEntityId } = createStartingBuildings();
   const scenario = getScenarioDefinition(options.scenarioId);
   const balanceProfile = getBalanceProfileDefinition(options.balanceProfileId);
+  const scenarioRuleMultipliers = buildScenarioRuleMultipliers(scenario);
   const seed = options.seed ?? 'colony-default';
   const state = {
     timeSeconds: 0,
@@ -182,6 +235,9 @@ export function createInitialState(options = {}) {
       restHealthDamageMultiplier: balanceProfile.restHealthDamageMultiplier,
       moralePenaltyMultiplier: balanceProfile.moralePenaltyMultiplier,
       objectiveRewardMultiplier: scenario.objectiveRewardMultiplier * balanceProfile.objectiveRewardMultiplier,
+      productionResourceMultipliers: scenarioRuleMultipliers.productionResourceMultipliers,
+      productionJobMultipliers: scenarioRuleMultipliers.productionJobMultipliers,
+      jobPriorityMultipliers: scenarioRuleMultipliers.jobPriorityMultipliers,
     },
     scenarioId: scenario.id,
     balanceProfileId: balanceProfile.id,

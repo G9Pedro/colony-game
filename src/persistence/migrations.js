@@ -1,6 +1,7 @@
 import { seedFromString } from '../game/random.js';
 import { getBalanceProfileDefinition } from '../content/balanceProfiles.js';
 import { getScenarioDefinition } from '../content/scenarios.js';
+import { buildScenarioRuleMultipliers, normalizeMultiplierMap } from '../game/state.js';
 
 export const SAVE_SCHEMA_VERSION = 2;
 
@@ -89,6 +90,7 @@ export function migrateSaveState(inputState) {
   }
   const scenario = getScenarioDefinition(state.scenarioId);
   const profile = getBalanceProfileDefinition(state.balanceProfileId);
+  const scenarioRuleMultipliers = buildScenarioRuleMultipliers(scenario);
   if (typeof state.rules.needDecayMultiplier !== 'number') {
     state.rules.needDecayMultiplier = profile.needDecayMultiplier;
   }
@@ -105,6 +107,18 @@ export function migrateSaveState(inputState) {
     state.rules.objectiveRewardMultiplier =
       (scenario.objectiveRewardMultiplier ?? 1) * (profile.objectiveRewardMultiplier ?? 1);
   }
+  state.rules.productionResourceMultipliers = normalizeMultiplierMap(
+    scenarioRuleMultipliers.productionResourceMultipliers,
+    state.rules.productionResourceMultipliers,
+  );
+  state.rules.productionJobMultipliers = normalizeMultiplierMap(
+    scenarioRuleMultipliers.productionJobMultipliers,
+    state.rules.productionJobMultipliers,
+  );
+  state.rules.jobPriorityMultipliers = normalizeMultiplierMap(
+    scenarioRuleMultipliers.jobPriorityMultipliers,
+    state.rules.jobPriorityMultipliers,
+  );
 
   state.saveMeta = {
     schemaVersion: SAVE_SCHEMA_VERSION,
