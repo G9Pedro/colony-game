@@ -3,6 +3,7 @@ export const REPORT_KINDS = {
   scenarioTuningBaselineSuggestions: 'scenario-tuning-baseline-suggestions',
   scenarioTuningValidation: 'scenario-tuning-validation',
   scenarioTuningDashboard: 'scenario-tuning-dashboard',
+  reportArtifactsValidation: 'report-artifacts-validation',
 };
 
 export const REPORT_SCHEMA_VERSIONS = {
@@ -10,6 +11,7 @@ export const REPORT_SCHEMA_VERSIONS = {
   [REPORT_KINDS.scenarioTuningBaselineSuggestions]: 1,
   [REPORT_KINDS.scenarioTuningValidation]: 1,
   [REPORT_KINDS.scenarioTuningDashboard]: 1,
+  [REPORT_KINDS.reportArtifactsValidation]: 1,
 };
 
 function hasValidMeta(payload, expectedKind) {
@@ -87,11 +89,22 @@ export function isValidScenarioTuningDashboardPayload(payload) {
   );
 }
 
+export function isValidReportArtifactsValidationPayload(payload) {
+  return Boolean(
+    hasValidMeta(payload, REPORT_KINDS.reportArtifactsValidation) &&
+      typeof payload.overallPassed === 'boolean' &&
+      typeof payload.failureCount === 'number' &&
+      typeof payload.totalChecked === 'number' &&
+      Array.isArray(payload.results),
+  );
+}
+
 export const REPORT_VALIDATORS = {
   [REPORT_KINDS.baselineSuggestions]: isValidBaselineSuggestionPayload,
   [REPORT_KINDS.scenarioTuningBaselineSuggestions]: isValidScenarioTuningSuggestionPayload,
   [REPORT_KINDS.scenarioTuningValidation]: isValidScenarioTuningValidationPayload,
   [REPORT_KINDS.scenarioTuningDashboard]: isValidScenarioTuningDashboardPayload,
+  [REPORT_KINDS.reportArtifactsValidation]: isValidReportArtifactsValidationPayload,
 };
 
 export function isKnownReportKind(kind) {

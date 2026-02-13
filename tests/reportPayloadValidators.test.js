@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   isValidBaselineSuggestionPayload,
+  isValidReportArtifactsValidationPayload,
   isKnownReportKind,
   isValidScenarioTuningDashboardPayload,
   isValidScenarioTuningSuggestionPayload,
@@ -86,6 +87,16 @@ test('isValidScenarioTuningDashboardPayload accepts dashboard report payload', (
     signatureMap: {},
   });
   assert.equal(isValidScenarioTuningDashboardPayload(payload), true);
+});
+
+test('isValidReportArtifactsValidationPayload accepts validation summary payload', () => {
+  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
+    overallPassed: true,
+    failureCount: 0,
+    totalChecked: 4,
+    results: [],
+  });
+  assert.equal(isValidReportArtifactsValidationPayload(payload), true);
 });
 
 test('withReportMeta throws for unknown report kind', () => {
