@@ -1,0 +1,39 @@
+import { REPORT_KINDS, withReportMeta } from '../../src/game/reportPayloadMeta.js';
+import {
+  buildReportArtifactResultStatistics,
+  buildRecommendedActionsFromResults,
+  REPORT_ARTIFACT_STATUSES,
+} from '../../src/game/reportArtifactValidationPayloadHelpers.js';
+import { REPORT_ARTIFACT_TARGETS } from '../../src/game/reportArtifactsManifest.js';
+
+export function buildReportArtifactValidationResults(overridesByPath = {}) {
+  return REPORT_ARTIFACT_TARGETS.map((target) => {
+    const overrides = overridesByPath[target.path] ?? {};
+    return {
+      path: target.path,
+      kind: target.kind,
+      status: REPORT_ARTIFACT_STATUSES.ok,
+      ok: true,
+      message: null,
+      recommendedCommand: null,
+      ...overrides,
+    };
+  }).sort((left, right) => left.path.localeCompare(right.path));
+}
+
+export function buildValidReportArtifactsValidationPayload(overrides = {}) {
+  const results = overrides.results ?? buildReportArtifactValidationResults();
+  const summary = buildReportArtifactResultStatistics(results);
+  const recommendedActions =
+    overrides.recommendedActions ?? buildRecommendedActionsFromResults(results);
+
+  return withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
+    overallPassed: summary.overallPassed,
+    failureCount: summary.failureCount,
+    totalChecked: summary.totalChecked,
+    statusCounts: summary.statusCounts,
+    recommendedActions,
+    results,
+    ...overrides,
+  });
+}

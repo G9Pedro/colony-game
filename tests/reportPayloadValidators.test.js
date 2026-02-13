@@ -13,15 +13,12 @@ import {
   validateReportPayloadByKind,
   withReportMeta,
 } from '../src/game/reportPayloadValidators.js';
+import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
+import { getReportArtifactRegenerationCommand } from '../src/game/reportArtifactsManifest.js';
 import {
-  buildReportArtifactResultStatistics,
-  buildRecommendedActionsFromResults,
-  REPORT_ARTIFACT_STATUSES,
-} from '../src/game/reportArtifactValidationPayloadHelpers.js';
-import {
-  getReportArtifactRegenerationCommand,
-  REPORT_ARTIFACT_TARGETS,
-} from '../src/game/reportArtifactsManifest.js';
+  buildReportArtifactValidationResults,
+  buildValidReportArtifactsValidationPayload,
+} from './helpers/reportArtifactsValidationFixtures.js';
 
 function buildValidBaselineSuggestionPayload(kind = REPORT_KINDS.baselineSuggestions) {
   const suggestedAggregateBounds = {
@@ -116,37 +113,6 @@ function buildValidScenarioTuningTrendPayload(
 
   return withReportMeta(kind, {
     ...basePayload,
-    ...overrides,
-  });
-}
-
-function buildReportArtifactValidationResults(overridesByPath = {}) {
-  return REPORT_ARTIFACT_TARGETS.map((target) => {
-    const overrides = overridesByPath[target.path] ?? {};
-    return {
-      path: target.path,
-      kind: target.kind,
-      status: REPORT_ARTIFACT_STATUSES.ok,
-      ok: true,
-      message: null,
-      recommendedCommand: null,
-      ...overrides,
-    };
-  }).sort((left, right) => left.path.localeCompare(right.path));
-}
-
-function buildValidReportArtifactsValidationPayload(overrides = {}) {
-  const results = overrides.results ?? buildReportArtifactValidationResults();
-  const summary = buildReportArtifactResultStatistics(results);
-  const recommendedActions =
-    overrides.recommendedActions ?? buildRecommendedActionsFromResults(results);
-  return withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: summary.overallPassed,
-    failureCount: summary.failureCount,
-    totalChecked: summary.totalChecked,
-    statusCounts: summary.statusCounts,
-    recommendedActions,
-    results,
     ...overrides,
   });
 }

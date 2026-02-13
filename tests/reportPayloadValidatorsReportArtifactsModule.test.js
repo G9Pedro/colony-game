@@ -1,53 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { withReportMeta, REPORT_KINDS } from '../src/game/reportPayloadMeta.js';
+import { REPORT_KINDS } from '../src/game/reportPayloadMeta.js';
 import { isValidReportArtifactsValidationPayload } from '../src/game/reportPayloadValidatorsReportArtifacts.js';
 import { REPORT_ARTIFACT_STATUSES } from '../src/game/reportArtifactValidationPayloadHelpers.js';
+import { getReportArtifactRegenerationCommand } from '../src/game/reportArtifactsManifest.js';
 import {
-  getReportArtifactRegenerationCommand,
-  REPORT_ARTIFACT_TARGETS,
-} from '../src/game/reportArtifactsManifest.js';
+  buildReportArtifactValidationResults,
+  buildValidReportArtifactsValidationPayload,
+} from './helpers/reportArtifactsValidationFixtures.js';
 
 function buildReportArtifactsPayload() {
   const invalidTargetPath = 'reports/scenario-tuning-trend.json';
-  const results = REPORT_ARTIFACT_TARGETS.map((target) => {
-    if (target.path === invalidTargetPath) {
-      return {
-        path: target.path,
-        kind: target.kind,
+  return buildValidReportArtifactsValidationPayload({
+    results: buildReportArtifactValidationResults({
+      [invalidTargetPath]: {
         status: REPORT_ARTIFACT_STATUSES.invalid,
         ok: false,
         message: 'payload schema mismatch',
-        recommendedCommand: getReportArtifactRegenerationCommand(target.path),
-      };
-    }
-    return {
-      path: target.path,
-      kind: target.kind,
-      status: REPORT_ARTIFACT_STATUSES.ok,
-      ok: true,
-      message: null,
-      recommendedCommand: null,
-    };
-  }).sort((left, right) => left.path.localeCompare(right.path));
-
-  return withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
-    overallPassed: false,
-    failureCount: 1,
-    totalChecked: REPORT_ARTIFACT_TARGETS.length,
-    statusCounts: {
-      [REPORT_ARTIFACT_STATUSES.ok]: REPORT_ARTIFACT_TARGETS.length - 1,
-      [REPORT_ARTIFACT_STATUSES.error]: 0,
-      [REPORT_ARTIFACT_STATUSES.invalid]: 1,
-      [REPORT_ARTIFACT_STATUSES.invalidJson]: 0,
-    },
-    results,
-    recommendedActions: [
-      {
-        command: getReportArtifactRegenerationCommand(invalidTargetPath),
-        paths: [invalidTargetPath],
+        recommendedCommand: getReportArtifactRegenerationCommand(invalidTargetPath),
       },
-    ],
+    }),
   });
 }
 
@@ -87,10 +59,9 @@ test('report artifacts module validator rejects unknown path with known target k
 });
 
 test('report artifacts module validator rejects payload missing canonical targets', () => {
-  const payload = buildReportArtifactsPayload();
-  payload.results = payload.results.slice(1);
-  payload.totalChecked = payload.results.length;
-  payload.statusCounts[REPORT_ARTIFACT_STATUSES.ok] -= 1;
+  const payload = buildValidReportArtifactsValidationPayload({
+    results: buildReportArtifactValidationResults().slice(1),
+  });
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
