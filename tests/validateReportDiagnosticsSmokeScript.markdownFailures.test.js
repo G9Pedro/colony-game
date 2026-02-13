@@ -5,7 +5,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import {
+  buildSmokeArtifactPath,
   createPassingSummary,
+  writeSmokeSummaryArtifact,
 } from './helpers/validateReportDiagnosticsSmokeTestUtils.js';
 import {
   assertValidateSmokeRejectsWithDiagnostic,
@@ -13,13 +15,15 @@ import {
 } from './helpers/validateReportDiagnosticsSmokeAssertions.js';
 import {
   buildMissingArtifactPath,
-  createJsonArtifact,
   createTextArtifact,
 } from './helpers/reportReadFailureFixtures.js';
 
 test('validate-report-diagnostics-smoke fails when markdown artifact is missing', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const reportPath = buildSmokeArtifactPath({
+    rootDirectory: tempDirectory,
+    filename: 'report-diagnostics-smoke.json',
+  });
   const markdownPath = buildMissingArtifactPath({
     rootDirectory: tempDirectory,
     relativePath: 'missing-report-diagnostics-smoke.md',
@@ -27,10 +31,9 @@ test('validate-report-diagnostics-smoke fails when markdown artifact is missing'
 
   try {
     const summary = createPassingSummary();
-    await createJsonArtifact({
+    await writeSmokeSummaryArtifact({
       rootDirectory: tempDirectory,
-      relativePath: 'report-diagnostics-smoke.json',
-      payload: summary,
+      summary,
     });
 
     await assert.rejects(
@@ -48,7 +51,10 @@ test('validate-report-diagnostics-smoke fails when markdown artifact is missing'
 
 test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for missing markdown when json diagnostics are enabled', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const reportPath = buildSmokeArtifactPath({
+    rootDirectory: tempDirectory,
+    filename: 'report-diagnostics-smoke.json',
+  });
   const markdownPath = buildMissingArtifactPath({
     rootDirectory: tempDirectory,
     relativePath: 'missing-report-diagnostics-smoke.md',
@@ -57,10 +63,9 @@ test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for mi
 
   try {
     const summary = createPassingSummary();
-    await createJsonArtifact({
+    await writeSmokeSummaryArtifact({
       rootDirectory: tempDirectory,
-      relativePath: 'report-diagnostics-smoke.json',
-      payload: summary,
+      summary,
     });
 
     await assertValidateSmokeRejectsWithDiagnostic({
@@ -80,15 +85,17 @@ test('validate-report-diagnostics-smoke emits artifact-missing diagnostic for mi
 
 test('validate-report-diagnostics-smoke fails when markdown artifact is invalid', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const reportPath = buildSmokeArtifactPath({
+    rootDirectory: tempDirectory,
+    filename: 'report-diagnostics-smoke.json',
+  });
   const markdownPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
 
   try {
     const summary = createPassingSummary();
-    await createJsonArtifact({
+    await writeSmokeSummaryArtifact({
       rootDirectory: tempDirectory,
-      relativePath: 'report-diagnostics-smoke.json',
-      payload: summary,
+      summary,
     });
     await createTextArtifact({
       rootDirectory: tempDirectory,
@@ -112,16 +119,18 @@ test('validate-report-diagnostics-smoke fails when markdown artifact is invalid'
 
 test('validate-report-diagnostics-smoke emits invalid-payload diagnostic for invalid markdown when json diagnostics are enabled', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-smoke-report-'));
-  const reportPath = path.join(tempDirectory, 'report-diagnostics-smoke.json');
+  const reportPath = buildSmokeArtifactPath({
+    rootDirectory: tempDirectory,
+    filename: 'report-diagnostics-smoke.json',
+  });
   const markdownPath = path.join(tempDirectory, 'report-diagnostics-smoke.md');
   const runId = 'validate-smoke-json-invalid-markdown-run';
 
   try {
     const summary = createPassingSummary();
-    await createJsonArtifact({
+    await writeSmokeSummaryArtifact({
       rootDirectory: tempDirectory,
-      relativePath: 'report-diagnostics-smoke.json',
-      payload: summary,
+      summary,
     });
     await createTextArtifact({
       rootDirectory: tempDirectory,

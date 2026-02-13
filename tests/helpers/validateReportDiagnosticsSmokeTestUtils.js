@@ -3,6 +3,7 @@ import { buildDiagnosticsSmokeSummary } from '../../scripts/reportDiagnosticsSmo
 import { buildDiagnosticsSmokeMarkdown } from '../../scripts/reportDiagnosticsSmokeMarkdown.js';
 import { buildReportDiagnostic } from '../../scripts/reportDiagnostics.js';
 import {
+  buildArtifactPath,
   createJsonArtifact,
   createTextArtifact,
 } from './reportReadFailureFixtures.js';
@@ -50,6 +51,40 @@ export function createFailingSummary() {
         errors: ['Missing expected baseline summary diagnostic.'],
       },
     ],
+  });
+}
+
+export async function writeSmokeSummaryArtifact({
+  rootDirectory,
+  summary,
+  reportFilename = 'report-diagnostics-smoke.json',
+}) {
+  return createJsonArtifact({
+    rootDirectory,
+    relativePath: reportFilename,
+    payload: summary,
+  });
+}
+
+export async function writeSmokeSummaryTextArtifact({
+  rootDirectory,
+  contents,
+  reportFilename = 'report-diagnostics-smoke.json',
+}) {
+  return createTextArtifact({
+    rootDirectory,
+    relativePath: reportFilename,
+    contents,
+  });
+}
+
+export function buildSmokeArtifactPath({
+  rootDirectory,
+  filename,
+}) {
+  return buildArtifactPath({
+    rootDirectory,
+    relativePath: filename,
   });
 }
 
