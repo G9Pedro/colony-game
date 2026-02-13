@@ -111,12 +111,19 @@ Run deterministic snapshot signature checks:
 npm run simulate:snapshot
 ```
 
+Run balance profile regression checks:
+
+```bash
+npm run simulate:balance
+```
+
 CI now runs:
 - `npm test`
 - `npm run simulate:assert`
 - `npm run simulate:report` (uploaded as artifact)
 - `npm run simulate:drift` (uploaded as artifact)
 - `npm run simulate:snapshot` (uploaded as artifact, enforced)
+- `npm run simulate:balance` (uploaded as artifact)
 
 One-command local verification:
 
@@ -128,6 +135,7 @@ npm run verify
 - `npm test`
 - `npm run simulate:assert`
 - `npm run simulate:drift`
+- `npm run simulate:balance`
 
 ## Gameplay Notes
 

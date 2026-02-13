@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildAggregateRegressionReport,
+  buildBalanceProfileRegressionReport,
   buildRegressionReport,
   buildSnapshotRegressionReport,
   buildSummarySignature,
+  evaluateBalanceProfileSummary,
   evaluateSimulationSummary,
 } from '../src/game/regression.js';
 
@@ -170,4 +172,61 @@ test('buildSnapshotRegressionReport compares signatures', () => {
   });
   assert.equal(failReport.overallPassed, false);
   assert.equal(failReport.results[0].passed, false);
+});
+
+test('evaluateBalanceProfileSummary validates profile expectations', () => {
+  const summary = {
+    scenarioId: 'prosperous',
+    balanceProfileId: 'standard',
+    status: 'playing',
+    alivePopulation: 9,
+    completedResearch: ['masonry'],
+  };
+  const expected = {
+    requiredStatus: 'playing',
+    minAlivePopulation: 9,
+    requiredResearch: ['masonry'],
+  };
+
+  assert.deepEqual(evaluateBalanceProfileSummary(summary, expected), []);
+});
+
+test('buildBalanceProfileRegressionReport detects expectation failures', () => {
+  const report = buildBalanceProfileRegressionReport({
+    summaries: [
+      {
+        scenarioId: 'harsh',
+        balanceProfileId: 'brutal',
+        status: 'lost',
+        alivePopulation: 0,
+        completedResearch: [],
+      },
+      {
+        scenarioId: 'harsh',
+        balanceProfileId: 'standard',
+        status: 'lost',
+        alivePopulation: 0,
+        completedResearch: [],
+      },
+    ],
+    expectations: {
+      'harsh:brutal': {
+        requiredStatus: 'lost',
+        minAlivePopulation: 0,
+        requiredResearch: [],
+      },
+      'harsh:standard': {
+        requiredStatus: 'playing',
+        minAlivePopulation: 7,
+        requiredResearch: [],
+      },
+    },
+  });
+
+  assert.equal(report.results.length, 2);
+  const brutal = report.results.find((result) => result.key === 'harsh:brutal');
+  const standard = report.results.find((result) => result.key === 'harsh:standard');
+  assert.equal(brutal.passed, true);
+  assert.equal(standard.passed, false);
+  assert.equal(report.overallPassed, false);
 });

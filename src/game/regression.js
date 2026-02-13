@@ -185,3 +185,42 @@ export function buildSnapshotRegressionReport({
     results,
   };
 }
+
+export function evaluateBalanceProfileSummary(summary, expected) {
+  const failures = [];
+  if (summary.status !== expected.requiredStatus) {
+    failures.push(`status expected "${expected.requiredStatus}" but was "${summary.status}"`);
+  }
+  if (summary.alivePopulation < expected.minAlivePopulation) {
+    failures.push(`alive population expected >= ${expected.minAlivePopulation}, got ${summary.alivePopulation}`);
+  }
+  for (const researchId of expected.requiredResearch) {
+    if (!summary.completedResearch.includes(researchId)) {
+      failures.push(`required research "${researchId}" missing`);
+    }
+  }
+  return failures;
+}
+
+export function buildBalanceProfileRegressionReport({
+  summaries,
+  expectations,
+}) {
+  const results = summaries.map((summary) => {
+    const key = `${summary.scenarioId}:${summary.balanceProfileId ?? 'standard'}`;
+    const expected = expectations[key];
+    const failures = expected ? evaluateBalanceProfileSummary(summary, expected) : ['No expectation configured'];
+    return {
+      key,
+      summary,
+      failures,
+      passed: failures.length === 0,
+    };
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    overallPassed: results.every((result) => result.passed),
+    results,
+  };
+}

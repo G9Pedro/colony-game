@@ -56,3 +56,12 @@ jobs:
         with:
           name: simulation-snapshot-report
           path: reports/simulation-snapshot.json
+
+      - name: Run balance profile regression check
+        run: npm run simulate:balance
+
+      - name: Upload simulation balance report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-balance-report
+          path: reports/simulation-balance.json
