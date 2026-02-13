@@ -1,5 +1,32 @@
 export const REPORT_DIAGNOSTICS_SMOKE_SUMMARY_TYPE = 'report-diagnostics-smoke-summary';
 export const REPORT_DIAGNOSTICS_SMOKE_SCHEMA_VERSION = 1;
+export const REPORT_DIAGNOSTICS_SMOKE_SUMMARY_FIELDS = Object.freeze([
+  'type',
+  'schemaVersion',
+  'generatedAt',
+  'runId',
+  'scenarioCount',
+  'passedScenarioCount',
+  'failedScenarioCount',
+  'diagnosticsCount',
+  'diagnosticsByCode',
+  'diagnosticsByLevel',
+  'diagnosticsByScript',
+  'scenarios',
+]);
+export const REPORT_DIAGNOSTICS_SMOKE_SCENARIO_FIELDS = Object.freeze([
+  'name',
+  'expectedScript',
+  'expectedExitCode',
+  'actualExitCode',
+  'diagnosticsCount',
+  'observedCodes',
+  'ok',
+  'errors',
+]);
+
+const REPORT_DIAGNOSTICS_SMOKE_SUMMARY_FIELD_SET = new Set(REPORT_DIAGNOSTICS_SMOKE_SUMMARY_FIELDS);
+const REPORT_DIAGNOSTICS_SMOKE_SCENARIO_FIELD_SET = new Set(REPORT_DIAGNOSTICS_SMOKE_SCENARIO_FIELDS);
 
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
@@ -39,6 +66,7 @@ function countMapTotal(record) {
 function isIntegerRecord(record) {
   return (
     isPlainObject(record) &&
+    Object.keys(record).every((key) => isNonEmptyString(key)) &&
     Object.values(record).every((value) => isNonNegativeInteger(value))
   );
 }
@@ -109,6 +137,13 @@ export function isValidDiagnosticsSmokeSummaryPayload(payload) {
   if (!isPlainObject(payload)) {
     return false;
   }
+  const payloadKeys = Object.keys(payload);
+  if (payloadKeys.length !== REPORT_DIAGNOSTICS_SMOKE_SUMMARY_FIELDS.length) {
+    return false;
+  }
+  if (payloadKeys.some((key) => !REPORT_DIAGNOSTICS_SMOKE_SUMMARY_FIELD_SET.has(key))) {
+    return false;
+  }
   if (payload.type !== REPORT_DIAGNOSTICS_SMOKE_SUMMARY_TYPE) {
     return false;
   }
@@ -157,6 +192,13 @@ export function isValidDiagnosticsSmokeSummaryPayload(payload) {
 
   const hasValidScenarios = payload.scenarios.every((scenario) => {
     if (!isPlainObject(scenario)) {
+      return false;
+    }
+    const scenarioKeys = Object.keys(scenario);
+    if (scenarioKeys.length !== REPORT_DIAGNOSTICS_SMOKE_SCENARIO_FIELDS.length) {
+      return false;
+    }
+    if (scenarioKeys.some((key) => !REPORT_DIAGNOSTICS_SMOKE_SCENARIO_FIELD_SET.has(key))) {
       return false;
     }
     if (!isNonEmptyString(scenario.name)) {

@@ -131,3 +131,20 @@ test('isValidDiagnosticsSmokeSummaryPayload rejects inconsistent counts', () => 
   };
   assert.equal(isValidDiagnosticsSmokeSummaryPayload(mutated), false);
 });
+
+test('isValidDiagnosticsSmokeSummaryPayload rejects unknown top-level fields', () => {
+  const summary = buildDiagnosticsSmokeSummary({
+    runId: 'smoke-summary-extra-field-run',
+    generatedAt: '2026-02-13T12:00:00.000Z',
+    scenarioResults: [],
+  });
+
+  assert.equal(isValidDiagnosticsSmokeSummaryPayload(summary), true);
+  assert.equal(
+    isValidDiagnosticsSmokeSummaryPayload({
+      ...summary,
+      unknownField: true,
+    }),
+    false,
+  );
+});
