@@ -3,6 +3,7 @@
 - Describe the problem and the solution in 2-5 bullets.
 - Command usage/details for checklist items: see `CONTRIBUTING.md`.
 - First tuning PR? Start with **New Contributor Quick Start** in `CONTRIBUTING.md`.
+- If command names changed, include a docs-sync note listing updated process docs/CI references.
 
 ## Validation
 
