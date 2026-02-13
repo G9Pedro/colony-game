@@ -12,6 +12,7 @@ import {
   READ_ARTIFACT_DIAGNOSTIC_CODES,
   readJsonArtifact,
   readTextArtifact,
+  readValidatedTextArtifact,
   readValidatedReportArtifact,
   toArtifactValidationEntry,
 } from '../scripts/reportPayloadInput.js';
@@ -116,6 +117,33 @@ test('readValidatedReportArtifact rejects schema-invalid payloads', async () => 
     assert.equal(result.ok, false);
     assert.equal(result.status, 'invalid');
     assert.match(result.message, /failed validation/i);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('readValidatedTextArtifact classifies invalid text through validator callback', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'report-input-helper-'));
+  const artifactPath = join(directory, 'artifact.md');
+
+  try {
+    await writeFile(artifactPath, '# not-the-expected-header', 'utf-8');
+
+    const invalidResult = await readValidatedTextArtifact({
+      path: artifactPath,
+      validateText: (text) => text.startsWith('# expected-header'),
+      invalidMessage: 'Markdown header is invalid.',
+    });
+    assert.equal(invalidResult.ok, false);
+    assert.equal(invalidResult.status, 'invalid');
+    assert.equal(invalidResult.message, 'Markdown header is invalid.');
+
+    const validResult = await readValidatedTextArtifact({
+      path: artifactPath,
+      validateText: (text) => text.startsWith('# not-the-expected-header'),
+    });
+    assert.equal(validResult.ok, true);
+    assert.equal(validResult.text, '# not-the-expected-header');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

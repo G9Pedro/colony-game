@@ -67,6 +67,29 @@ export async function readTextArtifact(path) {
   }
 }
 
+export async function readValidatedTextArtifact({
+  path,
+  validateText = undefined,
+  invalidMessage = 'Text artifact failed validation.',
+}) {
+  const readResult = await readTextArtifact(path);
+  if (!readResult.ok || typeof validateText !== 'function') {
+    return readResult;
+  }
+
+  if (validateText(readResult.text)) {
+    return readResult;
+  }
+
+  return {
+    ok: false,
+    path,
+    status: 'invalid',
+    message: invalidMessage,
+    errorCode: null,
+  };
+}
+
 export async function readValidatedReportArtifact({ path, kind }) {
   const readResult = await readJsonArtifact(path);
   if (!readResult.ok) {

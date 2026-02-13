@@ -2,7 +2,7 @@ import { isValidDiagnosticsSmokeSummaryPayload } from './reportDiagnosticsSmokeS
 import {
   getReadArtifactDiagnosticCode,
   readJsonArtifact,
-  readTextArtifact,
+  readValidatedTextArtifact,
 } from './reportPayloadInput.js';
 import { createScriptDiagnosticEmitter, REPORT_DIAGNOSTIC_CODES } from './reportDiagnostics.js';
 import { isValidDiagnosticsSmokeMarkdown } from './reportDiagnosticsSmokeMarkdown.js';
@@ -76,43 +76,39 @@ async function main() {
   }
 
   if (shouldValidateMarkdown) {
-    const markdownReadResult = await readTextArtifact(markdownPath);
+    const markdownReadResult = await readValidatedTextArtifact({
+      path: markdownPath,
+      validateText: (text) => isValidDiagnosticsSmokeMarkdown(text, readResult.payload),
+      invalidMessage: 'Diagnostics smoke markdown report failed validation.',
+    });
     if (!markdownReadResult.ok) {
       const diagnosticCode =
         getReadArtifactDiagnosticCode(markdownReadResult) ?? REPORT_DIAGNOSTIC_CODES.artifactReadError;
       emitDiagnostic({
         level: 'error',
         code: diagnosticCode,
-        message: 'Diagnostics smoke markdown report read failed.',
+        message:
+          markdownReadResult.status === 'invalid'
+            ? 'Diagnostics smoke markdown report failed validation.'
+            : 'Diagnostics smoke markdown report read failed.',
         context: {
           path: markdownPath,
           status: markdownReadResult.status,
+          reason: markdownReadResult.message ?? null,
           errorCode: markdownReadResult.errorCode ?? null,
         },
       });
       if (markdownReadResult.status === 'missing') {
         console.error(`Missing diagnostics smoke markdown report at "${markdownPath}".`);
+      } else if (markdownReadResult.status === 'invalid') {
+        console.error(
+          `Diagnostics smoke markdown report at "${markdownPath}" failed validation against summary payload.`,
+        );
       } else {
         console.error(
           `Unable to read diagnostics smoke markdown report at "${markdownPath}": ${markdownReadResult.message ?? 'read error'}`,
         );
       }
-      process.exit(1);
-    }
-
-    if (!isValidDiagnosticsSmokeMarkdown(markdownReadResult.text, readResult.payload)) {
-      emitDiagnostic({
-        level: 'error',
-        code: REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload,
-        message: 'Diagnostics smoke markdown report failed validation.',
-        context: {
-          path: markdownPath,
-          runId: readResult.payload.runId,
-        },
-      });
-      console.error(
-        `Diagnostics smoke markdown report at "${markdownPath}" failed validation against summary payload.`,
-      );
       process.exit(1);
     }
   }
