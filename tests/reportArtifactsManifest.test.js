@@ -7,6 +7,7 @@ import {
   isKnownReportArtifactTargetKind,
   isValidReportArtifactTarget,
   REPORT_ARTIFACT_TARGETS,
+  REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH,
 } from '../src/game/reportArtifactsManifest.js';
 
 test('report artifact manifest exposes expected target rows', () => {
@@ -43,9 +44,7 @@ test('isValidReportArtifactTarget validates path-kind pairs', () => {
 });
 
 test('hasExactReportArtifactTargets requires full canonical target set', () => {
-  const completeResults = [...REPORT_ARTIFACT_TARGETS]
-    .sort((left, right) => left.path.localeCompare(right.path))
-    .map((target) => ({ ...target }));
+  const completeResults = REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.map((target) => ({ ...target }));
   assert.equal(hasExactReportArtifactTargets(completeResults), true);
 
   const missingOne = completeResults.slice(1);
@@ -57,6 +56,14 @@ test('hasExactReportArtifactTargets requires full canonical target set', () => {
 
   const unsorted = [...completeResults].reverse();
   assert.equal(hasExactReportArtifactTargets(unsorted), false);
+});
+
+test('REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH keeps canonical ascending order', () => {
+  const sortedPaths = REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.map((target) => target.path);
+  const expectedPaths = [...REPORT_ARTIFACT_TARGETS.map((target) => target.path)].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  assert.deepEqual(sortedPaths, expectedPaths);
 });
 
 test('getReportArtifactRegenerationCommand uses target-specific defaults', () => {

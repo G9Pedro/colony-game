@@ -15,7 +15,7 @@ const REPORT_ARTIFACT_TARGET_KIND_SET = new Set(REPORT_ARTIFACT_TARGETS.map((tar
 const REPORT_ARTIFACT_TARGET_KIND_BY_PATH = new Map(
   REPORT_ARTIFACT_TARGETS.map((target) => [target.path, target.kind]),
 );
-const SORTED_REPORT_ARTIFACT_TARGETS = Object.freeze(
+export const REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH = Object.freeze(
   [...REPORT_ARTIFACT_TARGETS].sort((left, right) => left.path.localeCompare(right.path)),
 );
 
@@ -36,12 +36,12 @@ export function isValidReportArtifactTarget(path, kind) {
 }
 
 export function hasExactReportArtifactTargets(results = undefined) {
-  if (!Array.isArray(results) || results.length !== SORTED_REPORT_ARTIFACT_TARGETS.length) {
+  if (!Array.isArray(results) || results.length !== REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.length) {
     return false;
   }
-  for (let index = 0; index < SORTED_REPORT_ARTIFACT_TARGETS.length; index += 1) {
+  for (let index = 0; index < REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.length; index += 1) {
     const result = results[index];
-    const expectedTarget = SORTED_REPORT_ARTIFACT_TARGETS[index];
+    const expectedTarget = REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH[index];
     if (
       result?.path !== expectedTarget.path ||
       result?.kind !== expectedTarget.kind

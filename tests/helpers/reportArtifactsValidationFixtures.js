@@ -4,9 +4,11 @@ import {
   buildRecommendedActionsFromResults,
   REPORT_ARTIFACT_STATUSES,
 } from '../../src/game/reportArtifactValidationPayloadHelpers.js';
-import { REPORT_ARTIFACT_TARGETS } from '../../src/game/reportArtifactsManifest.js';
+import { REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH } from '../../src/game/reportArtifactsManifest.js';
 
-const REPORT_ARTIFACT_TARGET_PATHS = new Set(REPORT_ARTIFACT_TARGETS.map((target) => target.path));
+const REPORT_ARTIFACT_TARGET_PATHS = new Set(
+  REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.map((target) => target.path),
+);
 
 function assertKnownReportArtifactOverridePaths(overridesByPath) {
   for (const overridePath of Object.keys(overridesByPath ?? {})) {
@@ -18,7 +20,7 @@ function assertKnownReportArtifactOverridePaths(overridesByPath) {
 
 export function buildReportArtifactValidationResults(overridesByPath = {}) {
   assertKnownReportArtifactOverridePaths(overridesByPath);
-  return REPORT_ARTIFACT_TARGETS.map((target) => {
+  return REPORT_ARTIFACT_TARGETS_SORTED_BY_PATH.map((target) => {
     const overrides = overridesByPath[target.path] ?? {};
     return {
       path: target.path,
@@ -29,7 +31,7 @@ export function buildReportArtifactValidationResults(overridesByPath = {}) {
       recommendedCommand: null,
       ...overrides,
     };
-  }).sort((left, right) => left.path.localeCompare(right.path));
+  });
 }
 
 export function buildValidReportArtifactsValidationPayload(overrides = {}) {
