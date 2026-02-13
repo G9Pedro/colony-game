@@ -1,5 +1,3 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
 import {
   EXPECTED_SCENARIO_TUNING_SIGNATURES,
   EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA,
@@ -11,7 +9,11 @@ import {
 } from '../src/content/scenarioTuningBaselineCheck.js';
 import { SCENARIO_DEFINITIONS } from '../src/content/scenarios.js';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
-import { buildValidatedReportPayload } from './reportPayloadOutput.js';
+import {
+  buildValidatedReportPayload,
+  writeJsonArtifact,
+  writeTextArtifact,
+} from './reportPayloadOutput.js';
 
 const outputPath =
   process.env.SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH ??
@@ -33,13 +35,8 @@ const payload = buildValidatedReportPayload(
 const summary = getScenarioTuningBaselineChangeSummary(payload);
 const markdown = buildScenarioTuningBaselineSuggestionMarkdown(payload);
 
-await mkdir(dirname(outputPath), { recursive: true });
-await writeFile(
-  outputPath,
-  JSON.stringify(payload, null, 2),
-  'utf-8',
-);
-await writeFile(markdownOutputPath, markdown, 'utf-8');
+await writeJsonArtifact(outputPath, payload);
+await writeTextArtifact(markdownOutputPath, markdown);
 
 console.log(`Scenario tuning baseline suggestions written to: ${outputPath}`);
 console.log(`Scenario tuning baseline suggestions markdown written to: ${markdownOutputPath}`);

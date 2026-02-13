@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
-import { buildValidatedReportPayload } from '../scripts/reportPayloadOutput.js';
+import {
+  buildValidatedReportPayload,
+  writeJsonArtifact,
+  writeTextArtifact,
+} from '../scripts/reportPayloadOutput.js';
 
 test('buildValidatedReportPayload returns metadata-wrapped valid payload', () => {
   const payload = buildValidatedReportPayload(
@@ -37,4 +44,20 @@ test('buildValidatedReportPayload throws for invalid payload contracts', () => {
       ),
     /Unable to build valid scenario tuning validation payload/i,
   );
+});
+
+test('writeJsonArtifact and writeTextArtifact persist payloads with parent dirs', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'report-output-helper-'));
+  const jsonPath = join(dir, 'nested', 'report.json');
+  const textPath = join(dir, 'nested', 'report.md');
+
+  try {
+    await writeJsonArtifact(jsonPath, { ok: true, version: 1 });
+    await writeTextArtifact(textPath, '# Report\n');
+
+    assert.deepEqual(JSON.parse(await readFile(jsonPath, 'utf-8')), { ok: true, version: 1 });
+    assert.equal(await readFile(textPath, 'utf-8'), '# Report\n');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });

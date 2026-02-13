@@ -1,12 +1,15 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import {
   buildReportArtifactsValidationMarkdown,
   evaluateReportArtifactEntries,
   REPORT_ARTIFACT_TARGETS,
 } from '../src/game/reportArtifactsValidation.js';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
-import { buildValidatedReportPayload } from './reportPayloadOutput.js';
+import {
+  buildValidatedReportPayload,
+  writeJsonArtifact,
+  writeTextArtifact,
+} from './reportPayloadOutput.js';
 
 const outputPath =
   process.env.REPORTS_VALIDATE_OUTPUT_PATH ?? 'reports/report-artifacts-validation.json';
@@ -38,10 +41,9 @@ const report = buildValidatedReportPayload(
   baseReport,
   'report artifact validation',
 );
-await mkdir(dirname(outputPath), { recursive: true });
-await writeFile(outputPath, JSON.stringify(report, null, 2), 'utf-8');
+await writeJsonArtifact(outputPath, report);
 const markdown = buildReportArtifactsValidationMarkdown(report);
-await writeFile(markdownOutputPath, markdown, 'utf-8');
+await writeTextArtifact(markdownOutputPath, markdown);
 
 report.results.forEach((result) => {
   if (result.ok) {
