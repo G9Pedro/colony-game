@@ -6,6 +6,7 @@ You build structures, manage colonists and resources, research technologies, and
 Contributor workflow and PR checklist mapping are documented in `CONTRIBUTING.md`.
 `CONTRIBUTING.md` and `.github/pull_request_template.md` are intentionally synchronized process docs.
 If command/script names change, update this README, `CONTRIBUTING.md`, and `.github/pull_request_template.md` together.
+`package.json` scripts are the canonical source for command names used in docs and CI.
 Start with the **New Contributor Quick Start** subsection there for the shortest command path.
 Opening your first tuning PR? Review `.github/pull_request_template.md` and follow the tuning checklist items before requesting review.
 
