@@ -9,9 +9,10 @@ import { runEconomySystem } from '../systems/economySystem.js';
 import { runResearchSystem, startResearch } from '../systems/researchSystem.js';
 import { runObjectiveSystem } from '../systems/objectiveSystem.js';
 import { runOutcomeSystem } from '../systems/outcomeSystem.js';
-import { nextRandom, seedFromString } from './random.js';
+import { nextRandom } from './random.js';
 import { getScenarioDefinition } from '../content/scenarios.js';
 import { validateRuntimeState } from './stateInvariant.js';
+import { migrateSaveState } from '../persistence/migrations.js';
 
 const HIRE_COST_FOOD = 20;
 
@@ -190,45 +191,29 @@ export class GameEngine {
   }
 
   loadState(nextState) {
-    if (!nextState.metrics || typeof nextState.metrics !== 'object') {
-      nextState.metrics = {
-        starvationTicks: 0,
-        lowMoraleTicks: 0,
-        deaths: 0,
-        peakPopulation: nextState.colonists?.filter((colonist) => colonist.alive).length ?? 0,
-        buildingsConstructed: 0,
-        researchCompleted: nextState.research?.completed?.length ?? 0,
-        objectivesCompleted: nextState.objectives?.completed?.length ?? 0,
-      };
+    const migrated = migrateSaveState(nextState);
+    const invariants = validateRuntimeState(migrated);
+    if (invariants.length > 0) {
+      this.emit('state-invalid', {
+        kind: 'error',
+        message: `Loaded save failed runtime invariants: ${invariants[0]}`,
+        details: invariants,
+      });
+      return { ok: false, message: invariants[0] };
     }
-    if (!Array.isArray(nextState.runSummaryHistory)) {
-      nextState.runSummaryHistory = [];
-    }
-    if (!nextState.objectives || !Array.isArray(nextState.objectives.completed)) {
-      nextState.objectives = {
-        completed: [],
-      };
-    }
-    if (typeof nextState.scenarioId !== 'string') {
-      nextState.scenarioId = 'frontier';
-    }
-    if (typeof nextState.rngSeed !== 'string') {
-      nextState.rngSeed = 'legacy-save';
-    }
-    if (typeof nextState.rngState !== 'number') {
-      nextState.rngState = seedFromString(nextState.rngSeed);
-    }
-    this.state = nextState;
+
+    this.state = migrated;
     this.initialOptions = {
       ...this.initialOptions,
-      scenarioId: nextState.scenarioId,
-      seed: nextState.rngSeed,
+      scenarioId: migrated.scenarioId,
+      seed: migrated.rngSeed,
     };
     this.accumulator = 0;
     this.emit('state-loaded', {
       kind: 'success',
       message: 'Save loaded successfully.',
     });
+    return { ok: true };
   }
 
   snapshot() {

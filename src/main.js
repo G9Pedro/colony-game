@@ -77,7 +77,11 @@ ui.setPersistenceCallbacks({
       notify({ kind: 'error', message: `Save invalid: ${validation.errors[0]}` });
       return;
     }
-    engine.loadState(loaded);
+    const result = engine.loadState(loaded);
+    if (!result.ok) {
+      notify({ kind: 'error', message: `Failed to load save: ${result.message}` });
+      return;
+    }
     ui.setSelectedBuildType(null);
   },
   onExport: () => {
@@ -92,7 +96,11 @@ ui.setPersistenceCallbacks({
         notify({ kind: 'error', message: `Imported save invalid: ${validation.errors[0]}` });
         return;
       }
-      engine.loadState(loaded);
+      const result = engine.loadState(loaded);
+      if (!result.ok) {
+        notify({ kind: 'error', message: `Failed to load imported save: ${result.message}` });
+        return;
+      }
       ui.setSelectedBuildType(null);
       notify({ kind: 'success', message: 'Save imported successfully.' });
     } catch (error) {
