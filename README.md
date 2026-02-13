@@ -149,6 +149,11 @@ npm run simulate:report:tuning:trend
 
 When a baseline dashboard artifact is unavailable, the trend report falls back to committed signature and intensity baselines.
 
+Troubleshooting:
+- if you see a message that the baseline dashboard is missing, run:
+  - `npm run simulate:capture:tuning-dashboard-baseline`
+  - then rerun `npm run simulate:report:tuning:trend` to switch comparison source to dashboard mode.
+
 Trend baseline path can be overridden with:
 - `SIM_SCENARIO_TUNING_TREND_BASELINE_PATH` (read path used by trend report)
 - `SIM_SCENARIO_TUNING_DASHBOARD_BASELINE_PATH` (write path used by baseline capture)
