@@ -1,7 +1,10 @@
 import path from 'node:path';
 import { buildDiagnosticsSmokeSummary } from '../../scripts/reportDiagnosticsSmokeSummary.js';
 import { buildDiagnosticsSmokeMarkdown } from '../../scripts/reportDiagnosticsSmokeMarkdown.js';
-import { buildReportDiagnostic } from '../../scripts/reportDiagnostics.js';
+import {
+  buildReportDiagnostic,
+  REPORT_DIAGNOSTIC_CODES,
+} from '../../scripts/reportDiagnostics.js';
 import {
   buildArtifactPath,
   createJsonArtifact,
@@ -31,7 +34,7 @@ export function createFailingSummary() {
     script: 'simulate:baseline:check',
     runId,
     level: 'error',
-    code: 'baseline-signature-drift',
+    code: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
     message: 'Baseline drift detected.',
     context: { changedSnapshotCount: 1 },
   });
@@ -46,7 +49,7 @@ export function createFailingSummary() {
         expectedExitCode: 1,
         actualExitCode: 1,
         diagnostics: [diagnostic],
-        observedCodes: ['baseline-signature-drift'],
+        observedCodes: [REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift],
         ok: false,
         errors: ['Missing expected baseline summary diagnostic.'],
       },

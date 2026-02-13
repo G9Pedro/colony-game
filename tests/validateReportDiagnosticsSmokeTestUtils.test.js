@@ -6,6 +6,7 @@ import path from 'node:path';
 import {
   REPORT_DIAGNOSTICS_SMOKE_SUMMARY_TYPE,
 } from '../scripts/reportDiagnosticsSmokeSummary.js';
+import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import {
   buildSmokeArtifactPath,
   createFailingSummary,
@@ -31,7 +32,11 @@ test('createFailingSummary includes failed scenario and diagnostics', () => {
   assert.equal(summary.scenarios[0].ok, false);
   assert.ok(Array.isArray(summary.scenarios[0].observedCodes));
   assert.ok(summary.scenarios[0].observedCodes.length > 0);
+  assert.deepEqual(summary.scenarios[0].observedCodes, [
+    REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
+  ]);
   assert.equal(summary.scenarios[0].diagnosticsCount, 1);
+  assert.equal(summary.diagnosticsByCode[REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift], 1);
 });
 
 test('buildSmokeArtifactPath composes smoke artifact paths', () => {
