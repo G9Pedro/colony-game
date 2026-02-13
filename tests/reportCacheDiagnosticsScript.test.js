@@ -40,6 +40,47 @@ test('handleJsonCacheLoadFailure maps classified read failures to canonical diag
   }
 });
 
+test('handleJsonCacheLoadFailure maps invalid-json cache failures to invalid-json diagnostic code', () => {
+  const emitted = [];
+  const originalConsoleError = console.error;
+  const errorLines = [];
+  console.error = (line) => {
+    errorLines.push(String(line));
+  };
+
+  try {
+    const handled = handleJsonCacheLoadFailure({
+      error: {
+        cacheReadFailure: {
+          ok: false,
+          path: 'reports/scenario-tuning-baseline-suggestions.json',
+          status: 'invalid-json',
+          message: 'Unexpected token',
+          errorCode: null,
+        },
+      },
+      emitDiagnostic: (diagnostic) => emitted.push(diagnostic),
+      inputPath: 'reports/scenario-tuning-baseline-suggestions.json',
+      cacheArtifactLabel: 'scenario tuning baseline cache payload',
+      cacheReadFailureMessage: 'Scenario tuning baseline cache payload read failed.',
+      genericFailureMessage: 'Scenario tuning baseline check failed before summary evaluation.',
+    });
+
+    assert.equal(handled, true);
+    assert.equal(emitted.length, 1);
+    assert.equal(emitted[0].code, REPORT_DIAGNOSTIC_CODES.artifactInvalidJson);
+    assert.equal(emitted[0].context.status, 'invalid-json');
+    assert.equal(emitted[0].context.errorCode, null);
+    assert.equal(emitted[0].context.reason, 'Unexpected token');
+    assert.match(
+      errorLines.join('\n'),
+      /scenario tuning baseline cache payload at "reports\/scenario-tuning-baseline-suggestions\.json" is not valid JSON/,
+    );
+  } finally {
+    console.error = originalConsoleError;
+  }
+});
+
 test('handleJsonCacheLoadFailure emits fallback artifact-read-error for unexpected failures', () => {
   const emitted = [];
   const originalConsoleError = console.error;

@@ -5,7 +5,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
 import { buildBaselineSuggestionPayload } from '../scripts/reportDiagnosticsFixtures.js';
+import { collectReportDiagnostics } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -83,11 +85,20 @@ test('suggest-baselines-check emits read-error diagnostic for unreadable cache p
             REPORT_DIAGNOSTICS_JSON: '1',
           },
         }),
-      (error) =>
-        error.code === 1 &&
-        error.stderr.includes('Unable to read baseline suggestion cache payload') &&
-        error.stderr.includes('"code":"artifact-read-error"') &&
-        error.stderr.includes('"script":"simulate:baseline:check"'),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.ok(error.stderr.includes('Unable to read baseline suggestion cache payload'));
+        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
+        const readErrorDiagnostic = diagnostics.find(
+          (diagnostic) => diagnostic.code === REPORT_DIAGNOSTIC_CODES.artifactReadError,
+        );
+        assert.ok(readErrorDiagnostic);
+        assert.equal(readErrorDiagnostic.script, 'simulate:baseline:check');
+        assert.equal(readErrorDiagnostic.context?.status, 'error');
+        assert.equal(readErrorDiagnostic.context?.path, tempDirectory);
+        assert.equal(readErrorDiagnostic.context?.errorCode, 'EISDIR');
+        return true;
+      },
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
