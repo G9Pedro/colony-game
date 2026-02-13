@@ -326,6 +326,7 @@ npm run verify
 - Use `npm run verify` for full local parity with the default CI gate.
 - Use `npm run simulate:tuning:session:strict` when iterating on tuning and you want intensity drift enforcement to match strict CI mode before opening a PR.
 - For tuning-focused PRs, use `npm run simulate:tuning:prepr` as the required local pre-submit gate (strict tuning checks + report schema validation).
+- If the same PR also changes non-tuning gameplay/simulation code, run `npm run verify` in addition to `npm run simulate:tuning:prepr`.
 
 ## Gameplay Notes
 

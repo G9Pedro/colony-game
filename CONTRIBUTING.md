@@ -35,4 +35,8 @@ If your PR changes scenario tuning inputs (for example `src/content/scenarios.js
 npm run simulate:tuning:prepr
 ```
 
+Use this rule of thumb:
+- tuning-only/content-only PRs: `simulate:tuning:prepr` is the required pre-submit gate.
+- PRs that also change gameplay/simulation/runtime code: run **both** `simulate:tuning:prepr` and `verify`.
+
 If baseline suggestions are intentionally accepted, update committed baseline files in the same PR and mention the intent in the PR summary.
