@@ -1,6 +1,7 @@
 ## Summary
 
 - Describe the problem and the solution in 2-5 bullets.
+- Command usage/details for checklist items: see `CONTRIBUTING.md`.
 
 ## Validation
 
