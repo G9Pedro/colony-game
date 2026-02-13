@@ -7,7 +7,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { REPORT_KINDS } from '../src/game/reportPayloadValidators.js';
 import { REPORT_ARTIFACT_TARGETS } from '../src/game/reportArtifactsValidation.js';
-import { findDiagnosticByCodeFromOutput } from './helpers/reportDiagnosticsTestUtils.js';
+import { assertOutputHasReadFailureDiagnostic } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -102,18 +102,16 @@ test('validate-report-artifacts emits JSON diagnostics when enabled', async () =
           },
         }),
       (error) => {
-        const invalidJsonDiagnostic = findDiagnosticByCodeFromOutput(
-          { stdout: error.stdout, stderr: error.stderr },
-          'artifact-invalid-json',
-        );
+        const invalidJsonDiagnostic = assertOutputHasReadFailureDiagnostic({
+          stdout: error.stdout,
+          stderr: error.stderr,
+          diagnosticCode: 'artifact-invalid-json',
+          expectedScript: 'reports:validate',
+          expectedPath: 'reports/scenario-tuning-dashboard.json',
+          expectedStatus: 'invalid-json',
+          expectedErrorCode: null,
+        });
         assert.equal(invalidJsonDiagnostic.level, 'error');
-        assert.equal(invalidJsonDiagnostic.script, 'reports:validate');
-        assert.equal(
-          invalidJsonDiagnostic.context?.path,
-          'reports/scenario-tuning-dashboard.json',
-        );
-        assert.equal(invalidJsonDiagnostic.context?.status, 'invalid-json');
-        assert.equal(invalidJsonDiagnostic.context?.errorCode, null);
         assert.equal(typeof invalidJsonDiagnostic.context?.reason, 'string');
         return true;
       },
