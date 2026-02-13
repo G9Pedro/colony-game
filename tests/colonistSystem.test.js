@@ -36,3 +36,23 @@ test('colonists consume food and recover hunger', () => {
   assert.ok(colonist.needs.hunger > 30);
   assert.ok(state.resources.food < 100);
 });
+
+test('idle colonists forage small emergency resources', () => {
+  const state = createInitialState({ seed: 'forage-seed' });
+  state.buildings = [];
+  state.resources.food = 0;
+  state.resources.wood = 0;
+  state.colonists.forEach((colonist) => {
+    colonist.job = 'laborer';
+    colonist.task = 'Idle';
+  });
+
+  runColonistSystem({
+    state,
+    deltaSeconds: 5,
+    emit: () => {},
+  });
+
+  assert.ok(state.resources.food > 0);
+  assert.ok(state.resources.wood > 0);
+});

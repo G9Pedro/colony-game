@@ -162,6 +162,11 @@ export function runColonistSystem(context) {
     if (!isWorking) {
       colonist.needs.rest = clamp(colonist.needs.rest + deltaSeconds * 1.1);
       colonist.task = 'Resting';
+      if (colonist.needs.hunger > 60 && colonist.needs.health > 40) {
+        const forageEfficiency = colonist.trait === 'Resourceful' ? 1.25 : 1;
+        state.resources.food += deltaSeconds * 0.035 * forageEfficiency;
+        state.resources.wood += deltaSeconds * 0.02 * forageEfficiency;
+      }
     }
 
     if (overcrowded) {
