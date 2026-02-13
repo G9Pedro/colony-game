@@ -44,6 +44,7 @@ The pull request template checkboxes map to these commands/artifacts:
 Template path: `.github/pull_request_template.md`.
 This guide and the PR template are intentionally synchronized process references.
 When checklist commands change, update both files in the same PR and do a quick consistency pass.
+If npm scripts are renamed, also update command references in `README.md` in that same PR.
 
 | PR Template Item | Command | What to Review |
 | --- | --- | --- |
