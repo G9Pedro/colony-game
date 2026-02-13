@@ -1,0 +1,85 @@
+import { REPORT_KINDS, REPORT_SCHEMA_VERSIONS, hasValidMeta } from './reportPayloadMeta.js';
+import { isRecordOfNumbers } from './reportPayloadValidatorUtils.js';
+import {
+  areRecommendedActionsEqual,
+  buildRecommendedActionsFromResults,
+  isValidRecommendedActions,
+  isValidReportArtifactResultEntry,
+  KNOWN_REPORT_ARTIFACT_STATUSES,
+  REPORT_ARTIFACT_STATUS_ORDER,
+} from './reportArtifactValidationPayloadHelpers.js';
+
+export function isValidReportArtifactsValidationPayload(payload) {
+  const results = Array.isArray(payload?.results) ? payload.results : [];
+  const hasValidStatusCounts = isRecordOfNumbers(payload?.statusCounts);
+  const hasValidActions = isValidRecommendedActions(payload?.recommendedActions);
+  if (
+    !Boolean(
+      hasValidMeta(payload, REPORT_KINDS.reportArtifactsValidation) &&
+        typeof payload.overallPassed === 'boolean' &&
+        Number.isInteger(payload.failureCount) &&
+        payload.failureCount >= 0 &&
+        Number.isInteger(payload.totalChecked) &&
+        payload.totalChecked >= 0 &&
+        hasValidStatusCounts &&
+        hasValidActions &&
+        Array.isArray(payload.results),
+    )
+  ) {
+    return false;
+  }
+
+  const validResults = results.every((result) => isValidReportArtifactResultEntry(result));
+  if (!validResults) {
+    return false;
+  }
+  const hasKnownResultKinds = results.every((result) =>
+    Object.prototype.hasOwnProperty.call(REPORT_SCHEMA_VERSIONS, result.kind),
+  );
+  const hasUniqueResultPaths = new Set(results.map((result) => result.path)).size === results.length;
+  const hasSortedResultPaths = results.every(
+    (result, index) => index === 0 || results[index - 1].path.localeCompare(result.path) <= 0,
+  );
+
+  const failureCount = results.filter((result) => !result.ok).length;
+  const computedStatusCounts = results.reduce(
+    (acc, result) => {
+      acc[result.status] += 1;
+      return acc;
+    },
+    Object.fromEntries(REPORT_ARTIFACT_STATUS_ORDER.map((status) => [status, 0])),
+  );
+  const computedStatusTotal = Object.values(computedStatusCounts).reduce((sum, value) => sum + value, 0);
+  const reportedStatusTotal = Object.values(payload.statusCounts).reduce((sum, value) => sum + value, 0);
+  const hasExpectedStatusKeys =
+    Object.keys(payload.statusCounts).length === REPORT_ARTIFACT_STATUS_ORDER.length &&
+    REPORT_ARTIFACT_STATUS_ORDER.every((status) =>
+      Object.prototype.hasOwnProperty.call(payload.statusCounts, status),
+    );
+  const statusCountsMatch = REPORT_ARTIFACT_STATUS_ORDER.every(
+    (status) => payload.statusCounts[status] === computedStatusCounts[status],
+  );
+  const knownStatusKeysOnly = Object.keys(payload.statusCounts).every((status) =>
+    KNOWN_REPORT_ARTIFACT_STATUSES.has(status),
+  );
+  const expectedRecommendedActions = buildRecommendedActionsFromResults(results);
+  const recommendedActionsMatch = areRecommendedActionsEqual(
+    payload.recommendedActions,
+    expectedRecommendedActions,
+  );
+
+  return Boolean(
+    payload.totalChecked === results.length &&
+      payload.failureCount === failureCount &&
+      payload.overallPassed === (failureCount === 0) &&
+      reportedStatusTotal === payload.totalChecked &&
+      computedStatusTotal === payload.totalChecked &&
+      hasExpectedStatusKeys &&
+      knownStatusKeysOnly &&
+      statusCountsMatch &&
+      hasKnownResultKinds &&
+      hasUniqueResultPaths &&
+      hasSortedResultPaths &&
+      recommendedActionsMatch,
+  );
+}

@@ -1,326 +1,444 @@
-# 🏗️ Advanced Colony Simulation Game
+# Colony Frontier
 
-A sophisticated 3D colony management simulation built with Three.js, featuring complex economic systems, intelligent AI colonists, and mobile-first responsive design.
+Colony Frontier is a complete, browser-playable colony management game built with modular ES modules.  
+You build structures, manage colonists and resources, research technologies, and push your settlement to victory.
 
-## 🎮 **Live Demo**
+Contributor workflow and PR checklist mapping are documented in `CONTRIBUTING.md`.
+`CONTRIBUTING.md` and `.github/pull_request_template.md` are intentionally synchronized process docs.
+If command/script names change, update this README, `CONTRIBUTING.md`, and `.github/pull_request_template.md` together.
+`package.json` scripts are the canonical source for command names used in docs and CI.
+For command-rename PRs, include a brief docs-sync note in the PR summary listing updated docs/CI references.
+Start with the **New Contributor Quick Start** subsection there for the shortest command path.
+Opening your first tuning PR? Review `.github/pull_request_template.md` and follow the tuning checklist items before requesting review.
 
-**Play Now:** [http://158.69.198.2/](http://158.69.198.2/)
+## Features
 
-*Optimized for both desktop and mobile devices*
+- **Complete colony loop**: build → produce → research → expand → win/lose.
+- **12+ building types** across housing, production, infrastructure, culture, and defense.
+- **Colonist simulation** with jobs, movement, skills, and needs (hunger, rest, health, morale).
+- **Construction queue** with builder-driven progress.
+- **Research tree** with prerequisites and unlocks.
+- **Objective tracker** with milestone rewards and progression guidance.
+- Objective cards show explicit reward details before completion.
+- Objective rewards automatically scale with scenario difficulty.
+- **Run analytics**: track peak population, completions, deaths, run outcomes, and balance profile context.
+- **Runtime state invariants** to detect and pause on simulation corruption.
+- Invariant violations are logged in run stats for debugging and postmortems.
+- **Scenario presets**: Frontier, Prosperous, and Harsh with distinct start conditions and ongoing production/workforce tuning.
+- **Balance profiles**: Standard, Forgiving, and Brutal simulation tuning.
+- **Deterministic seeded simulation** support for reproducible runs.
+- **Save/Load/Reset** controls backed by `localStorage`.
+- **Save Export/Import** for portable JSON save files.
+- **Versioned save schema** with migration support for legacy save payloads.
+- **Strict save validation** for imports with actionable error feedback.
+- **Import safety limits** to reject unexpectedly large save files.
+- **Invariant-checked save loading** to reject structurally unsafe game states.
+- **3D rendering with Three.js**, plus an automatic 2D fallback when WebGL is unavailable.
+- **Responsive UI** that supports both desktop and touch interactions.
 
----
+## Recent Pipeline Improvements
 
-## 🚀 **From Zero to Hero in 1 Hour**
+- Added scenario tuning trend reporting with dual comparison sources:
+  - baseline dashboard artifact (when present),
+  - committed baseline signatures/intensity maps (fallback).
+- Added a baseline capture command for dashboard-to-dashboard trend workflows:
+  - `npm run simulate:capture:tuning-dashboard-baseline`
+- Expanded scenario tuning baseline suggestions to include:
+  - signature drift snippets,
+  - total tuning intensity drift snippets.
+- Added optional strict intensity enforcement:
+  - local: `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline`
+  - CI opt-in via repository variable: `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1`
 
-This project showcases rapid game development using AI-assisted programming. Starting from a basic Three.js demo with 3 buildings, we transformed it into a full-featured colony simulation with:
+### Tuning Report Pipeline Flow
 
-- **25+ building types** across 5 categories
-- **Individual AI colonists** with personalities and relationships
-- **Complex economy** with 7 resources and supply chains
-- **Mobile-first responsive design** with touch controls
-- **Research system** with technology progression
-- **Construction management** with worker allocation
-
----
-
-## ✨ **Key Features**
-
-### 🎯 **Core Gameplay**
-- **Colony Management**: Build and manage a thriving settlement
-- **Resource Economy**: Wood, Stone, Food, Iron, Tools, Medicine, Knowledge
-- **Population Growth**: Individual colonists with unique traits and needs
-- **Technology Research**: Unlock advanced buildings and capabilities
-- **Strategic Planning**: Balance immediate needs with long-term growth
-
-### 🏗️ **Advanced Building System**
-- **5 Categories**: Housing, Production, Infrastructure, Defense, Culture
-- **Building Tiers**: 3 upgrade levels (Basic → Advanced → Luxury)
-- **Prerequisites**: Research requirements and resource dependencies
-- **Construction Queue**: Real-time building with worker assignment
-- **Maintenance System**: Buildings degrade and require upkeep
-- **Adjacency Bonuses**: Strategic placement rewards
-
-#### Building Categories:
-
-**🏠 Housing** (Population Growth)
-- Hut (2 colonists) → House (4 colonists) → Manor (8 colonists)
-
-**🏭 Production** (Resource Generation)
-- Gatherer Hut, Farm, Logging Camp, Quarry, Mine, Workshop
-- Each with upgrade paths and specializations
-
-**🛤️ Infrastructure** (Colony Support)
-- Roads, Warehouses, Granaries, Markets
-- Efficiency bonuses and storage expansion
-
-**🛡️ Defense** (Protection)
-- Watchtowers, Palisades, Barracks
-- Early warning and fortification systems
-
-**📚 Culture** (Research & Happiness)
-- Shrines, Schools, Libraries, Hospitals
-- Knowledge generation and colonist wellbeing
-
-### 👥 **Intelligent Colonist AI**
-
-#### **Individual Personalities**
-- **Unique Names**: Each colonist has a distinct identity
-- **14 Trait Types**: Hardworking, Lazy, Social, Grumpy, Creative, etc.
-- **8 Personality Types**: Leader, Follower, Independent, Team Player
-- **Age & Gender**: Realistic demographics (18-58 years)
-
-#### **Advanced Behavior System**
-- **A* Pathfinding**: Smart navigation around obstacles
-- **Job Specialization**: Farmer, Builder, Miner, Gatherer, Scholar
-- **Individual Needs**: Health, Hunger, Rest, Happiness (0-100 scale)
-- **Skill Development**: 9 skills that improve through experience
-- **Relationships**: Dynamic social bonds affecting productivity
-
-#### **Realistic Decision Making**
-- **Priority System**: Survival needs override work assignments
-- **Trait Influence**: Personality affects behavior and efficiency
-- **Emergency Response**: Critical situations trigger appropriate actions
-- **Social Interactions**: Colonists form friendships and rivalries
-
-### 💰 **Complex Economic System**
-
-#### **Multi-Tier Resources**
-```
-RAW MATERIALS → PROCESSED GOODS → FINISHED PRODUCTS
-Wood + Iron → Tools → Advanced Buildings
-Food → Meals → Population Growth
-Stone → Iron → Medicine Production
+```txt
+SCENARIO_DEFINITIONS
+  ├─> simulate:report:tuning ---------------------> scenario-tuning-dashboard.{json,md}
+  ├─> simulate:capture:tuning-dashboard-baseline -> scenario-tuning-dashboard.baseline.json
+  ├─> simulate:report:tuning:trend --------------> scenario-tuning-trend.{json,md}
+  └─> simulate:suggest:tuning-baseline ----------> scenario-tuning-baseline-suggestions.{json,md}
+                                                   └─> simulate:check:tuning-baseline
+                                                        (optional strict: SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1)
 ```
 
-#### **Supply Chain Management**
-- **Production Recipes**: Multi-step crafting processes
-- **Resource Spoilage**: Realistic decay for perishable goods
-- **Storage Systems**: Warehouses and specialized storage buildings
-- **Market Trading**: Dynamic pricing based on supply and demand
+## Tech Stack
 
-#### **Skill-Based Efficiency**
-- **Worker Specialization**: Job-specific skill bonuses
-- **Experience System**: Performance improves over time
-- **Production Multipliers**: Skilled workers produce up to 2x resources
-- **Knowledge Investment**: Research points improve worker skills
+- Vanilla HTML/CSS/JavaScript (ES modules)
+- Three.js (installed via npm, served from `node_modules`)
+- Node built-in test runner for unit tests
 
-### 📱 **Mobile-First Design**
+## Project Structure
 
-#### **Touch-Optimized Controls**
-- **Pinch-to-Zoom**: Intuitive camera control (0.5x - 3x range)
-- **Pan & Rotate**: Single-finger drag for camera movement
-- **Context Menus**: Double-tap for building options
-- **Gesture System**: Long-press tooltips, tap-to-close
-
-#### **Responsive Interface**
-- **Floating Action Buttons**: Primary actions in thumb-reach zones
-- **Collapsible Panels**: Resource and colonist information slides up/down
-- **One-Handed Play**: All controls accessible with thumb navigation
-- **Adaptive Layout**: Portrait/landscape optimization
-
-#### **Modern UI Elements**
-- **Glassmorphism**: Backdrop blur effects and transparency
-- **Visual Feedback**: Smooth animations and transitions
-- **Color-Coded Systems**: Intuitive resource and building identification
-- **Progress Indicators**: Real-time construction and research status
-
-### 🔬 **Research & Technology**
-
-#### **Technology Tree** (11 Research Topics)
-- **Basic Construction** → **Advanced Construction** → **Luxury Buildings**
-- **Mining Technology** → **Smelting** → **Advanced Materials**
-- **Agriculture** → **Food Processing** → **Medicine**
-- **Knowledge** → **Education** → **Advanced Research**
-
-#### **Knowledge Generation**
-- **Culture Buildings**: Schools, Libraries generate research points
-- **Scholar Colonists**: Specialized researchers with intelligence bonuses
-- **Research Investment**: Knowledge spent on technology advancement
-
----
-
-## 🎯 **Gameplay Mechanics**
-
-### **Victory Conditions & Challenges**
-- **Population Milestones**: Reach 50, 100, 200 colonists
-- **Research Completion**: Unlock all technologies
-- **Economic Mastery**: Achieve resource abundance and trade dominance
-- **Survival Challenges**: Maintain colonist health and happiness
-
-### **Strategic Depth**
-- **Resource Allocation**: Balance immediate needs vs long-term investment
-- **Building Placement**: Adjacency bonuses reward thoughtful city planning
-- **Worker Management**: Assign skilled colonists to appropriate tasks
-- **Technology Prioritization**: Choose research paths for colony development
-
-### **Emergent Gameplay**
-- **Colonist Stories**: Individual personalities create unique narratives
-- **Economic Fluctuations**: Market dynamics affect resource values
-- **Social Dynamics**: Relationships influence work efficiency
-- **Construction Logistics**: Limited workers create timing challenges
-
----
-
-## 🛠️ **Technical Implementation**
-
-### **Architecture**
-- **Frontend**: Pure HTML5, CSS3, JavaScript (ES6+)
-- **3D Engine**: Three.js r128 for rendering and scene management
-- **AI Systems**: Custom pathfinding, decision trees, state machines
-- **Mobile Support**: Touch events, responsive design, gesture recognition
-
-### **Performance Optimizations**
-- **Efficient Rendering**: LOD system for distant objects
-- **Smart Updates**: Only update visible and active entities
-- **Memory Management**: Object pooling for frequently created/destroyed items
-- **Responsive Design**: Adaptive UI scaling for all device sizes
-
-### **Code Quality**
-- **Modular Design**: Separated systems for maintainability
-- **Event-Driven**: Loose coupling between game systems
-- **Mobile-First**: Touch interactions prioritized over mouse/keyboard
-- **Progressive Enhancement**: Graceful degradation for older devices
-
----
-
-## 🚀 **Development Process**
-
-### **AI-Assisted Development**
-This project demonstrates advanced AI-assisted programming techniques:
-
-1. **Multi-Agent Development**: 4 AI agents worked in parallel on different systems
-2. **Rapid Prototyping**: From concept to full game in under 1 hour
-3. **System Integration**: Seamless combination of complex, independently developed features
-4. **Quality Code Generation**: Production-ready code with proper architecture
-
-### **Agent Specializations**
-- **UI/UX Agent**: Mobile-first responsive design and touch controls
-- **Economy Agent**: Resource management and market systems
-- **AI Agent**: Colonist behavior and pathfinding algorithms
-- **Building Agent**: Construction mechanics and building variety
-
----
-
-## 📊 **Game Statistics**
-
-### **Content Volume**
-- **25+ Building Types** across 5 categories
-- **14 Colonist Traits** and 8 personality types
-- **7 Resource Types** with complex supply chains
-- **11 Research Technologies** for progression
-- **9 Skill Categories** for colonist development
-
-### **Technical Metrics**
-- **~3,000 lines** of highly optimized JavaScript
-- **Mobile-responsive** design for all screen sizes
-- **60 FPS performance** on modern devices
-- **Real-time AI** for dozens of colonists simultaneously
-
----
-
-## 🎨 **Visual Design**
-
-### **Art Style**
-- **Low-Poly 3D**: Clean, readable geometric shapes
-- **Color-Coded Systems**: Intuitive visual language for game elements
-- **Smooth Animations**: Fluid transitions and responsive feedback
-- **Modern UI**: Glassmorphism effects and contemporary design patterns
-
-### **Visual Hierarchy**
-- **Primary Actions**: Prominent floating buttons and clear CTAs
-- **Status Information**: Unobtrusive but always accessible
-- **Feedback Systems**: Immediate visual responses to player actions
-- **Accessibility**: High contrast and readable typography
-
----
-
-## 🔧 **Setup & Deployment**
-
-### **Local Development**
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/colony-game.git
-
-# Navigate to directory
-cd colony-game
-
-# Serve with any HTTP server (Python example)
-python3 -m http.server 8000
-
-# Open http://localhost:8000 in browser
+```txt
+index.html
+styles.css
+src/
+  content/        # data definitions (resources, buildings, research)
+  game/           # game engine, state, selectors, event bus
+  systems/        # simulation systems (colonists, economy, construction, research, outcomes)
+  render/         # Three.js renderer + fallback renderer
+  ui/             # UI controller and interactions
+  persistence/    # save/load helpers
+tests/            # unit tests for pure logic modules
 ```
 
-### **Server Deployment**
-The game is deployed using Nginx on Ubuntu VPS:
+## Run Locally
 
 ```bash
-# Install Nginx
-sudo apt update && sudo apt install nginx
-
-# Copy files to web directory
-sudo cp -r colony-game/* /var/www/html/
-
-# Configure Nginx (see nginx.conf for full config)
-sudo systemctl reload nginx
+npm install
+npm start
 ```
 
----
+Then open: `http://localhost:8000`
 
-## 🌟 **Future Enhancements**
+Optional URL parameters:
 
-### **Planned Features**
-- **Multiplayer Support**: Collaborative colony building
-- **Save/Load System**: Persistent game progress
-- **Audio Integration**: Ambient sounds and music
-- **Advanced Graphics**: Particle effects, lighting improvements
-- **Content Expansion**: More buildings, resources, and challenges
+- `?scenario=frontier|prosperous|harsh`
+- `?seed=any-string-you-like`
+- `?balance=standard|forgiving|brutal`
 
-### **Community Features**
-- **Colony Sharing**: Export/import colony designs
-- **Achievement System**: Unlock rewards for milestones
-- **Leaderboards**: Compare colony performance
-- **User-Generated Content**: Custom building mods
+## Test
 
----
+```bash
+npm test
+```
 
-## 📈 **Performance & Compatibility**
+Unit tests cover:
+- economy system
+- construction system
+- research system
+- colonist simulation behavior
+- scenario setup behavior
+- deterministic simulation behavior
+- state serialization validity
+- scripted integration progression milestones
+- objective progression behavior
 
-### **System Requirements**
-- **Mobile**: iOS 12+, Android 8+ with modern browser
-- **Desktop**: Chrome 80+, Firefox 75+, Safari 13+, Edge 80+
-- **Hardware**: WebGL 2.0 support, 2GB+ RAM recommended
+Run a deterministic scenario simulation matrix from CLI:
 
-### **Optimization Features**
-- **Adaptive Quality**: Graphics automatically adjust to device capabilities
-- **Battery Efficiency**: Optimized for mobile battery life
-- **Network Minimal**: Single HTML file with CDN dependencies
-- **Offline Capable**: Core game works without internet connection
+```bash
+npm run simulate
+```
 
----
+Most simulation CLI commands support:
 
-## 🤝 **Contributing**
+- `SIM_STRATEGY_PROFILE` (defaults to `baseline`)
 
-This project showcases the potential of AI-assisted game development. Contributions welcome for:
+Run deterministic regression assertions (fails on balance regressions):
 
-- **Feature Enhancements**: New building types, game mechanics
-- **Performance Optimizations**: Rendering improvements, memory efficiency
-- **Mobile Experience**: Touch interaction refinements
-- **Content Creation**: Additional colonist traits, building designs
+```bash
+npm run simulate:assert
+```
 
----
+Validate scenario tuning maps for invalid keys or unsafe multipliers:
 
-## 📄 **License**
+```bash
+npm run simulate:validate:tuning
+```
 
-MIT License - Feel free to use, modify, and distribute this code for any purpose.
+Generate a compact scenario tuning dashboard (JSON + Markdown):
 
----
+```bash
+npm run simulate:report:tuning
+```
 
-## 🎖️ **Credits**
+Capture the current scenario tuning dashboard as a reusable trend baseline artifact:
 
-**Development**: AI-Assisted Programming with Claude Code
-**Concept**: Colony simulation inspired by RimWorld, Banished, Anno series
-**Technology**: Three.js, Web Audio API, Modern Web Standards
+```bash
+npm run simulate:capture:tuning-dashboard-baseline
+```
 
----
+Generate a scenario tuning trend report against baseline signatures (or a baseline dashboard file when available):
 
-*Built with ❤️ using AI-assisted development. Demonstrating the future of rapid game prototyping and development.*
+```bash
+npm run simulate:report:tuning:trend
+```
+
+When a baseline dashboard artifact is unavailable, the trend report falls back to committed signature and intensity baselines.
+
+Troubleshooting:
+- if you see a message that the baseline dashboard is missing, run:
+  - `npm run simulate:capture:tuning-dashboard-baseline`
+  - then rerun `npm run simulate:report:tuning:trend` to switch comparison source to dashboard mode.
+
+Trend baseline path can be overridden with:
+- `SIM_SCENARIO_TUNING_TREND_BASELINE_PATH` (read path used by trend report)
+- `SIM_SCENARIO_TUNING_DASHBOARD_BASELINE_PATH` (write path used by baseline capture)
+
+Enforce scenario tuning signature baseline consistency:
+
+```bash
+npm run simulate:check:tuning-baseline
+```
+
+Optional strict mode:
+- set `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1` to fail when total tuning intensity baselines drift (not just signature baselines).
+
+Optional machine-readable diagnostics mode:
+- set `REPORT_DIAGNOSTICS_JSON=1` to emit one-line JSON diagnostics in addition to normal human-readable logs.
+- this is useful for CI log parsing and custom automation.
+- optional: set `REPORT_DIAGNOSTICS_RUN_ID=<value>` to attach a shared correlation ID across all emitted diagnostics in a run.
+- currently supported by:
+  - `npm run simulate:report:tuning:trend`
+  - `npm run reports:validate`
+  - `npm run simulate:check:tuning-baseline`
+  - `npm run simulate:baseline:check`
+  - `npm run diagnostics:smoke`
+  - `npm run diagnostics:smoke:validate`
+- `npm run diagnostics:smoke` executes a lightweight end-to-end diagnostics contract check, then writes consolidated JSON + Markdown reports (`reports/report-diagnostics-smoke.json/.md` by default) with counts by script/level/code plus per-scenario pass/fail details.
+- optional: set `REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH=<path>` to control where the consolidated smoke report is written.
+- optional: set `REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH=<path>` to control where the markdown smoke report is written.
+- `npm run diagnostics:smoke:validate` validates smoke JSON + markdown artifacts by default and fails if `failedScenarioCount > 0`.
+- optional: set `REPORT_DIAGNOSTICS_SMOKE_VALIDATE_MARKDOWN=0` to skip markdown artifact validation (JSON summary validation still enforced).
+- smoke summary payloads are versioned and tagged for automation:
+  - `type: "report-diagnostics-smoke-summary"`
+  - `schemaVersion: 1`
+  - includes aggregate counters (`diagnosticsByCode`, `diagnosticsByLevel`, `diagnosticsByScript`) and per-scenario contract verdicts.
+
+Common diagnostic codes:
+- artifact/baseline read + validation:
+  - `artifact-missing`
+  - `artifact-invalid-json`
+  - `artifact-invalid-payload`
+  - `artifact-read-error`
+- baseline drift checks:
+  - `scenario-tuning-signature-drift`
+  - `scenario-tuning-intensity-drift`
+  - `scenario-tuning-intensity-drift-strict`
+  - `baseline-signature-drift`
+- diagnostics smoke validation:
+  - `diagnostics-smoke-run-summary`
+  - `diagnostics-smoke-validation-summary`
+  - `diagnostics-smoke-failed-scenarios`
+
+Diagnostic JSON line format:
+
+```json
+{
+  "type": "report-diagnostic",
+  "schemaVersion": 1,
+  "generatedAt": "2026-02-13T12:34:56.789Z",
+  "script": "npm-script-or-null",
+  "runId": "optional-correlation-id-or-null",
+  "level": "info|warn|error",
+  "code": "stable-diagnostic-code",
+  "message": "human-readable summary",
+  "context": { "optional": "object payload" }
+}
+```
+
+Contract notes:
+- `type` is always `report-diagnostic`.
+- `schemaVersion` is an integer and currently `1`.
+- `generatedAt` is canonical ISO-8601 (`Date.toISOString()` format).
+- `script` is either `null` or a non-empty command identifier string.
+- `runId` is either `null` or a non-empty string (`REPORT_DIAGNOSTICS_RUN_ID` can set this globally).
+- `code` values are from a fixed, validated code catalog (unknown codes are rejected).
+- `context` is either `null` or an object (never an array/string).
+
+Diagnostics compatibility policy:
+- diagnostics are treated as an automation contract.
+- adding new diagnostic codes is allowed, but existing codes should not be renamed or removed without coordinated consumer updates.
+- schema changes should be explicit and versioned through `schemaVersion`.
+- contract fixtures in `tests/reportDiagnosticsCompatibility.test.js` and
+  `tests/reportDiagnosticsContractsScriptIntegration.test.js` intentionally fail on unreviewed drift.
+
+Enable strict mode in CI:
+1. Open repository **Settings → Secrets and variables → Actions → Variables**.
+2. Add variable `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY` with value `1`.
+3. Re-run CI to activate the optional strict intensity enforcement step.
+
+Generate scenario tuning baseline suggestions (JSON + Markdown):
+
+```bash
+npm run simulate:suggest:tuning-baseline
+```
+
+### Tuning Report Command Quick Reference
+
+| Command | Purpose | Primary Outputs |
+| --- | --- | --- |
+| `npm run simulate:report:tuning` | Build current tuning dashboard snapshot | `reports/scenario-tuning-dashboard.json/.md` |
+| `npm run simulate:capture:tuning-dashboard-baseline` | Capture dashboard baseline artifact for trend comparisons | `reports/scenario-tuning-dashboard.baseline.json` |
+| `npm run simulate:report:tuning:trend` | Compare current tuning against dashboard/signature+intensity baselines | `reports/scenario-tuning-trend.json/.md` |
+| `npm run simulate:suggest:tuning-baseline` | Suggest baseline updates for signatures and total intensity | `reports/scenario-tuning-baseline-suggestions.json/.md` |
+| `npm run simulate:check:tuning-baseline` | Enforce tuning baseline drift policy | console output + exit status |
+| `npm run simulate:tuning:session` | Run the recommended manual tuning command sequence | all tuning reports + baseline check output |
+| `npm run simulate:tuning:session:strict` | Run the same tuning sequence but fail on intensity drift | all tuning reports + strict baseline check output |
+| `npm run simulate:tuning:prepr` | Run strict tuning session plus report artifact schema checks | strict session output + report validation summary |
+| `npm run diagnostics:smoke` | Execute diagnostics contract smoke checks across report scripts | `reports/report-diagnostics-smoke.json/.md` |
+| `npm run diagnostics:smoke:validate` | Validate smoke JSON (+markdown by default) artifacts and enforce zero failed scenarios | console output + exit status |
+
+### Recommended Manual Tuning Session Order
+
+For local balancing sessions, use this order to get deterministic, review-friendly outputs:
+
+1. Edit scenario tuning multipliers in `src/content/scenarios.js`.
+2. Run the full tuning workflow:
+
+   ```bash
+   npm run simulate:tuning:session
+   ```
+
+3. If you are intentionally redefining dashboard-based trend comparisons, capture a fresh dashboard baseline:
+
+   ```bash
+   npm run simulate:capture:tuning-dashboard-baseline
+   ```
+
+4. Use strict mode when you want CI-parity gating locally (for example, before opening a balancing PR):
+
+   ```bash
+   npm run simulate:tuning:session:strict
+   ```
+
+### Tuning PR Checklist (Quick)
+
+Before opening a tuning-focused PR, run:
+
+```bash
+npm run simulate:tuning:prepr
+```
+
+Then review these artifacts:
+- `reports/scenario-tuning-dashboard.md` for current multiplier deltas/rankings.
+- `reports/scenario-tuning-trend.md` to confirm intended scenario changes only.
+- `reports/scenario-tuning-baseline-suggestions.md` for copy-ready baseline updates (signature + total intensity).
+
+This suggestion report now includes copy-ready snippets for both:
+- `EXPECTED_SCENARIO_TUNING_SIGNATURES`
+- `EXPECTED_SCENARIO_TUNING_TOTAL_ABS_DELTA`
+
+Generate a machine-readable regression report:
+
+```bash
+npm run simulate:report
+```
+
+Run multi-seed drift checks against baseline bounds:
+
+```bash
+npm run simulate:drift
+```
+
+Run deterministic snapshot signature checks:
+
+```bash
+npm run simulate:snapshot
+```
+
+Run balance profile regression checks:
+
+```bash
+npm run simulate:balance
+```
+
+Generate suggested baseline updates from current deterministic behavior:
+
+```bash
+npm run simulate:baseline:suggest
+```
+
+This produces:
+- `reports/baseline-suggestions.json` (structured data + deltas + snippets)
+- `reports/baseline-suggestions.md` (human-readable summary with copy-ready snippets)
+
+Fail CI/local checks if suggested baselines diverge from committed baselines:
+
+```bash
+npm run simulate:baseline:check
+```
+
+Validate generated JSON report artifacts against schema-tagged payload contracts:
+
+```bash
+npm run reports:validate
+```
+
+This writes: `reports/report-artifacts-validation.json`
+and `reports/report-artifacts-validation.md`
+
+CI now runs:
+- `npm test`
+- `npm run simulate:validate:tuning` (uploaded as artifact)
+- `npm run simulate:report:tuning` (uploaded as artifact)
+- `npm run simulate:report:tuning:trend` (uploaded as artifact)
+- `npm run simulate:suggest:tuning-baseline` (uploaded as artifact)
+- `npm run simulate:check:tuning-baseline` (enforced)
+- optional strict intensity enforcement when repo/org variable `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1` is set
+- `npm run simulate:assert`
+- `npm run simulate:report` (uploaded as artifact)
+- `npm run simulate:drift` (uploaded as artifact)
+- `npm run simulate:snapshot` (uploaded as artifact, enforced)
+- `npm run simulate:balance` (uploaded as artifact)
+- `npm run simulate:baseline:suggest` (uploaded as artifact)
+- `npm run reports:validate`
+- `reports/report-artifacts-validation.json/.md` (uploaded as artifact)
+- `npm run diagnostics:smoke`
+- `reports/report-diagnostics-smoke.json/.md` (local observability contract summary)
+- `npm run diagnostics:smoke:validate`
+- `npm run simulate:baseline:check` (enforced)
+
+One-command local verification:
+
+```bash
+npm run verify
+```
+
+`verify` now runs:
+- `npm test`
+- `npm run simulate:validate:tuning`
+- `npm run simulate:report:tuning`
+- `npm run simulate:report:tuning:trend`
+- `npm run simulate:suggest:tuning-baseline`
+- `npm run simulate:check:tuning-baseline`
+- `npm run simulate:assert`
+- `npm run simulate:drift`
+- `SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot`
+- `npm run simulate:balance`
+- `npm run simulate:baseline:suggest`
+- `npm run reports:validate`
+- `npm run diagnostics:smoke`
+- `npm run diagnostics:smoke:validate`
+- `npm run simulate:baseline:check`
+
+### CI/Local Parity Tip
+
+- Use `npm run verify` for full local parity with the default CI gate.
+- Use `npm run simulate:tuning:session:strict` when iterating on tuning and you want intensity drift enforcement to match strict CI mode before opening a PR.
+- For tuning-focused PRs, use `npm run simulate:tuning:prepr` as the required local pre-submit gate (strict tuning checks + report schema validation).
+- If the same PR also changes non-tuning gameplay/simulation code, run `npm run verify` in addition to `npm run simulate:tuning:prepr`.
+
+## Gameplay Notes
+
+### Controls
+
+- **Build**: choose category + building in right panel, then click/tap terrain.
+- **Hire Colonist**: left panel button (costs food).
+- **Research**: start technologies from the research panel when enough knowledge is available.
+- **Speed/Pause**: top controls (1x/2x/4x).
+- **Save/Load/Reset**: top controls.
+- **Export/Import**: export current game to JSON or import a previous exported save.
+
+### Progression
+
+- Build food + material production first.
+- Expand housing capacity to grow population.
+- Produce knowledge via schools/libraries to unlock higher-tier tech.
+- Reach the late-game charter condition to win.
+
+### Loss Conditions
+
+- Colony can collapse from starvation/despair pressure.
+- If all colonists die, the game ends immediately.
+
+## Code Quality and Maintainability
+
+The codebase is intentionally split by domain boundaries:
+
+- **data (content)** vs **simulation (systems)** vs **presentation (render/ui)**
+- deterministic update loop in `GameEngine`
+- pure, testable logic modules for critical systems
+
+This structure keeps game mechanics scalable and makes iterative balancing safer than monolithic scripts.

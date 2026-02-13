@@ -1,0 +1,232 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  buildAggregateRegressionReport,
+  buildBalanceProfileRegressionReport,
+  buildRegressionReport,
+  buildSnapshotRegressionReport,
+  buildSummarySignature,
+  evaluateBalanceProfileSummary,
+  evaluateSimulationSummary,
+} from '../src/game/regression.js';
+
+test('evaluateSimulationSummary returns empty failures for passing summary', () => {
+  const summary = {
+    scenarioId: 'frontier',
+    status: 'playing',
+    alivePopulation: 8,
+    buildings: 9,
+    completedResearch: [],
+  };
+  const expected = {
+    requiredStatus: 'playing',
+    minAlivePopulation: 7,
+    minBuildings: 8,
+    requiredResearch: [],
+  };
+
+  const failures = evaluateSimulationSummary(summary, expected);
+  assert.deepEqual(failures, []);
+});
+
+test('buildRegressionReport flags failures and computes overall status', () => {
+  const report = buildRegressionReport({
+    summaries: [
+      {
+        scenarioId: 'frontier',
+        status: 'playing',
+        alivePopulation: 8,
+        buildings: 9,
+        completedResearch: [],
+      },
+      {
+        scenarioId: 'harsh',
+        status: 'lost',
+        alivePopulation: 1,
+        buildings: 2,
+        completedResearch: [],
+      },
+    ],
+    expectations: {
+      frontier: {
+        requiredStatus: 'playing',
+        minAlivePopulation: 7,
+        minBuildings: 8,
+        requiredResearch: [],
+      },
+      harsh: {
+        requiredStatus: 'playing',
+        minAlivePopulation: 6,
+        minBuildings: 7,
+        requiredResearch: [],
+      },
+    },
+  });
+
+  assert.equal(report.overallPassed, false);
+  assert.equal(report.results.length, 2);
+  assert.equal(report.results[0].passed, true);
+  assert.equal(report.results[1].passed, false);
+  assert.ok(report.results[1].failures.length > 0);
+});
+
+test('buildAggregateRegressionReport computes aggregate scenario pass/fail', () => {
+  const report = buildAggregateRegressionReport({
+    summaries: [
+      {
+        scenarioId: 'frontier',
+        status: 'playing',
+        alivePopulation: 8,
+        buildings: 9,
+        day: 8,
+        completedResearch: [],
+      },
+      {
+        scenarioId: 'frontier',
+        status: 'playing',
+        alivePopulation: 8,
+        buildings: 9,
+        day: 8,
+        completedResearch: [],
+      },
+      {
+        scenarioId: 'harsh',
+        status: 'lost',
+        alivePopulation: 2,
+        buildings: 3,
+        day: 4,
+        completedResearch: [],
+      },
+    ],
+    baselineBounds: {
+      frontier: {
+        alivePopulationMean: { min: 7.5, max: 8.5 },
+        buildingsMean: { min: 8.5, max: 9.5 },
+        dayMean: { min: 7.5, max: 8.5 },
+        survivalRate: { min: 1, max: 1 },
+        masonryCompletionRate: { min: 0, max: 0 },
+      },
+      harsh: {
+        alivePopulationMean: { min: 6, max: 7 },
+        buildingsMean: { min: 7, max: 8 },
+        dayMean: { min: 7, max: 8 },
+        survivalRate: { min: 1, max: 1 },
+        masonryCompletionRate: { min: 0, max: 0 },
+      },
+    },
+  });
+
+  assert.equal(report.scenarioResults.length, 2);
+  const frontier = report.scenarioResults.find((result) => result.scenarioId === 'frontier');
+  const harsh = report.scenarioResults.find((result) => result.scenarioId === 'harsh');
+  assert.equal(frontier.passed, true);
+  assert.equal(harsh.passed, false);
+  assert.equal(report.overallPassed, false);
+  assert.ok(harsh.failures.length > 0);
+});
+
+test('buildSummarySignature is deterministic for same summary', () => {
+  const summary = {
+    scenarioId: 'frontier',
+    balanceProfileId: 'standard',
+    seed: 'assert-frontier',
+    status: 'playing',
+    day: 8,
+    alivePopulation: 8,
+    buildings: 9,
+    queueLength: 0,
+    resources: { food: 120, wood: 100 },
+    completedResearch: [],
+  };
+
+  const first = buildSummarySignature(summary);
+  const second = buildSummarySignature(summary);
+  assert.equal(first, second);
+});
+
+test('buildSnapshotRegressionReport compares signatures', () => {
+  const summary = {
+    scenarioId: 'frontier',
+    balanceProfileId: 'standard',
+    seed: 'assert-frontier',
+    status: 'playing',
+    day: 8,
+    alivePopulation: 8,
+    buildings: 9,
+    queueLength: 0,
+    resources: { food: 120, wood: 100 },
+    completedResearch: [],
+  };
+  const signature = buildSummarySignature(summary);
+
+  const passReport = buildSnapshotRegressionReport({
+    summaries: [summary],
+    expectedSignatures: { 'frontier:standard': signature },
+  });
+  assert.equal(passReport.overallPassed, true);
+  assert.equal(passReport.results[0].passed, true);
+
+  const failReport = buildSnapshotRegressionReport({
+    summaries: [summary],
+    expectedSignatures: { 'frontier:standard': 'deadbeef' },
+  });
+  assert.equal(failReport.overallPassed, false);
+  assert.equal(failReport.results[0].passed, false);
+});
+
+test('evaluateBalanceProfileSummary validates profile expectations', () => {
+  const summary = {
+    scenarioId: 'prosperous',
+    balanceProfileId: 'standard',
+    status: 'playing',
+    alivePopulation: 9,
+    completedResearch: ['masonry'],
+  };
+  const expected = {
+    requiredStatus: 'playing',
+    minAlivePopulation: 9,
+    requiredResearch: ['masonry'],
+  };
+
+  assert.deepEqual(evaluateBalanceProfileSummary(summary, expected), []);
+});
+
+test('buildBalanceProfileRegressionReport detects expectation failures', () => {
+  const report = buildBalanceProfileRegressionReport({
+    summaries: [
+      {
+        scenarioId: 'harsh',
+        balanceProfileId: 'brutal',
+        status: 'lost',
+        alivePopulation: 0,
+        completedResearch: [],
+      },
+      {
+        scenarioId: 'harsh',
+        balanceProfileId: 'standard',
+        status: 'lost',
+        alivePopulation: 0,
+        completedResearch: [],
+      },
+    ],
+    expectations: {
+      'harsh:brutal': {
+        requiredStatus: 'lost',
+        minAlivePopulation: 0,
+        requiredResearch: [],
+      },
+      'harsh:standard': {
+        requiredStatus: 'playing',
+        minAlivePopulation: 7,
+        requiredResearch: [],
+      },
+    },
+  });
+
+  assert.equal(report.results.length, 2);
+  const brutal = report.results.find((result) => result.key === 'harsh:brutal');
+  const standard = report.results.find((result) => result.key === 'harsh:standard');
+  assert.equal(brutal.passed, true);
+  assert.equal(standard.passed, false);
+  assert.equal(report.overallPassed, false);
+});

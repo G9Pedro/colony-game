@@ -1,0 +1,258 @@
+import {
+  BASE_POPULATION_CAPACITY,
+  BASE_STORAGE_CAPACITY,
+  RESOURCE_DEFINITIONS,
+  RESOURCE_KEYS,
+} from '../content/resources.js';
+import { BUILDING_DEFINITIONS, STARTING_BUILDINGS } from '../content/buildings.js';
+import { getScenarioDefinition } from '../content/scenarios.js';
+import { getBalanceProfileDefinition } from '../content/balanceProfiles.js';
+import { nextRandom, seedFromString } from './random.js';
+
+const NAMES = [
+  'Aria',
+  'Bennett',
+  'Cleo',
+  'Dorian',
+  'Eira',
+  'Finch',
+  'Galen',
+  'Hana',
+  'Ivo',
+  'Juno',
+  'Kira',
+  'Luca',
+  'Mira',
+  'Niko',
+  'Orin',
+  'Pia',
+  'Quin',
+  'Rhea',
+  'Soren',
+  'Tala',
+  'Uma',
+  'Vik',
+  'Wren',
+  'Xara',
+  'Yori',
+  'Zane',
+];
+
+const TRAITS = [
+  'Hardworking',
+  'Calm',
+  'Social',
+  'Brave',
+  'Curious',
+  'Practical',
+  'Cheerful',
+  'Resourceful',
+  'Patient',
+  'Focused',
+];
+
+export const JOB_TYPES = [
+  'farmer',
+  'lumberjack',
+  'miner',
+  'artisan',
+  'scholar',
+  'builder',
+  'medic',
+  'laborer',
+];
+
+const DEFAULT_PRODUCTION_RESOURCE_MULTIPLIERS = RESOURCE_KEYS.reduce((acc, key) => {
+  acc[key] = 1;
+  return acc;
+}, {});
+
+const DEFAULT_PRODUCTION_JOB_MULTIPLIERS = JOB_TYPES.reduce((acc, key) => {
+  acc[key] = 1;
+  return acc;
+}, {});
+
+const DEFAULT_JOB_PRIORITY_MULTIPLIERS = JOB_TYPES.reduce((acc, key) => {
+  acc[key] = 1;
+  return acc;
+}, {});
+
+function normalizeMultiplierValue(value, fallback = 1) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+  return value;
+}
+
+export function normalizeMultiplierMap(defaults, overrides = {}) {
+  const normalized = { ...defaults };
+  if (!overrides || typeof overrides !== 'object') {
+    return normalized;
+  }
+
+  for (const key of Object.keys(defaults)) {
+    normalized[key] = normalizeMultiplierValue(overrides[key], defaults[key]);
+  }
+  return normalized;
+}
+
+export function buildScenarioRuleMultipliers(scenario = {}) {
+  const resourceMultipliers = scenario.productionMultipliers?.resource ?? {};
+  const jobMultipliers = scenario.productionMultipliers?.job ?? {};
+  const jobPriorityMultipliers = scenario.jobPriorityMultipliers ?? {};
+
+  return {
+    productionResourceMultipliers: normalizeMultiplierMap(
+      DEFAULT_PRODUCTION_RESOURCE_MULTIPLIERS,
+      resourceMultipliers,
+    ),
+    productionJobMultipliers: normalizeMultiplierMap(DEFAULT_PRODUCTION_JOB_MULTIPLIERS, jobMultipliers),
+    jobPriorityMultipliers: normalizeMultiplierMap(
+      DEFAULT_JOB_PRIORITY_MULTIPLIERS,
+      jobPriorityMultipliers,
+    ),
+  };
+}
+
+export function createBaseResources(multipliers = {}) {
+  return RESOURCE_KEYS.reduce((acc, key) => {
+    const multiplier = multipliers[key] ?? 1;
+    acc[key] = RESOURCE_DEFINITIONS[key].starting * multiplier;
+    return acc;
+  }, {});
+}
+
+export function createColonist(id, random = Math.random, options = {}) {
+  const name = NAMES[(id - 1) % NAMES.length];
+  const trait = TRAITS[(id - 1) % TRAITS.length];
+  const jobAffinity = JOB_TYPES[(id - 1) % (JOB_TYPES.length - 1)];
+  const startingMorale = options.startingMorale ?? 72;
+
+  return {
+    id: `colonist-${id}`,
+    name,
+    trait,
+    age: 18 + ((id * 7) % 35),
+    alive: true,
+    job: 'laborer',
+    affinity: jobAffinity,
+    task: 'Idle',
+    assignedBuildingId: null,
+    position: {
+      x: (random() - 0.5) * 12,
+      z: (random() - 0.5) * 12,
+      targetX: (random() - 0.5) * 12,
+      targetZ: (random() - 0.5) * 12,
+    },
+    needs: {
+      hunger: 100,
+      rest: 100,
+      health: 100,
+      morale: startingMorale,
+    },
+    skills: {
+      farmer: 1,
+      lumberjack: 1,
+      miner: 1,
+      artisan: 1,
+      scholar: 1,
+      builder: 1,
+      medic: 1,
+    },
+  };
+}
+
+function createStartingBuildings(startId = 1) {
+  let entityId = startId;
+  const buildings = STARTING_BUILDINGS.map((item) => {
+    const definition = BUILDING_DEFINITIONS[item.type];
+    const building = {
+      id: `building-${entityId++}`,
+      type: item.type,
+      x: item.x,
+      z: item.z,
+      isOperational: true,
+      health: 100,
+      workersAssigned: 0,
+      createdAt: 0,
+      size: definition.size,
+    };
+    return building;
+  });
+
+  return { buildings, nextEntityId: entityId };
+}
+
+export function createInitialState(options = {}) {
+  const { buildings, nextEntityId } = createStartingBuildings();
+  const scenario = getScenarioDefinition(options.scenarioId);
+  const balanceProfile = getBalanceProfileDefinition(options.balanceProfileId);
+  const scenarioRuleMultipliers = buildScenarioRuleMultipliers(scenario);
+  const seed = options.seed ?? 'colony-default';
+  const state = {
+    timeSeconds: 0,
+    tick: 0,
+    day: 1,
+    speed: 1,
+    paused: false,
+    status: 'playing',
+    selectedBuildingType: null,
+    selectedCategory: 'housing',
+    resources: createBaseResources(scenario.resourceMultipliers),
+    colonists: [],
+    buildings,
+    constructionQueue: [],
+    nextEntityId,
+    research: {
+      completed: [],
+      current: null,
+      progress: 0,
+    },
+    objectives: {
+      completed: [],
+    },
+    metrics: {
+      starvationTicks: 0,
+      lowMoraleTicks: 0,
+      deaths: 0,
+      peakPopulation: scenario.colonistCount,
+      buildingsConstructed: 0,
+      researchCompleted: 0,
+      objectivesCompleted: 0,
+    },
+    runSummaryHistory: [],
+    lastRunSummary: null,
+    debug: {
+      invariantViolations: [],
+    },
+    lastAutoSaveAt: 0,
+    maxWorldRadius: 27,
+    rules: {
+      basePopulationCap: BASE_POPULATION_CAPACITY + scenario.ruleAdjustments.populationCap,
+      baseStorageCapacity: BASE_STORAGE_CAPACITY + scenario.ruleAdjustments.storageCap,
+      needDecayMultiplier: balanceProfile.needDecayMultiplier,
+      starvationHealthDamageMultiplier: balanceProfile.starvationHealthDamageMultiplier,
+      restHealthDamageMultiplier: balanceProfile.restHealthDamageMultiplier,
+      moralePenaltyMultiplier: balanceProfile.moralePenaltyMultiplier,
+      objectiveRewardMultiplier: scenario.objectiveRewardMultiplier * balanceProfile.objectiveRewardMultiplier,
+      productionResourceMultipliers: scenarioRuleMultipliers.productionResourceMultipliers,
+      productionJobMultipliers: scenarioRuleMultipliers.productionJobMultipliers,
+      jobPriorityMultipliers: scenarioRuleMultipliers.jobPriorityMultipliers,
+    },
+    scenarioId: scenario.id,
+    balanceProfileId: balanceProfile.id,
+    rngSeed: seed,
+    rngState: seedFromString(seed),
+  };
+
+  state.colonists = Array.from({ length: scenario.colonistCount }, (_, index) =>
+    createColonist(index + 1, () => nextRandom(state), {
+      startingMorale: scenario.startingMorale,
+    }),
+  );
+  return state;
+}
+
+export function cloneState(state) {
+  return JSON.parse(JSON.stringify(state));
+}

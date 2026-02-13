@@ -1,0 +1,127 @@
+export const SCENARIO_DEFINITIONS = {
+  frontier: {
+    id: 'frontier',
+    name: 'Frontier',
+    description: 'Balanced baseline colony conditions.',
+    colonistCount: 6,
+    startingMorale: 72,
+    resourceMultipliers: {
+      food: 1,
+      wood: 1,
+      stone: 1,
+      iron: 1,
+      tools: 1,
+      medicine: 1,
+      knowledge: 1,
+    },
+    ruleAdjustments: {
+      populationCap: 0,
+      storageCap: 0,
+    },
+    objectiveRewardMultiplier: 1,
+    productionMultipliers: {
+      resource: {},
+      job: {},
+    },
+    jobPriorityMultipliers: {},
+  },
+  prosperous: {
+    id: 'prosperous',
+    name: 'Prosperous',
+    description: 'Strong starting supplies with faster expansion runway.',
+    colonistCount: 8,
+    startingMorale: 78,
+    resourceMultipliers: {
+      food: 1.35,
+      wood: 1.35,
+      stone: 1.2,
+      iron: 1.2,
+      tools: 1.4,
+      medicine: 1.5,
+      knowledge: 1,
+    },
+    ruleAdjustments: {
+      populationCap: 2,
+      storageCap: 120,
+    },
+    objectiveRewardMultiplier: 0.85,
+    productionMultipliers: {
+      resource: {
+        food: 1.06,
+        wood: 1.06,
+        stone: 1.04,
+        iron: 1.04,
+        tools: 1.05,
+        medicine: 1.06,
+        knowledge: 1.08,
+      },
+      job: {
+        farmer: 1.06,
+        lumberjack: 1.06,
+        miner: 1.03,
+        artisan: 1.05,
+        scholar: 1.08,
+        medic: 1.06,
+        builder: 1,
+        laborer: 1,
+      },
+    },
+    jobPriorityMultipliers: {
+      scholar: 1.12,
+      artisan: 1.06,
+      miner: 1.04,
+    },
+  },
+  harsh: {
+    id: 'harsh',
+    name: 'Harsh',
+    description: 'Scarce resources and low morale for a difficult run.',
+    colonistCount: 5,
+    startingMorale: 62,
+    resourceMultipliers: {
+      food: 0.72,
+      wood: 0.8,
+      stone: 0.82,
+      iron: 0.7,
+      tools: 0.6,
+      medicine: 0.5,
+      knowledge: 1,
+    },
+    ruleAdjustments: {
+      populationCap: -1,
+      storageCap: -60,
+    },
+    objectiveRewardMultiplier: 1.25,
+    productionMultipliers: {
+      resource: {
+        food: 0.93,
+        wood: 0.94,
+        stone: 0.94,
+        iron: 0.92,
+        tools: 0.92,
+        medicine: 0.92,
+        knowledge: 0.9,
+      },
+      job: {
+        farmer: 0.95,
+        lumberjack: 0.95,
+        miner: 0.94,
+        artisan: 0.92,
+        scholar: 0.9,
+        medic: 0.92,
+        builder: 1,
+        laborer: 1,
+      },
+    },
+    jobPriorityMultipliers: {
+      farmer: 1.05,
+      medic: 1.02,
+      scholar: 0.86,
+      artisan: 0.94,
+    },
+  },
+};
+
+export function getScenarioDefinition(scenarioId) {
+  return SCENARIO_DEFINITIONS[scenarioId] ?? SCENARIO_DEFINITIONS.frontier;
+}

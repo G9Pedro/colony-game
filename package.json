@@ -1,12 +1,38 @@
 {
   "name": "colony-game",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test",
+    "start": "python3 -m http.server 8000",
+    "simulate": "node scripts/simulate.js",
+    "simulate:assert": "node scripts/simulate-assert.js",
+    "simulate:report": "node scripts/simulate-report.js",
+    "simulate:drift": "node scripts/simulate-drift.js",
+    "simulate:snapshot": "node scripts/simulate-snapshot.js",
+    "simulate:balance": "node scripts/simulate-balance.js",
+    "simulate:validate:tuning": "node scripts/validate-scenario-tuning.js",
+    "simulate:report:tuning": "node scripts/report-scenario-tuning.js",
+    "simulate:capture:tuning-dashboard-baseline": "node scripts/capture-scenario-tuning-dashboard-baseline.js",
+    "simulate:report:tuning:trend": "node scripts/report-scenario-tuning-trend.js",
+    "simulate:suggest:tuning-baseline": "node scripts/suggest-scenario-tuning-baseline.js",
+    "simulate:check:tuning-baseline": "node scripts/check-scenario-tuning-baseline.js",
+    "simulate:tuning:session": "npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:report:tuning:trend && npm run simulate:suggest:tuning-baseline && npm run simulate:check:tuning-baseline",
+    "simulate:tuning:session:strict": "npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:report:tuning:trend && npm run simulate:suggest:tuning-baseline && SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline",
+    "simulate:tuning:prepr": "npm run simulate:tuning:session:strict && npm run reports:validate",
+    "reports:validate": "node scripts/validate-report-artifacts.js",
+    "simulate:baseline:suggest": "node scripts/suggest-baselines.js",
+    "simulate:baseline:check": "node scripts/suggest-baselines-check.js",
+    "diagnostics:smoke": "node scripts/report-diagnostics-smoke.js",
+    "diagnostics:smoke:validate": "node scripts/validate-report-diagnostics-smoke.js",
+    "verify": "npm test && npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:report:tuning:trend && npm run simulate:suggest:tuning-baseline && npm run simulate:check:tuning-baseline && npm run simulate:assert && npm run simulate:drift && SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot && npm run simulate:balance && npm run simulate:baseline:suggest && npm run reports:validate && npm run diagnostics:smoke && npm run diagnostics:smoke:validate && npm run simulate:baseline:check"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "Complete colony simulation game",
+  "dependencies": {
+    "three": "^0.182.0"
+  }
 }

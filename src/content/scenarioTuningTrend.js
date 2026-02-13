@@ -1,0 +1,180 @@
+function round(value) {
+  return Number(value.toFixed(2));
+}
+
+const TREND_STATUS_ORDER = ['added', 'changed', 'removed', 'unchanged'];
+
+function asFiniteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function indexScenariosById(dashboard) {
+  const map = new Map();
+  for (const scenario of dashboard?.scenarios ?? []) {
+    if (!scenario || typeof scenario.id !== 'string') {
+      continue;
+    }
+    map.set(scenario.id, scenario);
+  }
+  return map;
+}
+
+function buildScenarioIds(currentScenarios, baselineScenarios, baselineSignatures) {
+  return Array.from(
+    new Set([
+      ...currentScenarios.keys(),
+      ...baselineScenarios.keys(),
+      ...Object.keys(baselineSignatures ?? {}),
+    ]),
+  ).sort((a, b) => a.localeCompare(b));
+}
+
+function resolveStatus({ hasCurrent, hasBaseline, signatureChanged, intensityChanged }) {
+  if (hasCurrent && hasBaseline) {
+    return signatureChanged || intensityChanged ? 'changed' : 'unchanged';
+  }
+  if (hasCurrent) {
+    return 'added';
+  }
+  return 'removed';
+}
+
+function buildStatusCounts(scenarios) {
+  const counts = Object.fromEntries(TREND_STATUS_ORDER.map((status) => [status, 0]));
+  for (const scenario of scenarios ?? []) {
+    if (scenario?.status in counts) {
+      counts[scenario.status] += 1;
+    }
+  }
+  return counts;
+}
+
+function resolveStatusCounts(report) {
+  const computed = buildStatusCounts(report?.scenarios ?? []);
+  if (!report?.statusCounts || typeof report.statusCounts !== 'object') {
+    return computed;
+  }
+  return Object.fromEntries(
+    TREND_STATUS_ORDER.map((status) => {
+      const value = report.statusCounts[status];
+      return [status, Number.isFinite(value) ? value : computed[status]];
+    }),
+  );
+}
+
+export function buildScenarioTuningTrendReport({
+  currentDashboard,
+  baselineDashboard = null,
+  baselineSignatures = {},
+  baselineTotalAbsDelta = {},
+  comparisonSource = 'dashboard',
+  baselineReference = null,
+}) {
+  const currentScenarios = indexScenariosById(currentDashboard);
+  const baselineScenarios = indexScenariosById(baselineDashboard);
+  const scenarioIds = buildScenarioIds(currentScenarios, baselineScenarios, baselineSignatures);
+
+  const scenarios = scenarioIds.map((scenarioId) => {
+    const currentScenario = currentScenarios.get(scenarioId);
+    const baselineScenario = baselineScenarios.get(scenarioId);
+    const currentSignature = currentScenario?.signature ?? null;
+    const baselineSignature = baselineScenario?.signature ?? baselineSignatures?.[scenarioId] ?? null;
+    const currentIntensity = asFiniteNumber(currentScenario?.totalAbsDeltaPercent);
+    const baselineIntensity =
+      asFiniteNumber(baselineScenario?.totalAbsDeltaPercent) ??
+      asFiniteNumber(baselineTotalAbsDelta?.[scenarioId]);
+    const signatureChanged = currentSignature !== baselineSignature;
+    const intensityDelta =
+      currentIntensity !== null && baselineIntensity !== null
+        ? round(currentIntensity - baselineIntensity)
+        : null;
+    const intensityChanged = intensityDelta !== null && intensityDelta !== 0;
+    const status = resolveStatus({
+      hasCurrent: Boolean(currentScenario),
+      hasBaseline: baselineSignature !== null || Boolean(baselineScenario),
+      signatureChanged,
+      intensityChanged,
+    });
+
+    return {
+      scenarioId,
+      status,
+      changed: status !== 'unchanged',
+      signatureChanged,
+      currentSignature,
+      baselineSignature,
+      currentTotalAbsDeltaPercent: currentIntensity,
+      baselineTotalAbsDeltaPercent: baselineIntensity,
+      deltaTotalAbsDeltaPercent: intensityDelta,
+    };
+  });
+
+  const statusCounts = buildStatusCounts(scenarios);
+  const changedScenarios = scenarios.filter((scenario) => scenario.changed);
+  return {
+    comparisonSource,
+    baselineReference,
+    hasBaselineDashboard: baselineScenarios.size > 0,
+    baselineScenarioCount: baselineScenarios.size,
+    scenarioCount: scenarios.length,
+    changedCount: changedScenarios.length,
+    unchangedCount: scenarios.length - changedScenarios.length,
+    hasChanges: changedScenarios.length > 0,
+    statusCounts,
+    scenarios,
+    changedScenarioIds: changedScenarios.map((scenario) => scenario.scenarioId),
+  };
+}
+
+function formatSignedDelta(value) {
+  if (value === null) {
+    return 'n/a';
+  }
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}%`;
+}
+
+export function buildScenarioTuningTrendMarkdown(report) {
+  const statusCounts = resolveStatusCounts(report);
+  const lines = [
+    '# Scenario Tuning Trend',
+    '',
+    `- Comparison Source: ${report.comparisonSource}`,
+    `- Baseline Reference: ${report.baselineReference ?? 'none'}`,
+    `- Baseline Dashboard Available: ${report.hasBaselineDashboard ? 'yes' : 'no'}`,
+    `- Baseline Scenarios Available: ${report.baselineScenarioCount}`,
+    `- Scenarios Compared: ${report.scenarioCount}`,
+    `- Changed: ${report.changedCount}`,
+    `- Unchanged: ${report.unchangedCount}`,
+    `- Status Counts: added=${statusCounts.added}, changed=${statusCounts.changed}, removed=${statusCounts.removed}, unchanged=${statusCounts.unchanged}`,
+    '',
+    '## Changed Scenarios',
+    '',
+  ];
+
+  if (!report.hasChanges) {
+    lines.push('- No scenario tuning changes detected.', '');
+    return `${lines.join('\n')}\n`;
+  }
+
+  lines.push('| Scenario | Status | Signature | Intensity Δ |');
+  lines.push('| --- | --- | --- | --- |');
+
+  for (const scenario of report.scenarios) {
+    if (!scenario.changed) {
+      continue;
+    }
+    const signatureText =
+      scenario.baselineSignature === null && scenario.currentSignature !== null
+        ? `added ${scenario.currentSignature}`
+        : scenario.currentSignature === null && scenario.baselineSignature !== null
+          ? `removed ${scenario.baselineSignature}`
+          : `${scenario.baselineSignature} → ${scenario.currentSignature}`;
+    lines.push(
+      `| ${scenario.scenarioId} | ${scenario.status} | ${signatureText} | ${formatSignedDelta(scenario.deltaTotalAbsDeltaPercent)} |`,
+    );
+  }
+
+  lines.push('');
+  return `${lines.join('\n')}\n`;
+}

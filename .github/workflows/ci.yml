@@ -1,0 +1,147 @@
+name: colony-ci
+
+on:
+  push:
+    branches:
+      - main
+      - cursor/**
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run simulation regression assertions
+        run: npm run simulate:assert
+
+      # Maintenance note: if validation/report command names change here,
+      # treat package.json scripts as source of truth and keep
+      # README.md, CONTRIBUTING.md, and .github/pull_request_template.md in sync.
+      # Command-rename PRs should also mention docs-sync updates in the PR summary.
+      - name: Validate scenario tuning configuration
+        run: npm run simulate:validate:tuning
+
+      - name: Upload scenario tuning validation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-tuning-validation-report
+          path: reports/scenario-tuning-validation.json
+
+      - name: Generate scenario tuning dashboard report
+        run: npm run simulate:report:tuning
+
+      - name: Upload scenario tuning dashboard artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-tuning-dashboard-report
+          path: |
+            reports/scenario-tuning-dashboard.json
+            reports/scenario-tuning-dashboard.md
+
+      - name: Generate scenario tuning trend report
+        run: npm run simulate:report:tuning:trend
+
+      - name: Upload scenario tuning trend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-tuning-trend-report
+          path: |
+            reports/scenario-tuning-trend.json
+            reports/scenario-tuning-trend.md
+
+      - name: Generate scenario tuning baseline suggestions
+        run: npm run simulate:suggest:tuning-baseline
+
+      - name: Upload scenario tuning baseline suggestion artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-tuning-baseline-suggestions-report
+          path: |
+            reports/scenario-tuning-baseline-suggestions.json
+            reports/scenario-tuning-baseline-suggestions.md
+
+      - name: Enforce scenario tuning baseline signatures
+        run: npm run simulate:check:tuning-baseline
+
+      - name: Enforce scenario tuning baseline intensity (optional strict mode)
+        if: ${{ vars.SIM_SCENARIO_TUNING_ENFORCE_INTENSITY == '1' }}
+        env:
+          SIM_SCENARIO_TUNING_ENFORCE_INTENSITY: '1'
+        run: npm run simulate:check:tuning-baseline
+
+      - name: Generate simulation regression report
+        run: npm run simulate:report
+
+      - name: Upload simulation regression report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-regression-report
+          path: reports/simulation-regression.json
+
+      - name: Run simulation drift baseline check
+        run: npm run simulate:drift
+
+      - name: Upload simulation drift report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-drift-report
+          path: reports/simulation-drift.json
+
+      - name: Run deterministic snapshot check
+        run: SIM_SNAPSHOT_ENFORCE=1 npm run simulate:snapshot
+
+      - name: Upload simulation snapshot report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-snapshot-report
+          path: reports/simulation-snapshot.json
+
+      - name: Run balance profile regression check
+        run: npm run simulate:balance
+
+      - name: Upload simulation balance report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-balance-report
+          path: reports/simulation-balance.json
+
+      - name: Generate baseline suggestion report
+        run: npm run simulate:baseline:suggest
+
+      - name: Validate generated report artifacts
+        run: npm run reports:validate
+
+      - name: Upload report artifact validation summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-artifact-validation-summary
+          path: |
+            reports/report-artifacts-validation.json
+            reports/report-artifacts-validation.md
+
+      - name: Enforce baseline suggestion check
+        run: npm run simulate:baseline:check
+
+      - name: Upload baseline suggestion artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-suggestion-report
+          path: |
+            reports/baseline-suggestions.json
+            reports/baseline-suggestions.md
