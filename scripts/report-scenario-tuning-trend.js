@@ -11,6 +11,7 @@ import {
 import {
   REPORT_KINDS,
 } from '../src/game/reportPayloadValidators.js';
+import { emitJsonDiagnostic } from './reportDiagnostics.js';
 import {
   buildReadArtifactDiagnostic,
   buildReadArtifactFailureLabel,
@@ -49,22 +50,61 @@ try {
     console.warn(
       `Baseline dashboard payload at ${baselineDashboardPath} is invalid (${baselineDashboardResult.message}; code=${diagnostic?.code ?? 'unknown'}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
+    emitJsonDiagnostic({
+      level: 'warn',
+      code: diagnostic?.code ?? 'artifact-read-error',
+      message: 'Baseline dashboard payload is invalid; falling back to signature baseline.',
+      context: {
+        baselinePath: baselineDashboardPath,
+        reason: baselineDashboardResult.message,
+        remediationCommand: BASELINE_CAPTURE_COMMAND,
+      },
+    });
   } else if (baselineDashboardResult.status === 'missing') {
     const diagnostic = buildReadArtifactDiagnostic(baselineDashboardResult);
     console.log(
       `Baseline dashboard not found at ${baselineDashboardPath} (code=${diagnostic?.code ?? 'unknown'}); using signature baseline comparison. To create one, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
+    emitJsonDiagnostic({
+      level: 'info',
+      code: diagnostic?.code ?? 'artifact-missing',
+      message: 'Baseline dashboard not found; using signature baseline comparison.',
+      context: {
+        baselinePath: baselineDashboardPath,
+        remediationCommand: BASELINE_CAPTURE_COMMAND,
+      },
+    });
   } else {
     const diagnostic = buildReadArtifactDiagnostic(baselineDashboardResult);
     const label = buildReadArtifactFailureLabel(baselineDashboardResult);
     console.warn(
       `Unable to read baseline dashboard from ${baselineDashboardPath} (${label}; code=${diagnostic?.code ?? 'unknown'}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
     );
+    emitJsonDiagnostic({
+      level: 'warn',
+      code: diagnostic?.code ?? 'artifact-read-error',
+      message: 'Unable to read baseline dashboard; falling back to signature baseline.',
+      context: {
+        baselinePath: baselineDashboardPath,
+        reason: baselineDashboardResult.message,
+        remediationCommand: BASELINE_CAPTURE_COMMAND,
+      },
+    });
   }
 } catch (error) {
   console.warn(
     `Unexpected baseline dashboard handling failure (${error.message}); falling back to signature baseline. To refresh baseline dashboard, run "${BASELINE_CAPTURE_COMMAND}".`,
   );
+  emitJsonDiagnostic({
+    level: 'warn',
+    code: 'artifact-read-error',
+    message: 'Unexpected baseline dashboard handling failure; falling back to signature baseline.',
+    context: {
+      baselinePath: baselineDashboardPath,
+      reason: error.message,
+      remediationCommand: BASELINE_CAPTURE_COMMAND,
+    },
+  });
 }
 
 const report = buildScenarioTuningTrendReport({

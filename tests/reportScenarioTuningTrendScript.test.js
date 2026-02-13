@@ -9,7 +9,7 @@ import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidator
 
 const execFileAsync = promisify(execFile);
 
-async function runTrendScript({ tempDirectory, baselinePath }) {
+async function runTrendScript({ tempDirectory, baselinePath, extraEnv = {} }) {
   const outputPath = path.join(tempDirectory, 'scenario-tuning-trend.json');
   const markdownPath = path.join(tempDirectory, 'scenario-tuning-trend.md');
   const scriptPath = path.resolve('scripts/report-scenario-tuning-trend.js');
@@ -20,6 +20,7 @@ async function runTrendScript({ tempDirectory, baselinePath }) {
       SIM_SCENARIO_TUNING_TREND_PATH: outputPath,
       SIM_SCENARIO_TUNING_TREND_MD_PATH: markdownPath,
       SIM_SCENARIO_TUNING_TREND_BASELINE_PATH: baselinePath,
+      ...extraEnv,
     },
   });
 
@@ -54,6 +55,34 @@ test('trend script falls back to signature baseline when dashboard baseline is m
     );
     assert.match(stdout, /statuses=added:\d+,changed:\d+,removed:\d+,unchanged:\d+/);
     assert.match(stdout, /code=artifact-missing/);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test('trend script emits JSON diagnostics when enabled', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'scenario-tuning-trend-script-'));
+  const missingBaselinePath = path.join(tempDirectory, 'missing-baseline.json');
+
+  try {
+    const { payload, stdout } = await runTrendScript({
+      tempDirectory,
+      baselinePath: missingBaselinePath,
+      extraEnv: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+      },
+    });
+
+    assert.equal(payload.comparisonSource, 'signature-baseline');
+    const diagnosticLine = stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .find((line) => line.startsWith('{"type":"report-diagnostic"'));
+    assert.ok(diagnosticLine);
+    const diagnostic = JSON.parse(diagnosticLine);
+    assert.equal(diagnostic.level, 'info');
+    assert.equal(diagnostic.code, 'artifact-missing');
+    assert.equal(diagnostic.context?.baselinePath, missingBaselinePath);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

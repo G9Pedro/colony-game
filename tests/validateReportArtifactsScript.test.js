@@ -72,6 +72,51 @@ test('validate-report-artifacts script emits validation report for invalid/missi
   }
 });
 
+test('validate-report-artifacts emits JSON diagnostics when enabled', async () => {
+  const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
+  const scriptPath = path.resolve('scripts/validate-report-artifacts.js');
+
+  try {
+    await mkdir(path.join(tempDirectory, 'reports'), { recursive: true });
+    await writeFile(
+      path.join(tempDirectory, 'reports', 'scenario-tuning-dashboard.json'),
+      '{"broken": ',
+      'utf-8',
+    );
+
+    await assert.rejects(
+      () =>
+        execFileAsync(process.execPath, [scriptPath], {
+          cwd: tempDirectory,
+          env: {
+            ...process.env,
+            REPORT_DIAGNOSTICS_JSON: '1',
+          },
+        }),
+      (error) => {
+        const diagnosticLines = error.stderr
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith('{"type":"report-diagnostic"'));
+        assert.ok(diagnosticLines.length > 0);
+        const diagnostics = diagnosticLines.map((line) => JSON.parse(line));
+        const invalidJsonDiagnostic = diagnostics.find(
+          (diagnostic) => diagnostic.code === 'artifact-invalid-json',
+        );
+        assert.ok(invalidJsonDiagnostic);
+        assert.equal(invalidJsonDiagnostic.level, 'error');
+        assert.equal(
+          invalidJsonDiagnostic.context?.path,
+          'reports/scenario-tuning-dashboard.json',
+        );
+        return true;
+      },
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test('validate-report-artifacts script passes after generating all target artifacts', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'validate-report-artifacts-script-'));
   const validateArtifactsScriptPath = path.resolve('scripts/validate-report-artifacts.js');
