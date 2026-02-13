@@ -15,7 +15,7 @@ import {
 import { buildDiagnosticsSmokeSummary } from '../scripts/reportDiagnosticsSmokeSummary.js';
 import { buildDiagnosticsSmokeMarkdown } from '../scripts/reportDiagnosticsSmokeMarkdown.js';
 import {
-  assertOutputHasReadFailureDiagnostic,
+  assertOutputHasReadFailureDiagnosticContract,
   assertOutputDiagnosticsContract,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
@@ -93,18 +93,13 @@ test('trend script emits invalid-json diagnostic contract for malformed baseline
       },
     });
 
-    assertOutputDiagnosticsContract({
+    assertOutputHasReadFailureDiagnosticContract({
       stdout,
       stderr,
-      expectedScript: 'simulate:report:tuning:trend',
-      expectedRunId: RUN_ID,
       expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactInvalidJson],
-    });
-    assertOutputHasReadFailureDiagnostic({
-      stdout,
-      stderr,
       diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactInvalidJson,
       expectedScript: 'simulate:report:tuning:trend',
+      expectedRunId: RUN_ID,
       expectedPath: baselinePath,
       expectedStatus: 'invalid-json',
       expectedErrorCode: null,
@@ -131,18 +126,13 @@ test('trend script emits read-error diagnostic contract for unreadable baseline 
       },
     });
 
-    assertOutputDiagnosticsContract({
+    assertOutputHasReadFailureDiagnosticContract({
       stdout,
       stderr,
-      expectedScript: 'simulate:report:tuning:trend',
-      expectedRunId: RUN_ID,
       expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-    });
-    assertOutputHasReadFailureDiagnostic({
-      stdout,
-      stderr,
       diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
       expectedScript: 'simulate:report:tuning:trend',
+      expectedRunId: RUN_ID,
       expectedPath: tempDirectory,
       expectedStatus: 'error',
       expectedErrorCode: 'EISDIR',
@@ -208,18 +198,13 @@ test('validate-report-artifacts emits read-error diagnostics for unreadable repo
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
       assertion: (error) => {
-        assertOutputDiagnosticsContract({
+        assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
-          expectedScript: 'reports:validate',
-          expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-        });
-        assertOutputHasReadFailureDiagnostic({
-          stdout: error.stdout,
-          stderr: error.stderr,
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'reports:validate',
+          expectedRunId: RUN_ID,
           expectedPath: 'reports/scenario-tuning-dashboard.json',
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
@@ -318,18 +303,13 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
       assertion: (error) => {
-        assertOutputDiagnosticsContract({
+        assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
-          expectedScript: 'simulate:baseline:check',
-          expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-        });
-        assertOutputHasReadFailureDiagnostic({
-          stdout: error.stdout,
-          stderr: error.stderr,
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'simulate:baseline:check',
+          expectedRunId: RUN_ID,
           expectedPath: tempDirectory,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
@@ -382,18 +362,13 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
         REPORT_DIAGNOSTICS_RUN_ID: RUN_ID,
       },
       assertion: (error) => {
-        assertOutputDiagnosticsContract({
+        assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
-          expectedScript: 'simulate:check:tuning-baseline',
-          expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-        });
-        assertOutputHasReadFailureDiagnostic({
-          stdout: error.stdout,
-          stderr: error.stderr,
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'simulate:check:tuning-baseline',
+          expectedRunId: RUN_ID,
           expectedPath: tempDirectory,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
@@ -455,18 +430,13 @@ test('diagnostics smoke validation emits artifact-missing diagnostic for absent 
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: missingOutputPath,
       },
       assertion: (error) => {
-        assertOutputDiagnosticsContract({
+        assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
-          expectedScript: 'diagnostics:smoke:validate',
-          expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactMissing],
-        });
-        assertOutputHasReadFailureDiagnostic({
-          stdout: error.stdout,
-          stderr: error.stderr,
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactMissing,
           expectedScript: 'diagnostics:smoke:validate',
+          expectedRunId: RUN_ID,
           expectedPath: missingOutputPath,
           expectedStatus: 'missing',
           expectedErrorCode: 'ENOENT',
@@ -492,18 +462,13 @@ test('diagnostics smoke validation emits read-error diagnostic for unreadable su
         REPORT_DIAGNOSTICS_SMOKE_OUTPUT_PATH: tempDirectory,
       },
       assertion: (error) => {
-        assertOutputDiagnosticsContract({
+        assertOutputHasReadFailureDiagnosticContract({
           stdout: error.stdout,
           stderr: error.stderr,
-          expectedScript: 'diagnostics:smoke:validate',
-          expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-        });
-        assertOutputHasReadFailureDiagnostic({
-          stdout: error.stdout,
-          stderr: error.stderr,
           diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
           expectedScript: 'diagnostics:smoke:validate',
+          expectedRunId: RUN_ID,
           expectedPath: tempDirectory,
           expectedStatus: 'error',
           expectedErrorCode: 'EISDIR',
