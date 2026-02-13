@@ -20,6 +20,7 @@
     "simulate:check:tuning-baseline": "node scripts/check-scenario-tuning-baseline.js",
     "simulate:tuning:session": "npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:report:tuning:trend && npm run simulate:suggest:tuning-baseline && npm run simulate:check:tuning-baseline",
     "simulate:tuning:session:strict": "npm run simulate:validate:tuning && npm run simulate:report:tuning && npm run simulate:report:tuning:trend && npm run simulate:suggest:tuning-baseline && SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1 npm run simulate:check:tuning-baseline",
+    "simulate:tuning:prepr": "npm run simulate:tuning:session:strict && npm run reports:validate",
     "reports:validate": "node scripts/validate-report-artifacts.js",
     "simulate:baseline:suggest": "node scripts/suggest-baselines.js",
     "simulate:baseline:check": "node scripts/suggest-baselines-check.js",

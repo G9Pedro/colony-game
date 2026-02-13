@@ -189,6 +189,7 @@ npm run simulate:suggest:tuning-baseline
 | `npm run simulate:check:tuning-baseline` | Enforce tuning baseline drift policy | console output + exit status |
 | `npm run simulate:tuning:session` | Run the recommended manual tuning command sequence | all tuning reports + baseline check output |
 | `npm run simulate:tuning:session:strict` | Run the same tuning sequence but fail on intensity drift | all tuning reports + strict baseline check output |
+| `npm run simulate:tuning:prepr` | Run strict tuning session plus report artifact schema checks | strict session output + report validation summary |
 
 ### Recommended Manual Tuning Session Order
 
@@ -218,7 +219,7 @@ For local balancing sessions, use this order to get deterministic, review-friend
 Before opening a tuning-focused PR, run:
 
 ```bash
-npm run simulate:tuning:session:strict
+npm run simulate:tuning:prepr
 ```
 
 Then review these artifacts:
