@@ -7,8 +7,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
 import {
-  assertReadFailureDiagnosticContext,
-  findDiagnosticByCodeFromOutput,
+  assertOutputHasReadFailureDiagnostic,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
@@ -78,20 +77,16 @@ test('trend script emits JSON diagnostics when enabled', async () => {
     });
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
-    const diagnostic = findDiagnosticByCodeFromOutput(
-      { stdout },
-      'artifact-missing',
-    );
-    assert.equal(diagnostic.level, 'info');
-    assert.equal(diagnostic.code, 'artifact-missing');
-    assert.equal(diagnostic.script, 'simulate:report:tuning:trend');
-    assert.equal(diagnostic.context?.baselinePath, missingBaselinePath);
-    assertReadFailureDiagnosticContext({
-      diagnostic,
+    const diagnostic = assertOutputHasReadFailureDiagnostic({
+      stdout,
+      diagnosticCode: 'artifact-missing',
+      expectedScript: 'simulate:report:tuning:trend',
       expectedPath: missingBaselinePath,
       expectedStatus: 'missing',
       expectedErrorCode: 'ENOENT',
     });
+    assert.equal(diagnostic.level, 'info');
+    assert.equal(diagnostic.context?.baselinePath, missingBaselinePath);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -237,11 +232,24 @@ test('trend script suggests baseline capture command when baseline payload is in
     const { payload, stderr } = await runTrendScript({
       tempDirectory,
       baselinePath,
+      extraEnv: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+      },
     });
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
     assert.match(stderr, /code=artifact-invalid-payload/);
+    const diagnostic = assertOutputHasReadFailureDiagnostic({
+      stderr,
+      diagnosticCode: 'artifact-invalid-payload',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedPath: baselinePath,
+      expectedStatus: 'invalid',
+      expectedErrorCode: null,
+    });
+    assert.equal(diagnostic.level, 'warn');
+    assert.equal(diagnostic.context?.baselinePath, baselinePath);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -257,12 +265,25 @@ test('trend script warns and falls back when baseline payload is invalid JSON', 
     const { payload, stderr } = await runTrendScript({
       tempDirectory,
       baselinePath,
+      extraEnv: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+      },
     });
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /invalid JSON/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
     assert.match(stderr, /code=artifact-invalid-json/);
+    const diagnostic = assertOutputHasReadFailureDiagnostic({
+      stderr,
+      diagnosticCode: 'artifact-invalid-json',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedPath: baselinePath,
+      expectedStatus: 'invalid-json',
+      expectedErrorCode: null,
+    });
+    assert.equal(diagnostic.level, 'warn');
+    assert.equal(diagnostic.context?.baselinePath, baselinePath);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -275,12 +296,25 @@ test('trend script warns and falls back when baseline path is unreadable as file
     const { payload, stderr } = await runTrendScript({
       tempDirectory,
       baselinePath: tempDirectory,
+      extraEnv: {
+        REPORT_DIAGNOSTICS_JSON: '1',
+      },
     });
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
     assert.match(stderr, /falling back to signature baseline/i);
     assert.match(stderr, /simulate:capture:tuning-dashboard-baseline/);
     assert.match(stderr, /code=artifact-read-error/);
+    const diagnostic = assertOutputHasReadFailureDiagnostic({
+      stderr,
+      diagnosticCode: 'artifact-read-error',
+      expectedScript: 'simulate:report:tuning:trend',
+      expectedPath: tempDirectory,
+      expectedStatus: 'error',
+      expectedErrorCode: 'EISDIR',
+    });
+    assert.equal(diagnostic.level, 'warn');
+    assert.equal(diagnostic.context?.baselinePath, tempDirectory);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
