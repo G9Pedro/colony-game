@@ -31,7 +31,8 @@ jobs:
         run: npm run simulate:assert
 
       # Maintenance note: if validation/report command names change here,
-      # keep README.md, CONTRIBUTING.md, and .github/pull_request_template.md in sync.
+      # treat package.json scripts as source of truth and keep
+      # README.md, CONTRIBUTING.md, and .github/pull_request_template.md in sync.
       - name: Validate scenario tuning configuration
         run: npm run simulate:validate:tuning
 
