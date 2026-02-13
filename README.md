@@ -175,6 +175,27 @@ npm run simulate:check:tuning-baseline
 Optional strict mode:
 - set `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1` to fail when total tuning intensity baselines drift (not just signature baselines).
 
+Optional machine-readable diagnostics mode:
+- set `REPORT_DIAGNOSTICS_JSON=1` to emit one-line JSON diagnostics in addition to normal human-readable logs.
+- this is useful for CI log parsing and custom automation.
+- currently supported by:
+  - `npm run simulate:report:tuning:trend`
+  - `npm run reports:validate`
+  - `npm run simulate:check:tuning-baseline`
+  - `npm run simulate:baseline:check`
+
+Common diagnostic codes:
+- artifact/baseline read + validation:
+  - `artifact-missing`
+  - `artifact-invalid-json`
+  - `artifact-invalid-payload`
+  - `artifact-read-error`
+- baseline drift checks:
+  - `scenario-tuning-signature-drift`
+  - `scenario-tuning-intensity-drift`
+  - `scenario-tuning-intensity-drift-strict`
+  - `baseline-signature-drift`
+
 Enable strict mode in CI:
 1. Open repository **Settings → Secrets and variables → Actions → Variables**.
 2. Add variable `SIM_SCENARIO_TUNING_ENFORCE_INTENSITY` with value `1`.
