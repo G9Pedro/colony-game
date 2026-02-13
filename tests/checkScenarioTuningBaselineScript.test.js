@@ -52,12 +52,13 @@ test('check-scenario-tuning-baseline allows intensity drift when strict mode is 
 
   try {
     await writeFile(payloadPath, JSON.stringify(buildIntensityOnlyDriftPayload(), null, 2), 'utf-8');
-    await execFileAsync(process.execPath, [scriptPath], {
+    const { stderr } = await execFileAsync(process.execPath, [scriptPath], {
       env: {
         ...process.env,
         SIM_SCENARIO_TUNING_BASELINE_SUGGEST_PATH: payloadPath,
       },
     });
+    assert.ok(stderr.includes('SIM_SCENARIO_TUNING_ENFORCE_INTENSITY=1'));
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
@@ -80,7 +81,9 @@ test('check-scenario-tuning-baseline fails on intensity drift when strict mode i
             SIM_SCENARIO_TUNING_ENFORCE_INTENSITY: '1',
           },
         }),
-      (error) => error.code === 1,
+      (error) =>
+        error.code === 1 &&
+        error.stderr.includes('strict enforcement enabled'),
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
