@@ -6,6 +6,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { REPORT_KINDS, withReportMeta } from '../src/game/reportPayloadValidators.js';
+import { parseReportDiagnosticsFromText } from '../scripts/reportDiagnostics.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -74,12 +75,9 @@ test('trend script emits JSON diagnostics when enabled', async () => {
     });
 
     assert.equal(payload.comparisonSource, 'signature-baseline');
-    const diagnosticLine = stdout
-      .split('\n')
-      .map((line) => line.trim())
-      .find((line) => line.startsWith('{"type":"report-diagnostic"'));
-    assert.ok(diagnosticLine);
-    const diagnostic = JSON.parse(diagnosticLine);
+    const diagnostics = parseReportDiagnosticsFromText(stdout);
+    assert.ok(diagnostics.length > 0);
+    const diagnostic = diagnostics[0];
     assert.equal(diagnostic.level, 'info');
     assert.equal(diagnostic.code, 'artifact-missing');
     assert.equal(diagnostic.context?.baselinePath, missingBaselinePath);

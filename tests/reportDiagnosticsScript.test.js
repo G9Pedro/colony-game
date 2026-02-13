@@ -5,6 +5,8 @@ import {
   emitJsonDiagnostic,
   isJsonDiagnosticsEnabled,
   isKnownReportDiagnosticCode,
+  isValidReportDiagnosticPayload,
+  parseReportDiagnosticsFromText,
   REPORT_DIAGNOSTIC_CODES,
 } from '../scripts/reportDiagnostics.js';
 
@@ -131,4 +133,44 @@ test('buildReportDiagnostic validates levels, codes, messages and context', () =
 test('isKnownReportDiagnosticCode recognizes known code set', () => {
   assert.equal(isKnownReportDiagnosticCode(REPORT_DIAGNOSTIC_CODES.artifactInvalidJson), true);
   assert.equal(isKnownReportDiagnosticCode('random-diagnostic'), false);
+});
+
+test('isValidReportDiagnosticPayload validates parsed payload shape', () => {
+  assert.equal(
+    isValidReportDiagnosticPayload({
+      level: 'error',
+      code: REPORT_DIAGNOSTIC_CODES.artifactReadError,
+      message: 'failed to read',
+      context: { path: 'reports/a.json' },
+    }),
+    true,
+  );
+  assert.equal(
+    isValidReportDiagnosticPayload({
+      level: 'error',
+      code: 'unknown-code',
+      message: 'bad',
+      context: {},
+    }),
+    false,
+  );
+});
+
+test('parseReportDiagnosticsFromText extracts and validates diagnostic lines', () => {
+  const text = [
+    'normal log line',
+    JSON.stringify({
+      type: 'report-diagnostic',
+      level: 'warn',
+      code: REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift,
+      message: 'drift',
+      context: { changed: 2 },
+    }),
+    '{"type":"report-diagnostic","level":"info","code":"unknown","message":"bad","context":{}}',
+    '{"type":"report-diagnostic","level":"warn","code":"artifact-read-error","message":"ok","context":[]}',
+  ].join('\n');
+
+  const diagnostics = parseReportDiagnosticsFromText(text);
+  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0].code, REPORT_DIAGNOSTIC_CODES.baselineSignatureDrift);
 });

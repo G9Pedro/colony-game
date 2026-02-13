@@ -80,3 +80,32 @@ export function emitJsonDiagnostic({
   }
   console.log(line);
 }
+
+export function isValidReportDiagnosticPayload(payload) {
+  try {
+    buildReportDiagnostic(payload);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function parseReportDiagnosticsFromText(text) {
+  if (typeof text !== 'string' || text.length === 0) {
+    return [];
+  }
+
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('{"type":"report-diagnostic"'))
+    .map((line) => {
+      try {
+        const payload = JSON.parse(line);
+        return isValidReportDiagnosticPayload(payload) ? payload : null;
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
