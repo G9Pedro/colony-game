@@ -45,3 +45,9 @@ test('report artifacts module validator rejects action/result parity mismatch', 
   payload.recommendedActions[0].paths = ['reports/scenario-tuning-dashboard.json'];
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
+
+test('report artifacts module validator rejects unknown report kind rows', () => {
+  const payload = buildReportArtifactsPayload();
+  payload.results[1].kind = 'unknown-kind';
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
+});

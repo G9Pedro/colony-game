@@ -786,6 +786,56 @@ test('isValidReportArtifactsValidationPayload rejects recommended actions mismat
   assert.equal(isValidReportArtifactsValidationPayload(payload), false);
 });
 
+test('isValidReportArtifactsValidationPayload rejects unknown result kinds', () => {
+  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
+    overallPassed: true,
+    failureCount: 0,
+    totalChecked: 1,
+    statusCounts: { ok: 1 },
+    recommendedActions: [],
+    results: [
+      {
+        path: 'reports/unknown.json',
+        kind: 'unknown-kind',
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+    ],
+  });
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
+});
+
+test('isValidReportArtifactsValidationPayload rejects duplicate result paths', () => {
+  const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
+    overallPassed: true,
+    failureCount: 0,
+    totalChecked: 2,
+    statusCounts: { ok: 2 },
+    recommendedActions: [],
+    results: [
+      {
+        path: 'reports/a.json',
+        kind: REPORT_KINDS.baselineSuggestions,
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+      {
+        path: 'reports/a.json',
+        kind: REPORT_KINDS.scenarioTuningDashboard,
+        status: 'ok',
+        ok: true,
+        message: null,
+        recommendedCommand: null,
+      },
+    ],
+  });
+  assert.equal(isValidReportArtifactsValidationPayload(payload), false);
+});
+
 test('withReportMeta throws for unknown report kind', () => {
   assert.throws(
     () => withReportMeta('unknown-report-kind', {}),

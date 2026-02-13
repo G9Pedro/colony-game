@@ -1,4 +1,4 @@
-import { REPORT_KINDS, hasValidMeta } from './reportPayloadMeta.js';
+import { REPORT_KINDS, REPORT_SCHEMA_VERSIONS, hasValidMeta } from './reportPayloadMeta.js';
 import { isRecordOfNumbers } from './reportPayloadValidatorUtils.js';
 import {
   areRecommendedActionsEqual,
@@ -32,6 +32,10 @@ export function isValidReportArtifactsValidationPayload(payload) {
   if (!validResults) {
     return false;
   }
+  const hasKnownResultKinds = results.every((result) =>
+    Object.prototype.hasOwnProperty.call(REPORT_SCHEMA_VERSIONS, result.kind),
+  );
+  const hasUniqueResultPaths = new Set(results.map((result) => result.path)).size === results.length;
 
   const failureCount = results.filter((result) => !result.ok).length;
   const computedStatusCounts = results.reduce((acc, result) => {
@@ -62,6 +66,8 @@ export function isValidReportArtifactsValidationPayload(payload) {
       knownStatusKeysOnly &&
       statusKeySetMatches &&
       statusCountsMatch &&
+      hasKnownResultKinds &&
+      hasUniqueResultPaths &&
       recommendedActionsMatch,
   );
 }
