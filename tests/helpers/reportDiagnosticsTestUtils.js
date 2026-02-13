@@ -42,6 +42,23 @@ export function assertReportDiagnosticsContract({
   });
 }
 
+export function assertOutputDiagnosticsContract({
+  stdout = '',
+  stderr = '',
+  expectedCodes = [],
+  expectedScript = undefined,
+  expectedRunId = undefined,
+}) {
+  const diagnostics = collectReportDiagnostics(stdout, stderr);
+  assertReportDiagnosticsContract({
+    diagnostics,
+    expectedCodes,
+    expectedScript,
+    expectedRunId,
+  });
+  return diagnostics;
+}
+
 export function findDiagnosticByCode(diagnostics, code) {
   const diagnostic = getDiagnosticByCode(diagnostics, code);
   assert.ok(diagnostic);

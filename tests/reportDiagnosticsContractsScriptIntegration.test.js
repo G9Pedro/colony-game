@@ -16,8 +16,7 @@ import { buildDiagnosticsSmokeSummary } from '../scripts/reportDiagnosticsSmokeS
 import { buildDiagnosticsSmokeMarkdown } from '../scripts/reportDiagnosticsSmokeMarkdown.js';
 import {
   assertOutputHasReadFailureDiagnostic,
-  assertReportDiagnosticsContract,
-  collectReportDiagnostics,
+  assertOutputDiagnosticsContract,
 } from './helpers/reportDiagnosticsTestUtils.js';
 
 const execFileAsync = promisify(execFile);
@@ -42,8 +41,9 @@ test('trend script diagnostics follow contract fixture', async () => {
       },
     });
 
-    assertReportDiagnosticsContract({
-      diagnostics: collectReportDiagnostics(stdout, stderr),
+    assertOutputDiagnosticsContract({
+      stdout,
+      stderr,
       expectedScript: 'simulate:report:tuning:trend',
       expectedRunId: RUN_ID,
       expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactMissing],
@@ -76,8 +76,9 @@ test('validate-report-artifacts diagnostics follow contract fixture', async () =
           },
         }),
       (error) => {
-        assertReportDiagnosticsContract({
-          diagnostics: collectReportDiagnostics(error.stdout, error.stderr),
+        assertOutputDiagnosticsContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
           expectedScript: 'reports:validate',
           expectedRunId: RUN_ID,
           expectedCodes: [
@@ -113,8 +114,9 @@ test('scenario tuning baseline check diagnostics follow contract fixture', async
       },
     });
 
-    assertReportDiagnosticsContract({
-      diagnostics: collectReportDiagnostics(stdout, stderr),
+    assertOutputDiagnosticsContract({
+      stdout,
+      stderr,
       expectedScript: 'simulate:check:tuning-baseline',
       expectedRunId: RUN_ID,
       expectedCodes: [
@@ -151,8 +153,9 @@ test('baseline suggestion check diagnostics follow contract fixture', async () =
           },
         }),
       (error) => {
-        assertReportDiagnosticsContract({
-          diagnostics: collectReportDiagnostics(error.stdout, error.stderr),
+        assertOutputDiagnosticsContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
           expectedScript: 'simulate:baseline:check',
           expectedRunId: RUN_ID,
           expectedCodes: [
@@ -184,9 +187,9 @@ test('baseline suggestion check emits read-error diagnostics for unreadable cach
           },
         }),
       (error) => {
-        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
-        assertReportDiagnosticsContract({
-          diagnostics,
+        assertOutputDiagnosticsContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
           expectedScript: 'simulate:baseline:check',
           expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
@@ -224,8 +227,9 @@ test('diagnostics smoke script diagnostics follow contract fixture', async () =>
         REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
       },
     });
-    assertReportDiagnosticsContract({
-      diagnostics: collectReportDiagnostics(stdout, stderr),
+    assertOutputDiagnosticsContract({
+      stdout,
+      stderr,
       expectedScript: 'diagnostics:smoke',
       expectedRunId: RUN_ID,
       expectedCodes: [REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeRunSummary],
@@ -251,9 +255,9 @@ test('scenario tuning baseline check emits read-error diagnostics for unreadable
           },
         }),
       (error) => {
-        const diagnostics = collectReportDiagnostics(error.stdout, error.stderr);
-        assertReportDiagnosticsContract({
-          diagnostics,
+        assertOutputDiagnosticsContract({
+          stdout: error.stdout,
+          stderr: error.stderr,
           expectedScript: 'simulate:check:tuning-baseline',
           expectedRunId: RUN_ID,
           expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
@@ -299,8 +303,9 @@ test('diagnostics smoke validation script diagnostics follow contract fixture', 
         REPORT_DIAGNOSTICS_SMOKE_MD_OUTPUT_PATH: markdownOutputPath,
       },
     });
-    assertReportDiagnosticsContract({
-      diagnostics: collectReportDiagnostics(stdout, stderr),
+    assertOutputDiagnosticsContract({
+      stdout,
+      stderr,
       expectedScript: 'diagnostics:smoke:validate',
       expectedRunId: RUN_ID,
       expectedCodes: [REPORT_DIAGNOSTIC_CODES.diagnosticsSmokeValidationSummary],
