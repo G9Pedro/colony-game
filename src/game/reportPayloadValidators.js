@@ -51,6 +51,110 @@ function isNullableFiniteNumber(value) {
   return value === null || Number.isFinite(value);
 }
 
+function isRecordOfNullableStrings(value) {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+  return Object.values(value).every((entry) => isNullableString(entry));
+}
+
+function isValidBoundsEntry(value) {
+  return Boolean(
+    isPlainRecord(value) &&
+      Number.isFinite(value.min) &&
+      Number.isFinite(value.max),
+  );
+}
+
+function isNullableBoundsEntry(value) {
+  return value === null || isValidBoundsEntry(value);
+}
+
+function isValidBoundsMap(value) {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+
+  return Object.values(value).every((scenarioBounds) => {
+    if (!isPlainRecord(scenarioBounds)) {
+      return false;
+    }
+    return Object.values(scenarioBounds).every((metricBounds) => isValidBoundsEntry(metricBounds));
+  });
+}
+
+function isValidAggregateDeltaMap(value) {
+  if (!isPlainRecord(value)) {
+    return false;
+  }
+
+  return Object.values(value).every((scenarioDelta) => {
+    if (!isPlainRecord(scenarioDelta)) {
+      return false;
+    }
+    return Object.values(scenarioDelta).every((metricDelta) => {
+      if (!isPlainRecord(metricDelta) || typeof metricDelta.changed !== 'boolean') {
+        return false;
+      }
+
+      const hasDeltaNumbers =
+        Number.isFinite(metricDelta.minDelta) && Number.isFinite(metricDelta.maxDelta);
+      const hasFromTo = 'from' in metricDelta || 'to' in metricDelta;
+      if (!hasDeltaNumbers && !hasFromTo) {
+        return false;
+      }
+      if (hasDeltaNumbers && metricDelta.changed !== (metricDelta.minDelta !== 0 || metricDelta.maxDelta !== 0)) {
+        return false;
+      }
+      if (hasFromTo) {
+        if (!isNullableBoundsEntry(metricDelta.from) || !isNullableBoundsEntry(metricDelta.to)) {
+          return false;
+        }
+        if (!metricDelta.changed || metricDelta.from === metricDelta.to) {
+          return false;
+        }
+      }
+      return true;
+    });
+  });
+}
+
+function hasValidSnapshotDeltaConsistency(payload) {
+  const currentSignatures = payload?.currentSnapshotSignatures ?? {};
+  const suggestedSignatures = payload?.suggestedSnapshotSignatures ?? {};
+  const snapshotDelta = payload?.snapshotDelta ?? [];
+
+  const allKeys = new Set([
+    ...Object.keys(currentSignatures),
+    ...Object.keys(suggestedSignatures),
+  ]);
+  const seenKeys = new Set();
+
+  for (const entry of snapshotDelta) {
+    if (!entry || typeof entry !== 'object' || typeof entry.key !== 'string' || entry.key.length === 0) {
+      return false;
+    }
+    if (seenKeys.has(entry.key)) {
+      return false;
+    }
+    seenKeys.add(entry.key);
+
+    const expectedFrom = currentSignatures[entry.key] ?? null;
+    const expectedTo = suggestedSignatures[entry.key] ?? null;
+    if (!isNullableString(entry.from) || !isNullableString(entry.to)) {
+      return false;
+    }
+    if (entry.from !== expectedFrom || entry.to !== expectedTo) {
+      return false;
+    }
+    if (typeof entry.changed !== 'boolean' || entry.changed !== (expectedFrom !== expectedTo)) {
+      return false;
+    }
+  }
+
+  return seenKeys.size === allKeys.size && snapshotDelta.length === allKeys.size;
+}
+
 function isValidRecommendedActions(value) {
   if (!Array.isArray(value)) {
     return false;
@@ -84,15 +188,25 @@ export function withReportMeta(kind, payload) {
 }
 
 export function isValidBaselineSuggestionPayload(payload) {
-  return Boolean(
-    hasValidMeta(payload, REPORT_KINDS.baselineSuggestions) &&
-      payload.aggregateDelta &&
-      typeof payload.aggregateDelta === 'object' &&
-      Array.isArray(payload.snapshotDelta) &&
-      payload.snippets &&
-      typeof payload.snippets.regressionBaseline === 'string' &&
-      typeof payload.snippets.regressionSnapshots === 'string',
-  );
+  if (
+    !Boolean(
+      hasValidMeta(payload, REPORT_KINDS.baselineSuggestions) &&
+        isNonNegativeInteger(payload.driftRuns) &&
+        isValidBoundsMap(payload.currentAggregateBounds) &&
+        isValidBoundsMap(payload.suggestedAggregateBounds) &&
+        isRecordOfNullableStrings(payload.currentSnapshotSignatures) &&
+        isRecordOfNullableStrings(payload.suggestedSnapshotSignatures) &&
+        isValidAggregateDeltaMap(payload.aggregateDelta) &&
+        Array.isArray(payload.snapshotDelta) &&
+        payload.snippets &&
+        typeof payload.snippets.regressionBaseline === 'string' &&
+        typeof payload.snippets.regressionSnapshots === 'string',
+    )
+  ) {
+    return false;
+  }
+
+  return hasValidSnapshotDeltaConsistency(payload);
 }
 
 function isValidScenarioTuningSignatureResultEntry(entry) {

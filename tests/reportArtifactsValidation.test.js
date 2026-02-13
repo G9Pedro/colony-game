@@ -19,8 +19,40 @@ test('REPORT_ARTIFACT_TARGETS includes expected report kinds', () => {
 
 test('evaluateReportArtifactEntries reports valid and invalid statuses', () => {
   const validBaselinePayload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
-    aggregateDelta: {},
-    snapshotDelta: [],
+    driftRuns: 8,
+    currentAggregateBounds: {
+      frontier: {
+        alivePopulationMean: { min: 7.9, max: 8.1 },
+      },
+    },
+    suggestedAggregateBounds: {
+      frontier: {
+        alivePopulationMean: { min: 8, max: 8.2 },
+      },
+    },
+    currentSnapshotSignatures: {
+      'frontier:standard': 'aaaa1111',
+    },
+    suggestedSnapshotSignatures: {
+      'frontier:standard': 'bbbb2222',
+    },
+    aggregateDelta: {
+      frontier: {
+        alivePopulationMean: {
+          changed: true,
+          minDelta: 0.1,
+          maxDelta: 0.1,
+        },
+      },
+    },
+    snapshotDelta: [
+      {
+        key: 'frontier:standard',
+        changed: true,
+        from: 'aaaa1111',
+        to: 'bbbb2222',
+      },
+    ],
     snippets: {
       regressionBaseline: 'export const AGGREGATE_BASELINE_BOUNDS = {};',
       regressionSnapshots: 'export const EXPECTED_SUMMARY_SIGNATURES = {};',

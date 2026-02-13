@@ -14,6 +14,49 @@ import {
   withReportMeta,
 } from '../src/game/reportPayloadValidators.js';
 
+function buildValidBaselineSuggestionPayload(kind = REPORT_KINDS.baselineSuggestions) {
+  return withReportMeta(kind, {
+    driftRuns: 8,
+    currentAggregateBounds: {
+      frontier: {
+        alivePopulationMean: { min: 7.9, max: 8.1 },
+      },
+    },
+    suggestedAggregateBounds: {
+      frontier: {
+        alivePopulationMean: { min: 8, max: 8.2 },
+      },
+    },
+    currentSnapshotSignatures: {
+      'frontier:standard': 'aaaa1111',
+    },
+    suggestedSnapshotSignatures: {
+      'frontier:standard': 'bbbb2222',
+    },
+    aggregateDelta: {
+      frontier: {
+        alivePopulationMean: {
+          changed: true,
+          minDelta: 0.1,
+          maxDelta: 0.1,
+        },
+      },
+    },
+    snapshotDelta: [
+      {
+        key: 'frontier:standard',
+        changed: true,
+        from: 'aaaa1111',
+        to: 'bbbb2222',
+      },
+    ],
+    snippets: {
+      regressionBaseline: 'export const AGGREGATE_BASELINE_BOUNDS = {};',
+      regressionSnapshots: 'export const EXPECTED_SUMMARY_SIGNATURES = {};',
+    },
+  });
+}
+
 test('withReportMeta stamps kind, schema version, and timestamps', () => {
   const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, { value: 1 });
   assert.equal(payload.meta.kind, REPORT_KINDS.baselineSuggestions);
@@ -41,41 +84,28 @@ test('withReportMeta overwrites stale generatedAt/meta values from payload', () 
 });
 
 test('isValidBaselineSuggestionPayload accepts fully shaped payload', () => {
-  const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
-    aggregateDelta: {},
-    snapshotDelta: [],
-    snippets: {
-      regressionBaseline: 'export const AGGREGATE_BASELINE_BOUNDS = {};',
-      regressionSnapshots: 'export const EXPECTED_SUMMARY_SIGNATURES = {};',
-    },
-  });
+  const payload = buildValidBaselineSuggestionPayload();
 
   assert.equal(isValidBaselineSuggestionPayload(payload), true);
 });
 
 test('isValidBaselineSuggestionPayload rejects missing metadata', () => {
-  const payload = {
-    aggregateDelta: {},
-    snapshotDelta: [],
-    snippets: {
-      regressionBaseline: 'x',
-      regressionSnapshots: 'y',
-    },
-  };
+  const payload = buildValidBaselineSuggestionPayload();
+  delete payload.meta;
+  delete payload.generatedAt;
   assert.equal(isValidBaselineSuggestionPayload(payload), false);
 });
 
 test('isValidBaselineSuggestionPayload rejects generatedAt mismatch between root/meta', () => {
-  const payload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
-    aggregateDelta: {},
-    snapshotDelta: [],
-    snippets: {
-      regressionBaseline: 'x',
-      regressionSnapshots: 'y',
-    },
-  });
+  const payload = buildValidBaselineSuggestionPayload();
 
   payload.generatedAt = '1999-01-01T00:00:00.000Z';
+  assert.equal(isValidBaselineSuggestionPayload(payload), false);
+});
+
+test('isValidBaselineSuggestionPayload rejects snapshot delta mismatch against signature maps', () => {
+  const payload = buildValidBaselineSuggestionPayload();
+  payload.snapshotDelta[0].to = 'cccc3333';
   assert.equal(isValidBaselineSuggestionPayload(payload), false);
 });
 
@@ -412,14 +442,7 @@ test('isKnownReportKind returns true for registered kinds', () => {
 });
 
 test('validateReportPayloadByKind validates payload and reports reason', () => {
-  const validPayload = withReportMeta(REPORT_KINDS.baselineSuggestions, {
-    aggregateDelta: {},
-    snapshotDelta: [],
-    snippets: {
-      regressionBaseline: 'export const AGGREGATE_BASELINE_BOUNDS = {};',
-      regressionSnapshots: 'export const EXPECTED_SUMMARY_SIGNATURES = {};',
-    },
-  });
+  const validPayload = buildValidBaselineSuggestionPayload();
 
   const validResult = validateReportPayloadByKind(REPORT_KINDS.baselineSuggestions, validPayload);
   assert.equal(validResult.ok, true);
