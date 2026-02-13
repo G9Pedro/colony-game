@@ -146,3 +146,49 @@ test('scenario tuning module trend validator rejects changed/id mismatch', () =>
   payload.changedScenarioIds = ['frontier'];
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });
+
+test('scenario tuning module trend validator rejects unsorted scenario rows', () => {
+  const payload = withReportMeta(REPORT_KINDS.scenarioTuningTrend, {
+    comparisonSource: 'signature-baseline',
+    baselineReference: 'src/content/scenarioTuningBaseline.js',
+    hasBaselineDashboard: false,
+    baselineScenarioCount: 0,
+    scenarioCount: 2,
+    changedCount: 1,
+    unchangedCount: 1,
+    hasChanges: true,
+    statusCounts: {
+      added: 1,
+      changed: 0,
+      removed: 0,
+      unchanged: 1,
+    },
+    scenarios: [
+      {
+        scenarioId: 'zeta',
+        status: 'added',
+        changed: true,
+        signatureChanged: true,
+        currentSignature: 'bbbb2222',
+        baselineSignature: null,
+        currentTotalAbsDeltaPercent: 10,
+        baselineTotalAbsDeltaPercent: null,
+        deltaTotalAbsDeltaPercent: null,
+      },
+      {
+        scenarioId: 'alpha',
+        status: 'unchanged',
+        changed: false,
+        signatureChanged: false,
+        currentSignature: 'aaaa1111',
+        baselineSignature: 'aaaa1111',
+        currentTotalAbsDeltaPercent: 0,
+        baselineTotalAbsDeltaPercent: 0,
+        deltaTotalAbsDeltaPercent: 0,
+      },
+    ],
+    changedScenarioIds: ['zeta'],
+  });
+
+  assert.equal(isValidScenarioTuningTrendPayload(payload), false);
+});

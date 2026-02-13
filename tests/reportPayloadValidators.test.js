@@ -694,6 +694,37 @@ test('isValidScenarioTuningTrendPayload rejects changedScenarioIds mismatch with
   assert.equal(isValidScenarioTuningTrendPayload(payload), false);
 });
 
+test('isValidScenarioTuningTrendPayload rejects unsorted scenario rows', () => {
+  const payload = buildValidScenarioTuningTrendPayload(REPORT_KINDS.scenarioTuningTrend, {
+    scenarios: [
+      {
+        scenarioId: 'new',
+        status: 'added',
+        changed: true,
+        signatureChanged: true,
+        currentSignature: 'bbbb2222',
+        baselineSignature: null,
+        currentTotalAbsDeltaPercent: 10,
+        baselineTotalAbsDeltaPercent: null,
+        deltaTotalAbsDeltaPercent: null,
+      },
+      {
+        scenarioId: 'frontier',
+        status: 'unchanged',
+        changed: false,
+        signatureChanged: false,
+        currentSignature: 'aaaa1111',
+        baselineSignature: 'aaaa1111',
+        currentTotalAbsDeltaPercent: 0,
+        baselineTotalAbsDeltaPercent: 0,
+        deltaTotalAbsDeltaPercent: 0,
+      },
+    ],
+    changedScenarioIds: ['new'],
+  });
+  assert.equal(isValidScenarioTuningTrendPayload(payload), false);
+});
+
 test('isValidReportArtifactsValidationPayload accepts validation summary payload', () => {
   const payload = withReportMeta(REPORT_KINDS.reportArtifactsValidation, {
     overallPassed: true,

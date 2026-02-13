@@ -502,6 +502,11 @@ function hasValidTrendScenarioConsistency(payload) {
   if (new Set(scenarioIds).size !== scenarioIds.length) {
     return false;
   }
+  for (let index = 1; index < scenarioIds.length; index += 1) {
+    if (scenarioIds[index - 1].localeCompare(scenarioIds[index]) > 0) {
+      return false;
+    }
+  }
 
   const changedScenarioIds = payload.scenarios
     .filter((scenario) => scenario.changed)
