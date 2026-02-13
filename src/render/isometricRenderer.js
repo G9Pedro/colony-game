@@ -2,6 +2,7 @@ import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { AnimationManager } from './animations.js';
 import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
+import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
 
 function clamp(value, min, max) {
@@ -33,6 +34,7 @@ export class IsometricRenderer {
     this.options = {
       quality: options.quality ?? 'balanced',
       effectsEnabled: options.effectsEnabled ?? true,
+      autoQuality: options.autoQuality ?? true,
       cameraTileWidth: options.cameraTileWidth ?? 64,
       cameraTileHeight: options.cameraTileHeight ?? 32,
     };
@@ -60,6 +62,9 @@ export class IsometricRenderer {
     this.spriteFactory.prewarm(BUILDING_DEFINITIONS);
     this.particles = new ParticleSystem({
       maxParticles: this.options.quality === 'high' ? 900 : 520,
+    });
+    this.qualityController = new FrameQualityController({
+      enabled: this.options.autoQuality,
     });
 
     this.preview = null;
@@ -441,7 +446,7 @@ export class IsometricRenderer {
       .map(([key, amount]) => [key, amount - (this.previousResources[key] ?? amount)])
       .filter(([, delta]) => delta >= 3);
 
-    if (gains.length > 0 && this.options.effectsEnabled) {
+    if (gains.length > 0 && this.options.effectsEnabled && this.qualityController.shouldRunOptionalEffects()) {
       const [resource, delta] = gains[0];
       const origin = state.buildings[Math.floor(Math.random() * Math.max(1, state.buildings.length))];
       this.particles.emitFloatingText({
@@ -666,14 +671,18 @@ export class IsometricRenderer {
     if (!this.options.effectsEnabled) {
       return;
     }
-    const smokeRate = deltaSeconds * 0.75;
+    if (!this.qualityController.shouldRunOptionalEffects()) {
+      return;
+    }
+    const qualityMultiplier = this.qualityController.getParticleMultiplier();
+    const smokeRate = deltaSeconds * 0.75 * qualityMultiplier;
     state.buildings.forEach((building) => {
       if ((building.type === 'workshop' || building.type === 'ironMine') && Math.random() < smokeRate) {
         this.particles.emitBurst({
           x: building.x + 0.3,
           z: building.z - 0.2,
           kind: 'smoke',
-          count: 2,
+          count: Math.max(1, Math.round(2 * qualityMultiplier)),
           color: 'rgba(185, 188, 196, 0.45)',
         });
       }
@@ -839,8 +848,10 @@ export class IsometricRenderer {
     const now = performance.now();
     const deltaSeconds = Math.min(0.12, (now - this.lastFrameAt) / 1000);
     this.lastFrameAt = now;
+    this.qualityController.recordFrame(deltaSeconds);
     this.camera.setWorldRadius(state.maxWorldRadius);
     this.camera.update(deltaSeconds);
+    this.particles.setQuality(this.qualityController.getParticleMultiplier());
     this.particles.update(deltaSeconds);
     this.sampleResourceGains(state, deltaSeconds);
     this.syncBuildingAnimations(state, now);

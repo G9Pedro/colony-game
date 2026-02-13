@@ -8,10 +8,24 @@ function clamp(value, min, max) {
 
 export class ParticleSystem {
   constructor({ maxParticles = 480, maxFloatingText = 96 } = {}) {
+    this.baseMaxParticles = maxParticles;
+    this.baseMaxFloatingText = maxFloatingText;
     this.maxParticles = maxParticles;
     this.maxFloatingText = maxFloatingText;
     this.particles = [];
     this.floatingText = [];
+  }
+
+  setQuality(qualityMultiplier = 1) {
+    const clamped = clamp(qualityMultiplier, 0.35, 1);
+    this.maxParticles = Math.max(120, Math.floor(this.baseMaxParticles * clamped));
+    this.maxFloatingText = Math.max(24, Math.floor(this.baseMaxFloatingText * clamped));
+    if (this.particles.length > this.maxParticles) {
+      this.particles.splice(0, this.particles.length - this.maxParticles);
+    }
+    if (this.floatingText.length > this.maxFloatingText) {
+      this.floatingText.splice(0, this.floatingText.length - this.maxFloatingText);
+    }
   }
 
   emitBurst({
