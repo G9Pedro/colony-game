@@ -7,7 +7,8 @@
     "test": "node --test",
     "start": "python3 -m http.server 8000",
     "simulate": "node scripts/simulate.js",
-    "simulate:assert": "node scripts/simulate-assert.js"
+    "simulate:assert": "node scripts/simulate-assert.js",
+    "verify": "npm test && npm run simulate:assert"
   },
   "keywords": [],
   "author": "",

@@ -93,6 +93,12 @@ CI now runs:
 - `npm test`
 - `npm run simulate:assert`
 
+One-command local verification:
+
+```bash
+npm run verify
+```
+
 ## Gameplay Notes
 
 ### Controls
