@@ -1,4 +1,6 @@
 import { seedFromString } from '../game/random.js';
+import { getBalanceProfileDefinition } from '../content/balanceProfiles.js';
+import { getScenarioDefinition } from '../content/scenarios.js';
 
 export const SAVE_SCHEMA_VERSION = 2;
 
@@ -18,6 +20,9 @@ export function migrateSaveState(inputState) {
 
   if (typeof state.scenarioId !== 'string') {
     state.scenarioId = 'frontier';
+  }
+  if (typeof state.balanceProfileId !== 'string') {
+    state.balanceProfileId = 'standard';
   }
 
   if (typeof state.rngSeed !== 'string') {
@@ -64,6 +69,28 @@ export function migrateSaveState(inputState) {
   }
   if (!Array.isArray(state.debug.invariantViolations)) {
     state.debug.invariantViolations = [];
+  }
+
+  if (!state.rules || typeof state.rules !== 'object') {
+    state.rules = {};
+  }
+  const scenario = getScenarioDefinition(state.scenarioId);
+  const profile = getBalanceProfileDefinition(state.balanceProfileId);
+  if (typeof state.rules.needDecayMultiplier !== 'number') {
+    state.rules.needDecayMultiplier = profile.needDecayMultiplier;
+  }
+  if (typeof state.rules.starvationHealthDamageMultiplier !== 'number') {
+    state.rules.starvationHealthDamageMultiplier = profile.starvationHealthDamageMultiplier;
+  }
+  if (typeof state.rules.restHealthDamageMultiplier !== 'number') {
+    state.rules.restHealthDamageMultiplier = profile.restHealthDamageMultiplier;
+  }
+  if (typeof state.rules.moralePenaltyMultiplier !== 'number') {
+    state.rules.moralePenaltyMultiplier = profile.moralePenaltyMultiplier;
+  }
+  if (typeof state.rules.objectiveRewardMultiplier !== 'number') {
+    state.rules.objectiveRewardMultiplier =
+      (scenario.objectiveRewardMultiplier ?? 1) * (profile.objectiveRewardMultiplier ?? 1);
   }
 
   state.saveMeta = {

@@ -142,6 +142,10 @@ function getMoraleBonusFromBuildings(state) {
 export function runColonistSystem(context) {
   const { state, deltaSeconds, emit } = context;
   reassignJobs(state);
+  const needDecayMultiplier = state.rules?.needDecayMultiplier ?? 1;
+  const starvationDamageMultiplier = state.rules?.starvationHealthDamageMultiplier ?? 1;
+  const restDamageMultiplier = state.rules?.restHealthDamageMultiplier ?? 1;
+  const moralePenaltyMultiplier = state.rules?.moralePenaltyMultiplier ?? 1;
   const moraleBonus = getMoraleBonusFromBuildings(state) * 0.02;
   const alivePopulation = state.colonists.filter((colonist) => colonist.alive).length;
   const populationCap = getPopulationCapacity(state);
@@ -155,9 +159,13 @@ export function runColonistSystem(context) {
     const isWorking = colonist.job !== 'laborer' || state.constructionQueue.length > 0;
     colonist.task = isWorking ? 'Working' : 'Idle';
 
-    colonist.needs.hunger = clamp(colonist.needs.hunger - deltaSeconds * 0.9);
-    colonist.needs.rest = clamp(colonist.needs.rest - deltaSeconds * (isWorking ? 0.62 : 0.25));
-    colonist.needs.morale = clamp(colonist.needs.morale - deltaSeconds * 0.22 + moraleBonus);
+    colonist.needs.hunger = clamp(colonist.needs.hunger - deltaSeconds * 0.9 * needDecayMultiplier);
+    colonist.needs.rest = clamp(
+      colonist.needs.rest - deltaSeconds * (isWorking ? 0.62 : 0.25) * needDecayMultiplier,
+    );
+    colonist.needs.morale = clamp(
+      colonist.needs.morale - deltaSeconds * 0.22 * moralePenaltyMultiplier + moraleBonus,
+    );
 
     if (!isWorking) {
       colonist.needs.rest = clamp(colonist.needs.rest + deltaSeconds * 1.1);
@@ -170,22 +178,24 @@ export function runColonistSystem(context) {
     }
 
     if (overcrowded) {
-      colonist.needs.morale = clamp(colonist.needs.morale - deltaSeconds * 0.65);
+      colonist.needs.morale = clamp(colonist.needs.morale - deltaSeconds * 0.65 * moralePenaltyMultiplier);
     }
 
     consumeFood(state, colonist, deltaSeconds);
     consumeMedicine(state, colonist, deltaSeconds);
 
     if (colonist.needs.hunger <= 0) {
-      colonist.needs.health = clamp(colonist.needs.health - deltaSeconds * 4.5);
-      colonist.needs.morale = clamp(colonist.needs.morale - deltaSeconds * 1.5);
+      colonist.needs.health = clamp(
+        colonist.needs.health - deltaSeconds * 4.5 * starvationDamageMultiplier,
+      );
+      colonist.needs.morale = clamp(colonist.needs.morale - deltaSeconds * 1.5 * moralePenaltyMultiplier);
     }
     if (colonist.needs.rest <= 6) {
-      colonist.needs.health = clamp(colonist.needs.health - deltaSeconds * 1.8);
-      colonist.needs.morale = clamp(colonist.needs.morale - deltaSeconds * 1.1);
+      colonist.needs.health = clamp(colonist.needs.health - deltaSeconds * 1.8 * restDamageMultiplier);
+      colonist.needs.morale = clamp(colonist.needs.morale - deltaSeconds * 1.1 * moralePenaltyMultiplier);
     }
     if (colonist.needs.morale <= 8) {
-      colonist.needs.health = clamp(colonist.needs.health - deltaSeconds * 1.2);
+      colonist.needs.health = clamp(colonist.needs.health - deltaSeconds * 1.2 * moralePenaltyMultiplier);
     }
 
     if (colonist.task === 'Working' && colonist.job !== 'laborer') {

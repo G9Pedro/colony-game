@@ -17,6 +17,7 @@ You build structures, manage colonists and resources, research technologies, and
 - **Runtime state invariants** to detect and pause on simulation corruption.
 - Invariant violations are logged in run stats for debugging and postmortems.
 - **Scenario presets**: Frontier, Prosperous, and Harsh start conditions.
+- **Balance profiles**: Standard, Forgiving, and Brutal simulation tuning.
 - **Deterministic seeded simulation** support for reproducible runs.
 - **Save/Load/Reset** controls backed by `localStorage`.
 - **Save Export/Import** for portable JSON save files.
@@ -61,6 +62,7 @@ Optional URL parameters:
 
 - `?scenario=frontier|prosperous|harsh`
 - `?seed=any-string-you-like`
+- `?balance=standard|forgiving|brutal`
 
 ## Test
 

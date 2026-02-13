@@ -77,6 +77,9 @@ export function getCurrentObjectiveIds(state) {
 }
 
 export function getObjectiveRewardMultiplier(state) {
+  if (typeof state?.rules?.objectiveRewardMultiplier === 'number') {
+    return state.rules.objectiveRewardMultiplier;
+  }
   const scenario = getScenarioDefinition(state?.scenarioId);
   return scenario.objectiveRewardMultiplier ?? 1;
 }

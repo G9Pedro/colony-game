@@ -1,4 +1,5 @@
 import { BUILDING_DEFINITIONS } from './content/buildings.js';
+import { BALANCE_PROFILE_DEFINITIONS } from './content/balanceProfiles.js';
 import { SCENARIO_DEFINITIONS } from './content/scenarios.js';
 import { RESOURCE_DEFINITIONS } from './content/resources.js';
 import { RESEARCH_DEFINITIONS } from './content/research.js';
@@ -14,9 +15,11 @@ import { UIController } from './ui/uiController.js';
 const sceneRoot = document.getElementById('scene-root');
 const requestedSeed = new URLSearchParams(window.location.search).get('seed');
 const requestedScenario = new URLSearchParams(window.location.search).get('scenario');
+const requestedBalanceProfile = new URLSearchParams(window.location.search).get('balance');
 const engine = new GameEngine({
   ...(requestedSeed ? { seed: requestedSeed } : {}),
   ...(requestedScenario ? { scenarioId: requestedScenario } : {}),
+  ...(requestedBalanceProfile ? { balanceProfileId: requestedBalanceProfile } : {}),
 });
 let usingFallbackRenderer = false;
 let renderer;
@@ -33,6 +36,7 @@ const ui = new UIController({
   resourceDefinitions: RESOURCE_DEFINITIONS,
 });
 ui.setScenarioOptions(Object.values(SCENARIO_DEFINITIONS), engine.state.scenarioId);
+ui.setBalanceProfileOptions(Object.values(BALANCE_PROFILE_DEFINITIONS), engine.state.balanceProfileId);
 
 const recentMessages = new Map();
 
@@ -59,6 +63,7 @@ engine.on('game-over', notify);
 engine.on('game-reset', notify);
 engine.on('state-loaded', notify);
 engine.on('scenario-change', notify);
+engine.on('balance-profile-change', notify);
 engine.on('state-invalid', notify);
 
 ui.setPersistenceCallbacks({
@@ -114,6 +119,10 @@ ui.setPersistenceCallbacks({
   },
   onScenarioChange: (scenarioId) => {
     engine.setScenario(scenarioId);
+    ui.setSelectedBuildType(null);
+  },
+  onBalanceProfileChange: (balanceProfileId) => {
+    engine.setBalanceProfile(balanceProfileId);
     ui.setSelectedBuildType(null);
   },
 });

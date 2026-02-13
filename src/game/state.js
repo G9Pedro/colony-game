@@ -6,6 +6,7 @@ import {
 } from '../content/resources.js';
 import { BUILDING_DEFINITIONS, STARTING_BUILDINGS } from '../content/buildings.js';
 import { getScenarioDefinition } from '../content/scenarios.js';
+import { getBalanceProfileDefinition } from '../content/balanceProfiles.js';
 import { nextRandom, seedFromString } from './random.js';
 
 const NAMES = [
@@ -133,6 +134,7 @@ function createStartingBuildings(startId = 1) {
 export function createInitialState(options = {}) {
   const { buildings, nextEntityId } = createStartingBuildings();
   const scenario = getScenarioDefinition(options.scenarioId);
+  const balanceProfile = getBalanceProfileDefinition(options.balanceProfileId);
   const seed = options.seed ?? 'colony-default';
   const state = {
     timeSeconds: 0,
@@ -175,8 +177,14 @@ export function createInitialState(options = {}) {
     rules: {
       basePopulationCap: BASE_POPULATION_CAPACITY + scenario.ruleAdjustments.populationCap,
       baseStorageCapacity: BASE_STORAGE_CAPACITY + scenario.ruleAdjustments.storageCap,
+      needDecayMultiplier: balanceProfile.needDecayMultiplier,
+      starvationHealthDamageMultiplier: balanceProfile.starvationHealthDamageMultiplier,
+      restHealthDamageMultiplier: balanceProfile.restHealthDamageMultiplier,
+      moralePenaltyMultiplier: balanceProfile.moralePenaltyMultiplier,
+      objectiveRewardMultiplier: scenario.objectiveRewardMultiplier * balanceProfile.objectiveRewardMultiplier,
     },
     scenarioId: scenario.id,
+    balanceProfileId: balanceProfile.id,
     rngSeed: seed,
     rngState: seedFromString(seed),
   };

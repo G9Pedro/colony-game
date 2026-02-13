@@ -11,6 +11,7 @@ import { runObjectiveSystem } from '../systems/objectiveSystem.js';
 import { runOutcomeSystem } from '../systems/outcomeSystem.js';
 import { nextRandom } from './random.js';
 import { getScenarioDefinition } from '../content/scenarios.js';
+import { getBalanceProfileDefinition } from '../content/balanceProfiles.js';
 import { validateRuntimeState } from './stateInvariant.js';
 import { migrateSaveState } from '../persistence/migrations.js';
 
@@ -19,8 +20,11 @@ const HIRE_COST_FOOD = 20;
 export class GameEngine {
   constructor(initialStateOrOptions = {}) {
     this.initialOptions = this.isStateLike(initialStateOrOptions)
-      ? { scenarioId: initialStateOrOptions.scenarioId ?? 'frontier' }
-      : { scenarioId: 'frontier', ...initialStateOrOptions };
+      ? {
+          scenarioId: initialStateOrOptions.scenarioId ?? 'frontier',
+          balanceProfileId: initialStateOrOptions.balanceProfileId ?? 'standard',
+        }
+      : { scenarioId: 'frontier', balanceProfileId: 'standard', ...initialStateOrOptions };
     this.state = this.isStateLike(initialStateOrOptions)
       ? initialStateOrOptions
       : createInitialState(initialStateOrOptions);
@@ -69,6 +73,19 @@ export class GameEngine {
     this.emit('scenario-change', {
       kind: 'warn',
       message: `Scenario switched to ${scenario.name}.`,
+    });
+  }
+
+  setBalanceProfile(balanceProfileId) {
+    const profile = getBalanceProfileDefinition(balanceProfileId);
+    this.initialOptions = {
+      ...this.initialOptions,
+      balanceProfileId: profile.id,
+    };
+    this.reset();
+    this.emit('balance-profile-change', {
+      kind: 'warn',
+      message: `Balance profile switched to ${profile.name}.`,
     });
   }
 
@@ -218,6 +235,7 @@ export class GameEngine {
     this.initialOptions = {
       ...this.initialOptions,
       scenarioId: migrated.scenarioId,
+      balanceProfileId: migrated.balanceProfileId ?? this.initialOptions.balanceProfileId,
       seed: migrated.rngSeed,
     };
     this.accumulator = 0;

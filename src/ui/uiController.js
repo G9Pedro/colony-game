@@ -30,6 +30,7 @@ export class UIController {
 
     this.el = {
       scenarioSelect: document.getElementById('scenario-select'),
+      balanceProfileSelect: document.getElementById('balance-profile-select'),
       pauseBtn: document.getElementById('pause-btn'),
       speedButtons: [
         document.getElementById('speed-1-btn'),
@@ -70,6 +71,7 @@ export class UIController {
       onImport: async () => {},
       onReset: () => {},
       onScenarioChange: () => {},
+      onBalanceProfileChange: () => {},
     };
     this.bindGlobalActions();
   }
@@ -102,6 +104,9 @@ export class UIController {
     this.el.scenarioSelect.addEventListener('change', (event) =>
       this.callbacks.onScenarioChange(event.target.value),
     );
+    this.el.balanceProfileSelect.addEventListener('change', (event) =>
+      this.callbacks.onBalanceProfileChange(event.target.value),
+    );
   }
 
   setPersistenceCallbacks(callbacks) {
@@ -123,6 +128,17 @@ export class UIController {
       option.textContent = scenario.name;
       option.selected = scenario.id === currentScenarioId;
       this.el.scenarioSelect.appendChild(option);
+    });
+  }
+
+  setBalanceProfileOptions(profiles, currentProfileId) {
+    this.el.balanceProfileSelect.innerHTML = '';
+    profiles.forEach((profile) => {
+      const option = document.createElement('option');
+      option.value = profile.id;
+      option.textContent = profile.name;
+      option.selected = profile.id === currentProfileId;
+      this.el.balanceProfileSelect.appendChild(option);
     });
   }
 
@@ -346,6 +362,7 @@ export class UIController {
       button.classList.toggle('active', state.speed === speed);
     });
     this.el.scenarioSelect.value = state.scenarioId;
+    this.el.balanceProfileSelect.value = state.balanceProfileId;
 
     if (state.status === 'won') {
       this.showBanner('Victory! Colony Charter Achieved.');
