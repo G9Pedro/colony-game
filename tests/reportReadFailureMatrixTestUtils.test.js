@@ -8,6 +8,7 @@ import {
 } from '../scripts/reportDiagnostics.js';
 import {
   assertNodeDiagnosticsScriptReadFailureScenario,
+  getReportReadFailureScenarioFromDiagnosticCode,
   getReportReadFailureScenarioContract,
 } from './helpers/reportReadFailureMatrixTestUtils.js';
 import { buildMissingArtifactPath } from './helpers/reportReadFailureFixtures.js';
@@ -39,6 +40,32 @@ test('getReportReadFailureScenarioContract throws for unknown scenarios', () => 
   assert.throws(
     () => getReportReadFailureScenarioContract('other'),
     /Unknown read-failure scenario "other"/,
+  );
+});
+
+test('getReportReadFailureScenarioFromDiagnosticCode resolves scenario identifiers', () => {
+  assert.equal(
+    getReportReadFailureScenarioFromDiagnosticCode(REPORT_DIAGNOSTIC_CODES.artifactMissing),
+    'missing',
+  );
+  assert.equal(
+    getReportReadFailureScenarioFromDiagnosticCode(REPORT_DIAGNOSTIC_CODES.artifactInvalidJson),
+    'invalidJson',
+  );
+  assert.equal(
+    getReportReadFailureScenarioFromDiagnosticCode(REPORT_DIAGNOSTIC_CODES.artifactInvalidPayload),
+    'invalidPayload',
+  );
+  assert.equal(
+    getReportReadFailureScenarioFromDiagnosticCode(REPORT_DIAGNOSTIC_CODES.artifactReadError),
+    'unreadable',
+  );
+});
+
+test('getReportReadFailureScenarioFromDiagnosticCode throws for unknown codes', () => {
+  assert.throws(
+    () => getReportReadFailureScenarioFromDiagnosticCode('other-code'),
+    /Unknown read-failure diagnostic code "other-code"/,
   );
 });
 

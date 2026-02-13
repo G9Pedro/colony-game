@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { REPORT_DIAGNOSTIC_CODES } from '../scripts/reportDiagnostics.js';
@@ -8,13 +8,16 @@ import { buildBaselineSuggestionPayload } from '../scripts/reportDiagnosticsFixt
 import {
   assertOutputDiagnosticsContract,
   assertOutputHasDiagnostic,
-  assertOutputHasReadFailureDiagnosticContract,
 } from './helpers/reportDiagnosticsTestUtils.js';
 import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './helpers/reportDiagnosticsScriptTestUtils.js';
-import { createUnreadableArtifactPath } from './helpers/reportReadFailureFixtures.js';
+import { assertNodeDiagnosticsScriptReadFailureScenario } from './helpers/reportReadFailureMatrixTestUtils.js';
+import {
+  createJsonArtifact,
+  createUnreadableArtifactPath,
+} from './helpers/reportReadFailureFixtures.js';
 
 test('suggest-baselines-check passes with no drift and emits summary diagnostic', async () => {
   const tempDirectory = await mkdtemp(path.join(tmpdir(), 'suggest-baselines-check-'));
@@ -23,11 +26,11 @@ test('suggest-baselines-check passes with no drift and emits summary diagnostic'
   const runId = 'suggest-baseline-check-pass-run';
 
   try {
-    await writeFile(
-      payloadPath,
-      JSON.stringify(buildBaselineSuggestionPayload({ changed: false }), null, 2),
-      'utf-8',
-    );
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'baseline-suggestions.json',
+      payload: buildBaselineSuggestionPayload({ changed: false }),
+    });
 
     const { stdout, stderr } = await runNodeDiagnosticsScript(scriptPath, {
       env: {
@@ -68,11 +71,11 @@ test('suggest-baselines-check fails on drift and emits drift diagnostic', async 
   const runId = 'suggest-baseline-check-drift-run';
 
   try {
-    await writeFile(
-      payloadPath,
-      JSON.stringify(buildBaselineSuggestionPayload({ changed: true }), null, 2),
-      'utf-8',
-    );
+    await createJsonArtifact({
+      rootDirectory: tempDirectory,
+      relativePath: 'baseline-suggestions.json',
+      payload: buildBaselineSuggestionPayload({ changed: true }),
+    });
 
     await assertNodeDiagnosticsScriptRejects({
       scriptPath,
@@ -128,28 +131,20 @@ test('suggest-baselines-check emits read-error diagnostic for unreadable cache p
       relativePath: 'baseline-suggestions.unreadable.json',
     });
 
-    await assertNodeDiagnosticsScriptRejects({
+    await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath,
+      scenario: 'unreadable',
       env: {
         SIM_BASELINE_SUGGEST_PATH: unreadableCachePath,
         REPORT_DIAGNOSTICS_JSON: '1',
         REPORT_DIAGNOSTICS_RUN_ID: runId,
       },
-      assertion: (error) => {
+      expectedScript: 'simulate:baseline:check',
+      expectedRunId: runId,
+      expectedPath: unreadableCachePath,
+      assertDiagnostic: ({ error }) => {
         assert.equal(error.code, 1);
         assert.ok(error.stderr.includes('Unable to read baseline suggestion cache payload'));
-        assertOutputHasReadFailureDiagnosticContract({
-          stdout: error.stdout,
-          stderr: error.stderr,
-          expectedCodes: [REPORT_DIAGNOSTIC_CODES.artifactReadError],
-          diagnosticCode: REPORT_DIAGNOSTIC_CODES.artifactReadError,
-          expectedScript: 'simulate:baseline:check',
-          expectedRunId: runId,
-          expectedPath: unreadableCachePath,
-          expectedStatus: 'error',
-          expectedErrorCode: 'EISDIR',
-        });
-        return true;
       },
     });
   } finally {

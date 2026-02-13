@@ -35,6 +35,18 @@ export function getReportReadFailureScenarioContract(scenario) {
   return contract;
 }
 
+export function getReportReadFailureScenarioFromDiagnosticCode(diagnosticCode) {
+  const scenarioEntry = Object.entries(REPORT_READ_FAILURE_SCENARIO_CONTRACTS).find(
+    ([, contract]) => contract.diagnosticCode === diagnosticCode,
+  );
+  if (scenarioEntry === undefined) {
+    throw new Error(
+      `Unknown read-failure diagnostic code "${diagnosticCode}" for scenario mapping.`,
+    );
+  }
+  return scenarioEntry[0];
+}
+
 export async function assertNodeDiagnosticsScriptReadFailureScenario({
   scriptPath,
   cwd = undefined,

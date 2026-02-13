@@ -5,7 +5,10 @@ import {
   assertNodeDiagnosticsScriptRejects,
   runNodeDiagnosticsScript,
 } from './reportDiagnosticsScriptTestUtils.js';
-import { assertNodeDiagnosticsScriptReadFailureScenario } from './reportReadFailureMatrixTestUtils.js';
+import {
+  assertNodeDiagnosticsScriptReadFailureScenario,
+  getReportReadFailureScenarioFromDiagnosticCode,
+} from './reportReadFailureMatrixTestUtils.js';
 import { VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH } from './validateReportDiagnosticsSmokeTestUtils.js';
 
 export function runValidateReportDiagnosticsSmoke(envOverrides = {}) {
@@ -24,13 +27,7 @@ export async function assertValidateSmokeRejectsWithDiagnostic({
   expectedErrorCode = undefined,
 }) {
   if (expectedPath !== undefined) {
-    const readFailureScenarioByDiagnosticCode = {
-      'artifact-missing': 'missing',
-      'artifact-invalid-json': 'invalidJson',
-      'artifact-invalid-payload': 'invalidPayload',
-      'artifact-read-error': 'unreadable',
-    };
-    const readFailureScenario = readFailureScenarioByDiagnosticCode[diagnosticCode] ?? 'unreadable';
+    const readFailureScenario = getReportReadFailureScenarioFromDiagnosticCode(diagnosticCode);
     await assertNodeDiagnosticsScriptReadFailureScenario({
       scriptPath: VALIDATE_REPORT_DIAGNOSTICS_SMOKE_SCRIPT_PATH,
       env: envOverrides,
