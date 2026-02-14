@@ -1,6 +1,6 @@
 import { createIsometricRendererRuntime } from './isometricRendererRuntime.js';
 import { dispatchIsometricFrame } from './isometricFrameDispatch.js';
-import { disposeIsometricRenderer, resizeIsometricViewport } from './isometricRendererLifecycle.js';
+import { dispatchIsometricDispose, dispatchIsometricResize } from './isometricLifecycleDispatch.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
 import { createIsometricInteractionSession } from './isometricInteractionSession.js';
 import {
@@ -56,32 +56,11 @@ export class IsometricRenderer {
   }
 
   resize() {
-    const viewport = resizeIsometricViewport({
-      rootElement: this.rootElement,
-      canvas: this.canvas,
-      ctx: this.ctx,
-      camera: this.camera,
-      terrainLayer: this.terrainLayer,
-      windowObject: window,
-      maxPixelRatio: 2,
-    });
-    this.devicePixelRatio = viewport.dpr;
+    dispatchIsometricResize(this);
   }
 
   dispose() {
-    disposeIsometricRenderer({
-      windowObject: window,
-      boundResize: this.boundResize,
-      interactionController: this.interactionController,
-      canvas: this.canvas,
-      clearInteractiveEntities: () => {
-        this.interactiveEntities = [];
-      },
-      clearTerrainLayer: () => {
-        this.terrainLayer = null;
-      },
-    });
-    this.interactionController = null;
+    dispatchIsometricDispose(this);
   }
 
   setGroundClickHandler(handler) {
