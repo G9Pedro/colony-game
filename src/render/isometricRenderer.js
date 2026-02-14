@@ -3,8 +3,6 @@ import { runIsometricFrame } from './isometricFramePipeline.js';
 import { createIsometricRendererRuntime } from './isometricRendererRuntime.js';
 import { disposeIsometricRenderer, resizeIsometricViewport } from './isometricRendererLifecycle.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
-import { drawIsometricEntityPass } from './isometricEntityDraw.js';
-import { buildIsometricEntityDrawInvocation } from './isometricEntityDrawInvocation.js';
 import { createIsometricInteractionSession } from './isometricInteractionSession.js';
 import { applyRendererFrameState } from './rendererFrameState.js';
 import {
@@ -31,7 +29,13 @@ import {
   clearIsometricPreview,
   updateIsometricPreviewMarker,
 } from './isometricPreviewHandlers.js';
-import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight } from './overlayPainter.js';
+import {
+  dispatchIsometricBackgroundDraw,
+  dispatchIsometricEntityDraw,
+  dispatchIsometricPreviewDraw,
+  dispatchIsometricSelectionDraw,
+  dispatchIsometricTerrainDraw,
+} from './isometricDrawDispatch.js';
 
 export class IsometricRenderer {
   constructor(rootElement, options = {}) {
@@ -146,19 +150,19 @@ export class IsometricRenderer {
   }
 
   drawBackground(state, width, height, daylight) {
-    drawBackgroundLayer(this.ctx, width, height, daylight);
+    dispatchIsometricBackgroundDraw(this, width, height, daylight);
   }
 
   drawTerrain(state) {
-    this.terrainLayer.draw(this.ctx, state, this.camera, this.devicePixelRatio);
+    dispatchIsometricTerrainDraw(this, state);
   }
 
   drawPreview() {
-    drawPlacementPreview(this.ctx, this.camera, this.preview);
+    dispatchIsometricPreviewDraw(this);
   }
 
   drawSelectionOverlay(entity, pulseAlpha) {
-    drawSelectionHighlight(this.ctx, this.camera, entity, pulseAlpha);
+    dispatchIsometricSelectionDraw(this, entity, pulseAlpha);
   }
 
   maybeEmitBuildingEffects(state, deltaSeconds) {
@@ -166,10 +170,7 @@ export class IsometricRenderer {
   }
 
   drawEntities(state, now, daylight) {
-    const result = drawIsometricEntityPass(
-      buildIsometricEntityDrawInvocation(this, state, now, daylight),
-    );
-    return result;
+    return dispatchIsometricEntityDraw(this, state, now, daylight);
   }
 
   render(state) {
