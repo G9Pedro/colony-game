@@ -3,13 +3,14 @@ import {
   screenToWorldPoint,
   worldToScreenPoint,
 } from './isometricProjection.js';
+import {
+  applyCameraInertia,
+  buildPinchGestureState,
+  clampCameraCenter,
+} from './isometricCameraState.js';
 
 const DEFAULT_TILE_WIDTH = 64;
 const DEFAULT_TILE_HEIGHT = 32;
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
 
 export { screenToWorldPoint, worldToScreenPoint };
 
@@ -60,9 +61,11 @@ export class IsometricCamera {
   }
 
   clampCenter() {
-    const maxPan = this.worldRadius + 2;
-    this.centerX = clamp(this.centerX, -maxPan, maxPan);
-    this.centerZ = clamp(this.centerZ, -maxPan, maxPan);
+    const clamped = clampCameraCenter(this.centerX, this.centerZ, {
+      worldRadius: this.worldRadius,
+    });
+    this.centerX = clamped.centerX;
+    this.centerZ = clamped.centerZ;
   }
 
   worldToScreen(x, z) {
@@ -123,7 +126,7 @@ export class IsometricCamera {
 
   zoomAt(delta, screenX, screenY) {
     const before = this.screenToWorld(screenX, screenY);
-    const nextZoom = clamp(this.zoom * (1 - delta), this.minZoom, this.maxZoom);
+    const nextZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * (1 - delta)));
     this.zoom = nextZoom;
     const after = this.screenToWorld(screenX, screenY);
     this.centerX += before.x - after.x;
@@ -185,13 +188,11 @@ export class IsometricCamera {
   }
 
   beginPinch(firstTouch, secondTouch) {
+    const pinchGesture = buildPinchGestureState(firstTouch, secondTouch);
     this.pinchState.active = true;
-    this.pinchState.distance = Math.hypot(
-      secondTouch.clientX - firstTouch.clientX,
-      secondTouch.clientY - firstTouch.clientY,
-    );
-    this.pinchState.midpointX = (firstTouch.clientX + secondTouch.clientX) * 0.5;
-    this.pinchState.midpointY = (firstTouch.clientY + secondTouch.clientY) * 0.5;
+    this.pinchState.distance = pinchGesture.distance;
+    this.pinchState.midpointX = pinchGesture.midpointX;
+    this.pinchState.midpointY = pinchGesture.midpointY;
     this.velocityX = 0;
     this.velocityZ = 0;
   }
@@ -200,20 +201,15 @@ export class IsometricCamera {
     if (!this.pinchState.active) {
       return;
     }
-    const distance = Math.hypot(
-      secondTouch.clientX - firstTouch.clientX,
-      secondTouch.clientY - firstTouch.clientY,
-    );
-    if (distance <= 0) {
+    const pinchGesture = buildPinchGestureState(firstTouch, secondTouch);
+    if (pinchGesture.distance <= 0) {
       return;
     }
-    const midpointX = (firstTouch.clientX + secondTouch.clientX) * 0.5;
-    const midpointY = (firstTouch.clientY + secondTouch.clientY) * 0.5;
-    const delta = (this.pinchState.distance - distance) * 0.0022;
-    this.zoomAt(delta, midpointX, midpointY);
-    this.pinchState.distance = distance;
-    this.pinchState.midpointX = midpointX;
-    this.pinchState.midpointY = midpointY;
+    const delta = (this.pinchState.distance - pinchGesture.distance) * 0.0022;
+    this.zoomAt(delta, pinchGesture.midpointX, pinchGesture.midpointY);
+    this.pinchState.distance = pinchGesture.distance;
+    this.pinchState.midpointX = pinchGesture.midpointX;
+    this.pinchState.midpointY = pinchGesture.midpointY;
   }
 
   endPinch() {
@@ -224,17 +220,17 @@ export class IsometricCamera {
     if (this.dragging || this.pinchState.active) {
       return;
     }
-    const dragDamping = 7.5;
-    this.centerX += this.velocityX * deltaSeconds;
-    this.centerZ += this.velocityZ * deltaSeconds;
-    this.velocityX *= Math.max(0, 1 - dragDamping * deltaSeconds);
-    this.velocityZ *= Math.max(0, 1 - dragDamping * deltaSeconds);
-    if (Math.abs(this.velocityX) < 0.02) {
-      this.velocityX = 0;
-    }
-    if (Math.abs(this.velocityZ) < 0.02) {
-      this.velocityZ = 0;
-    }
+    const nextState = applyCameraInertia({
+      centerX: this.centerX,
+      centerZ: this.centerZ,
+      velocityX: this.velocityX,
+      velocityZ: this.velocityZ,
+      deltaSeconds,
+    });
+    this.centerX = nextState.centerX;
+    this.centerZ = nextState.centerZ;
+    this.velocityX = nextState.velocityX;
+    this.velocityZ = nextState.velocityZ;
     this.clampCenter();
   }
 
