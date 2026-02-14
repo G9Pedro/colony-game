@@ -6,6 +6,7 @@ import { GameUI } from './gameUI.js';
 import { Minimap } from './minimap.js';
 import { NotificationCenter } from './notifications.js';
 import { formatRenderStatsLabel } from './renderStatsLabel.js';
+import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { buildUiControllerHudState, toggleBuildSelection } from './uiControllerViewState.js';
 import { buildTopSummary, getRendererModeLabel, getStatusBannerMessage } from './uiViewState.js';
 
@@ -150,14 +151,12 @@ export class UIController {
   }
 
   setRendererModeOptions(modes, activeMode) {
-    this.el.rendererModeSelect.innerHTML = '';
-    modes.forEach((mode) => {
-      const option = document.createElement('option');
-      option.value = mode;
-      option.textContent = getRendererModeLabel(mode);
-      option.selected = mode === activeMode;
-      this.el.rendererModeSelect.appendChild(option);
+    const rows = buildSelectOptionRows(modes, {
+      selectedId: activeMode,
+      getId: (mode) => mode,
+      getLabel: (mode) => getRendererModeLabel(mode),
     });
+    renderSelectOptions(this.el.rendererModeSelect, rows);
   }
 
   setSelectedEntity(entity) {

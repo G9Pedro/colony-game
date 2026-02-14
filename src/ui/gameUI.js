@@ -8,6 +8,7 @@ import { buildSelectionPanelViewModel } from './selectionPanelViewState.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
 import { buildRunStatsPanelViewModel } from './runStatsPanelViewState.js';
 import { buildActiveResearchViewModel, buildResearchOptionViewModels } from './researchViewState.js';
+import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
 import { formatCost, formatRate, percent } from './uiFormatting.js';
 
@@ -24,25 +25,21 @@ export class GameUI {
   }
 
   setScenarioOptions(scenarios, currentScenarioId) {
-    this.el.scenarioSelect.innerHTML = '';
-    scenarios.forEach((scenario) => {
-      const option = document.createElement('option');
-      option.value = scenario.id;
-      option.textContent = scenario.name;
-      option.selected = scenario.id === currentScenarioId;
-      this.el.scenarioSelect.appendChild(option);
+    const rows = buildSelectOptionRows(scenarios, {
+      selectedId: currentScenarioId,
+      getId: (scenario) => scenario.id,
+      getLabel: (scenario) => scenario.name,
     });
+    renderSelectOptions(this.el.scenarioSelect, rows);
   }
 
   setBalanceProfileOptions(profiles, currentProfileId) {
-    this.el.balanceProfileSelect.innerHTML = '';
-    profiles.forEach((profile) => {
-      const option = document.createElement('option');
-      option.value = profile.id;
-      option.textContent = profile.name;
-      option.selected = profile.id === currentProfileId;
-      this.el.balanceProfileSelect.appendChild(option);
+    const rows = buildSelectOptionRows(profiles, {
+      selectedId: currentProfileId,
+      getId: (profile) => profile.id,
+      getLabel: (profile) => profile.name,
     });
+    renderSelectOptions(this.el.balanceProfileSelect, rows);
   }
 
   updateResourceRates(state) {
