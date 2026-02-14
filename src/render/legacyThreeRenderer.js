@@ -1,8 +1,5 @@
 import * as THREE from '../../node_modules/three/build/three.module.js';
-import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { applyLegacyCameraPose, computeLegacyCameraPosition } from './legacyCameraPose.js';
-import { createLegacyBuildingMesh, createLegacyColonistMesh } from './legacyMeshFactory.js';
-import { reconcileMeshMap, updateColonistMeshPose } from './legacyEntitySync.js';
 import { runLegacyFrame } from './legacyFrameRender.js';
 import {
   handleLegacyPointerMoveEvent,
@@ -17,6 +14,7 @@ import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecy
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
 import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
+import { buildLegacyBuildingSyncInvocation, buildLegacyColonistSyncInvocation } from './legacyMeshSyncInvocation.js';
 import {
   buildLegacyPointerMoveInvocation,
   buildLegacyPointerUpInvocation,
@@ -179,27 +177,11 @@ export class LegacyThreeRenderer {
   }
 
   syncBuildings(state) {
-    syncLegacyBuildingMeshes({
-      state,
-      buildingMeshes: this.buildingMeshes,
-      scene: this.scene,
-      three: THREE,
-      buildingDefinitions: BUILDING_DEFINITIONS,
-      reconcileMeshMap,
-      createLegacyBuildingMesh,
-    });
+    syncLegacyBuildingMeshes(buildLegacyBuildingSyncInvocation(this, state, { three: THREE }));
   }
 
   syncColonists(state) {
-    syncLegacyColonistMeshes({
-      state,
-      colonistMeshes: this.colonistMeshes,
-      scene: this.scene,
-      three: THREE,
-      reconcileMeshMap,
-      createLegacyColonistMesh,
-      updateColonistMeshPose,
-    });
+    syncLegacyColonistMeshes(buildLegacyColonistSyncInvocation(this, state, { three: THREE }));
   }
 
   render(state) {
