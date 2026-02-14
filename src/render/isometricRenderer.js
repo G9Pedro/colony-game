@@ -8,11 +8,6 @@ import { buildIsometricEntityDrawInvocation } from './isometricEntityDrawInvocat
 import { createIsometricInteractionSession } from './isometricInteractionSession.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
 import { createIsometricPreviewState, resolveIsometricPreviewUpdate } from './isometricPreviewState.js';
-import {
-  buildIsometricAmbientEffectInvocation,
-  buildIsometricPlacementEffectInvocation,
-  buildIsometricResourceGainEffectInvocation,
-} from './isometricEffectInvocations.js';
 import { applyRendererFrameState } from './rendererFrameState.js';
 import {
   applyIsometricSelectedEntity,
@@ -29,10 +24,10 @@ import {
   buildIsometricRendererDebugStats,
 } from './isometricRendererSnapshots.js';
 import {
-  emitAmbientBuildingEffects,
-  maybeEmitResourceGainFloatingText,
-  syncPlacementAnimationEffects,
-} from './isometricRuntimeEffects.js';
+  runIsometricAmbientEffects,
+  runIsometricPlacementEffectSync,
+  runIsometricResourceGainSampling,
+} from './isometricEffectDispatch.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight } from './overlayPainter.js';
 
 export class IsometricRenderer {
@@ -136,9 +131,7 @@ export class IsometricRenderer {
   }
 
   syncBuildingAnimations(state, now) {
-    this.knownBuildingIds = syncPlacementAnimationEffects(
-      buildIsometricPlacementEffectInvocation(this, state, now),
-    );
+    this.knownBuildingIds = runIsometricPlacementEffectSync(this, state, now);
   }
 
   updateColonistInterpolation(state, deltaSeconds) {
@@ -146,8 +139,7 @@ export class IsometricRenderer {
   }
 
   sampleResourceGains(state, deltaSeconds) {
-    const gains = this.resourceGainTracker.sample(state.resources, deltaSeconds);
-    maybeEmitResourceGainFloatingText(buildIsometricResourceGainEffectInvocation(this, gains, state));
+    runIsometricResourceGainSampling(this, state, deltaSeconds);
   }
 
   drawBackground(state, width, height, daylight) {
@@ -167,7 +159,7 @@ export class IsometricRenderer {
   }
 
   maybeEmitBuildingEffects(state, deltaSeconds) {
-    emitAmbientBuildingEffects(buildIsometricAmbientEffectInvocation(this, state, deltaSeconds));
+    runIsometricAmbientEffects(this, state, deltaSeconds);
   }
 
   drawEntities(state, now, daylight) {
