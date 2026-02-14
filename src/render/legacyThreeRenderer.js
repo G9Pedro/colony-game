@@ -8,6 +8,7 @@ import {
   updateRadiusFromPinch,
   updateRadiusFromWheel,
 } from './legacyThreeCameraControls.js';
+import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
 
 const BUILDING_Y_BASE = 0.01;
 
@@ -170,8 +171,9 @@ export class LegacyThreeRenderer {
 
   screenToGround(clientX, clientY) {
     const rect = this.renderer.domElement.getBoundingClientRect();
-    this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    const ndc = clientToNdc(clientX, clientY, rect);
+    this.mouse.x = ndc.x;
+    this.mouse.y = ndc.y;
     this.raycaster.setFromCamera(this.mouse, this.camera);
     const intersects = this.raycaster.intersectObject(this.groundPlane);
     if (intersects.length === 0) {
@@ -182,8 +184,9 @@ export class LegacyThreeRenderer {
 
   screenToEntity(clientX, clientY) {
     const rect = this.renderer.domElement.getBoundingClientRect();
-    this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    const ndc = clientToNdc(clientX, clientY, rect);
+    this.mouse.x = ndc.x;
+    this.mouse.y = ndc.y;
     this.raycaster.setFromCamera(this.mouse, this.camera);
     const targets = [
       ...this.buildingMeshes.values(),
@@ -193,17 +196,7 @@ export class LegacyThreeRenderer {
     if (intersects.length === 0) {
       return null;
     }
-    const top = intersects[0].object;
-    if (!top?.userData?.entityId || !top?.userData?.entityType) {
-      return null;
-    }
-    return {
-      type: top.userData.entityType,
-      id: top.userData.entityId,
-      [top.userData.entityType === 'building' ? 'buildingId' : 'colonistId']: top.userData.entityId,
-      x: top.position.x,
-      z: top.position.z,
-    };
+    return buildEntitySelectionFromObject(intersects[0].object);
   }
 
   handlePointerDown(event) {
