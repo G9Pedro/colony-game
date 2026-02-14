@@ -40,3 +40,21 @@ export function disposeMeshMap(meshMap) {
   meshMap.clear();
 }
 
+export function disposeLegacyRendererRuntime({
+  unbindEvents,
+  setUnbindEvents = () => {},
+  buildingMeshes,
+  colonistMeshes,
+  renderer,
+  disposeMeshMapFn = disposeMeshMap,
+}) {
+  unbindEvents?.();
+  setUnbindEvents(null);
+
+  disposeMeshMapFn(buildingMeshes);
+  disposeMeshMapFn(colonistMeshes);
+
+  renderer.dispose();
+  renderer.domElement.remove();
+}
+

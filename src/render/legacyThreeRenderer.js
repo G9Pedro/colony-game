@@ -10,7 +10,10 @@ import {
 } from './legacyInteractionHandlers.js';
 import { handleLegacyPointerUpEvent } from './legacyPointerUpHandler.js';
 import { beginLegacyPointerDrag } from './legacyPointerState.js';
-import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
+import {
+  bindLegacyRendererEvents,
+  disposeLegacyRendererRuntime,
+} from './legacyRendererLifecycle.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
 import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
@@ -195,14 +198,15 @@ export class LegacyThreeRenderer {
   }
 
   dispose() {
-    this.unbindEvents?.();
-    this.unbindEvents = null;
-
-    disposeMeshMap(this.buildingMeshes);
-    disposeMeshMap(this.colonistMeshes);
-
-    this.renderer.dispose();
-    this.renderer.domElement.remove();
+    disposeLegacyRendererRuntime({
+      unbindEvents: this.unbindEvents,
+      setUnbindEvents: (value) => {
+        this.unbindEvents = value;
+      },
+      buildingMeshes: this.buildingMeshes,
+      colonistMeshes: this.colonistMeshes,
+      renderer: this.renderer,
+    });
   }
 }
 

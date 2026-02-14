@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bindLegacyRendererEvents, disposeMeshMap } from '../src/render/legacyRendererLifecycle.js';
+import {
+  bindLegacyRendererEvents,
+  disposeLegacyRendererRuntime,
+  disposeMeshMap,
+} from '../src/render/legacyRendererLifecycle.js';
 
 function createEventTargetMock() {
   const added = [];
@@ -88,5 +92,36 @@ test('disposeMeshMap disposes geometry/material and clears map', () => {
 
   assert.deepEqual(disposed, ['g-a', 'm-a', 'g-b', 'm-b1', 'm-b2']);
   assert.equal(meshMap.size, 0);
+});
+
+test('disposeLegacyRendererRuntime clears session, disposes mesh maps, and tears down renderer', () => {
+  const calls = [];
+  const unbindEvents = () => calls.push('unbind');
+  const renderer = {
+    dispose: () => calls.push('dispose-renderer'),
+    domElement: {
+      remove: () => calls.push('remove-dom'),
+    },
+  };
+  const buildingMeshes = new Map();
+  const colonistMeshes = new Map();
+
+  disposeLegacyRendererRuntime({
+    unbindEvents,
+    setUnbindEvents: (value) => calls.push({ setUnbindEvents: value }),
+    buildingMeshes,
+    colonistMeshes,
+    renderer,
+    disposeMeshMapFn: (meshMap) => calls.push({ disposeMeshMap: meshMap }),
+  });
+
+  assert.deepEqual(calls, [
+    'unbind',
+    { setUnbindEvents: null },
+    { disposeMeshMap: buildingMeshes },
+    { disposeMeshMap: colonistMeshes },
+    'dispose-renderer',
+    'remove-dom',
+  ]);
 });
 
