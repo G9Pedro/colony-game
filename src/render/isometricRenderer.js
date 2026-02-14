@@ -4,6 +4,7 @@ import { createIsometricRendererRuntime } from './isometricRendererRuntime.js';
 import { disposeIsometricRenderer, resizeIsometricViewport } from './isometricRendererLifecycle.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
 import { drawIsometricEntityPass } from './isometricEntityDraw.js';
+import { buildIsometricEntityDrawInvocation } from './isometricEntityDrawInvocation.js';
 import { createIsometricInteractionSession } from './isometricInteractionSession.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
@@ -183,20 +184,9 @@ export class IsometricRenderer {
   }
 
   drawEntities(state, now, daylight) {
-    const result = drawIsometricEntityPass({
-      state,
-      now,
-      daylight,
-      camera: this.camera,
-      spriteFactory: this.spriteFactory,
-      animations: this.animations,
-      particles: this.particles,
-      colonistRenderState: this.colonistRenderState,
-      ctx: this.ctx,
-      setInteractiveEntities: (interactiveEntities) => {
-        this.interactiveEntities = interactiveEntities;
-      },
-    });
+    const result = drawIsometricEntityPass(
+      buildIsometricEntityDrawInvocation(this, state, now, daylight),
+    );
     return result;
   }
 
