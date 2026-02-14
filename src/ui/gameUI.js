@@ -1,5 +1,6 @@
 import { AnimationManager } from '../render/animations.js';
 import { getBuildingCardState } from './buildingAvailability.js';
+import { buildColonistRows, buildConstructionQueueRows } from './colonyPanelsViewState.js';
 import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
 import {
@@ -209,14 +210,13 @@ export class GameUI {
       this.el.constructionList.innerHTML = '<div class="panel-card"><small>No active construction</small></div>';
       return;
     }
-    state.constructionQueue.forEach((item) => {
-      const building = this.buildingDefinitions[item.type];
-      const progress = percent(item.progress, item.buildTime);
+    const rows = buildConstructionQueueRows(state.constructionQueue, this.buildingDefinitions, percent);
+    rows.forEach((row) => {
       const card = document.createElement('div');
       card.className = 'panel-card';
       card.innerHTML = `
-        <div class="kv"><strong>${building.name}</strong><small>${Math.floor(progress)}%</small></div>
-        <div class="progress-track"><span style="width:${progress}%"></span></div>
+        <div class="kv"><strong>${row.name}</strong><small>${Math.floor(row.progress)}%</small></div>
+        <div class="progress-track"><span style="width:${row.progress}%"></span></div>
       `;
       this.el.constructionList.appendChild(card);
     });
@@ -224,18 +224,16 @@ export class GameUI {
 
   renderColonists(state) {
     this.el.colonistList.innerHTML = '';
-    state.colonists
-      .filter((colonist) => colonist.alive)
-      .slice(0, 18)
-      .forEach((colonist) => {
-        const card = document.createElement('div');
-        card.className = 'panel-card';
-        card.innerHTML = `
-          <div class="kv"><strong>${colonist.name}</strong><small>${colonist.job}</small></div>
-          <small>${colonist.task} · H${Math.floor(colonist.needs.health)} F${Math.floor(colonist.needs.hunger)} R${Math.floor(colonist.needs.rest)} M${Math.floor(colonist.needs.morale)}</small>
-        `;
-        this.el.colonistList.appendChild(card);
-      });
+    const rows = buildColonistRows(state.colonists, 18);
+    rows.forEach((row) => {
+      const card = document.createElement('div');
+      card.className = 'panel-card';
+      card.innerHTML = `
+        <div class="kv"><strong>${row.name}</strong><small>${row.job}</small></div>
+        <small>${row.task} · H${row.health} F${row.hunger} R${row.rest} M${row.morale}</small>
+      `;
+      this.el.colonistList.appendChild(card);
+    });
   }
 
   renderObjectives(state, objectives, rewardMultiplier, formatObjectiveReward, getCurrentObjectiveIds) {
