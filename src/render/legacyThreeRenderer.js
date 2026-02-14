@@ -16,6 +16,7 @@ import { beginLegacyPointerDrag } from './legacyPointerState.js';
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
+import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
 import {
   buildLegacyPointerMoveInvocation,
   buildLegacyPointerUpInvocation,
@@ -51,18 +52,7 @@ export class LegacyThreeRenderer {
       windowObject: window,
       maxPixelRatio: 2,
     });
-    this.camera = runtime.camera;
-    this.cameraTarget = runtime.cameraTarget;
-    this.cameraPolar = runtime.cameraPolar;
-    this.renderer = runtime.renderer;
-    this.raycaster = runtime.raycaster;
-    this.mouse = runtime.mouse;
-    this.groundPlane = runtime.groundPlane;
-    this.previewMarker = runtime.previewMarker;
-    this.dragState = runtime.dragState;
-    this.touchState = runtime.touchState;
-    this.buildingMeshes = runtime.buildingMeshes;
-    this.colonistMeshes = runtime.colonistMeshes;
+    applyLegacyRendererRuntimeState(this, runtime);
 
     this.updateCamera();
     this.resize();
