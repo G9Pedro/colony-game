@@ -1,4 +1,5 @@
 import { AnimationManager } from '../render/animations.js';
+import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
 
 function formatCost(cost) {
@@ -30,12 +31,8 @@ export class GameUI {
     this.resourceDefinitions = resourceDefinitions;
     this.spriteFactory = spriteFactory;
     this.valueAnimator = new AnimationManager();
-
-    this.resourceRateSample = {
-      values: null,
-      atSeconds: 0,
-      rates: {},
-    };
+    this.resourceFlowTracker = new ResourceFlowTracker({ minElapsedSeconds: 1.2, hoursPerDay: 24 });
+    this.resourceRates = {};
   }
 
   setScenarioOptions(scenarios, currentScenarioId) {
@@ -61,28 +58,7 @@ export class GameUI {
   }
 
   updateResourceRates(state) {
-    if (!this.resourceRateSample.values) {
-      this.resourceRateSample = {
-        values: { ...state.resources },
-        atSeconds: state.timeSeconds,
-        rates: {},
-      };
-      return;
-    }
-    const elapsed = state.timeSeconds - this.resourceRateSample.atSeconds;
-    if (elapsed < 1.2) {
-      return;
-    }
-    const rates = {};
-    Object.keys(state.resources).forEach((resource) => {
-      const delta = state.resources[resource] - (this.resourceRateSample.values[resource] ?? state.resources[resource]);
-      rates[resource] = (delta / elapsed) * 24;
-    });
-    this.resourceRateSample = {
-      values: { ...state.resources },
-      atSeconds: state.timeSeconds,
-      rates,
-    };
+    this.resourceRates = this.resourceFlowTracker.sample(state.resources, state.timeSeconds);
   }
 
   renderTopState(state, { populationText, morale, storageText }) {
@@ -112,7 +88,7 @@ export class GameUI {
         state.resources[resource] ?? 0,
       );
       const rounded = Math.floor(displayed);
-      const rate = this.resourceRateSample.rates[resource] ?? 0;
+      const rate = this.resourceRates[resource] ?? 0;
 
       const card = document.createElement('div');
       card.className = 'resource-chip';
