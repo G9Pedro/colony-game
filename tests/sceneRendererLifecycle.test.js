@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { instantiateSceneRenderer, syncSceneRendererSession } from '../src/render/sceneRendererLifecycle.js';
+import {
+  initializeSceneRendererMode,
+  instantiateSceneRenderer,
+  syncSceneRendererSession,
+} from '../src/render/sceneRendererLifecycle.js';
 
 function createMockRenderer() {
   return {
@@ -74,5 +78,43 @@ test('syncSceneRendererSession rehydrates handlers, preview, and last state', ()
     ['marker', { x: 4, z: -1 }, false],
     ['render', { tick: 120 }],
   ]);
+});
+
+test('initializeSceneRendererMode disposes previous renderer and syncs new session', () => {
+  const disposed = [];
+  const syncCalls = [];
+  const previousRenderer = {
+    dispose() {
+      disposed.push('disposed');
+    },
+  };
+  const nextRenderer = createMockRenderer();
+  const payload = {
+    onGroundClick: () => {},
+    onPlacementPreview: () => {},
+    onEntitySelect: () => {},
+    preview: null,
+    lastState: null,
+  };
+  const persistedModes = [];
+
+  const result = initializeSceneRendererMode({
+    activeRenderer: previousRenderer,
+    mode: 'three',
+    rootElement: { id: 'root' },
+    createIsometricRenderer: () => createMockRenderer(),
+    createThreeRenderer: () => nextRenderer,
+    persistRendererMode: (mode) => persistedModes.push(mode),
+    sessionPayload: payload,
+    syncRendererSession: (renderer, sessionPayload) => {
+      syncCalls.push({ renderer, sessionPayload });
+    },
+  });
+
+  assert.equal(result.mode, 'three');
+  assert.equal(result.renderer, nextRenderer);
+  assert.deepEqual(disposed, ['disposed']);
+  assert.deepEqual(persistedModes, ['three']);
+  assert.deepEqual(syncCalls, [{ renderer: nextRenderer, sessionPayload: payload }]);
 });
 

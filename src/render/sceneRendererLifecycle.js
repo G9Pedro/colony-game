@@ -29,6 +29,29 @@ export function instantiateSceneRenderer({
   }
 }
 
+export function initializeSceneRendererMode({
+  activeRenderer,
+  mode,
+  rootElement,
+  createIsometricRenderer,
+  createThreeRenderer,
+  persistRendererMode = () => {},
+  sessionPayload,
+  instantiateRenderer = instantiateSceneRenderer,
+  syncRendererSession = syncSceneRendererSession,
+}) {
+  activeRenderer?.dispose?.();
+  const result = instantiateRenderer({
+    mode,
+    rootElement,
+    createIsometricRenderer,
+    createThreeRenderer,
+  });
+  persistRendererMode(result.mode);
+  syncRendererSession(result.renderer, sessionPayload);
+  return result;
+}
+
 export function syncSceneRendererSession(renderer, {
   onGroundClick,
   onPlacementPreview,

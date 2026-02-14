@@ -9,7 +9,7 @@ import {
   persistRendererModePreference,
   readRendererModePreference,
 } from './rendererModePreference.js';
-import { instantiateSceneRenderer, syncSceneRendererSession } from './sceneRendererLifecycle.js';
+import { initializeSceneRendererMode } from './sceneRendererLifecycle.js';
 
 export class SceneRenderer {
   constructor(rootElement) {
@@ -27,27 +27,23 @@ export class SceneRenderer {
   }
 
   initializeRenderer(mode) {
-    if (this.activeRenderer) {
-      this.activeRenderer.dispose();
-    }
-
-    const result = instantiateSceneRenderer({
+    const result = initializeSceneRendererMode({
+      activeRenderer: this.activeRenderer,
       mode,
       rootElement: this.rootElement,
       createIsometricRenderer: (rootElement, options) => new IsometricRenderer(rootElement, options),
       createThreeRenderer: (rootElement) => new LegacyThreeRenderer(rootElement),
+      persistRendererMode: persistRendererModePreference,
+      sessionPayload: {
+        onGroundClick: this._onGroundClick,
+        onPlacementPreview: this._onPlacementPreview,
+        onEntitySelect: this._onEntitySelect,
+        preview: this.preview,
+        lastState: this.lastState,
+      },
     });
     this.activeRenderer = result.renderer;
     this.mode = result.mode;
-
-    persistRendererModePreference(this.mode);
-    syncSceneRendererSession(this.activeRenderer, {
-      onGroundClick: this._onGroundClick,
-      onPlacementPreview: this._onPlacementPreview,
-      onEntitySelect: this._onEntitySelect,
-      preview: this.preview,
-      lastState: this.lastState,
-    });
   }
 
   setRendererMode(mode) {
