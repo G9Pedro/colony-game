@@ -10,6 +10,11 @@ import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
 import { createIsometricPreviewState, resolveIsometricPreviewUpdate } from './isometricPreviewState.js';
+import {
+  buildIsometricAmbientEffectInvocation,
+  buildIsometricPlacementEffectInvocation,
+  buildIsometricResourceGainEffectInvocation,
+} from './isometricEffectInvocations.js';
 import { applyRendererFrameState } from './rendererFrameState.js';
 import {
   applyIsometricSelectedEntity,
@@ -130,14 +135,9 @@ export class IsometricRenderer {
   }
 
   syncBuildingAnimations(state, now) {
-    this.knownBuildingIds = syncPlacementAnimationEffects({
-      buildings: state.buildings,
-      knownBuildingIds: this.knownBuildingIds,
-      now,
-      animations: this.animations,
-      effectsEnabled: this.options.effectsEnabled,
-      particles: this.particles,
-    });
+    this.knownBuildingIds = syncPlacementAnimationEffects(
+      buildIsometricPlacementEffectInvocation(this, state, now),
+    );
   }
 
   updateColonistInterpolation(state, deltaSeconds) {
@@ -146,14 +146,7 @@ export class IsometricRenderer {
 
   sampleResourceGains(state, deltaSeconds) {
     const gains = this.resourceGainTracker.sample(state.resources, deltaSeconds);
-    maybeEmitResourceGainFloatingText({
-      gains,
-      state,
-      effectsEnabled: this.options.effectsEnabled,
-      shouldRunOptionalEffects: this.qualityController.shouldRunOptionalEffects(),
-      particles: this.particles,
-      camera: this.camera,
-    });
+    maybeEmitResourceGainFloatingText(buildIsometricResourceGainEffectInvocation(this, gains, state));
   }
 
   drawBackground(state, width, height, daylight) {
@@ -173,14 +166,7 @@ export class IsometricRenderer {
   }
 
   maybeEmitBuildingEffects(state, deltaSeconds) {
-    emitAmbientBuildingEffects({
-      state,
-      deltaSeconds,
-      effectsEnabled: this.options.effectsEnabled,
-      shouldRunOptionalEffects: this.qualityController.shouldRunOptionalEffects(),
-      qualityMultiplier: this.qualityController.getParticleMultiplier(),
-      particles: this.particles,
-    });
+    emitAmbientBuildingEffects(buildIsometricAmbientEffectInvocation(this, state, deltaSeconds));
   }
 
   drawEntities(state, now, daylight) {
