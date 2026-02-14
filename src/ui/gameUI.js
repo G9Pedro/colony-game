@@ -10,6 +10,7 @@ import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './
 import { buildRunStatsPanelViewModel } from './runStatsPanelViewState.js';
 import { buildActiveResearchViewModel, buildResearchOptionViewModels } from './researchViewState.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
+import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
 import { formatCost, formatRate, percent } from './uiFormatting.js';
 
@@ -75,30 +76,12 @@ export class GameUI {
     });
 
     rows.forEach((row) => {
-
-      const card = document.createElement('div');
-      card.className = 'resource-chip';
-
       const icon = this.spriteFactory.getResourceIcon(row.id, 20);
-      const iconNode = document.createElement('canvas');
-      iconNode.width = icon.width;
-      iconNode.height = icon.height;
-      iconNode.className = 'resource-icon';
-      iconNode.getContext('2d').drawImage(icon, 0, 0);
-
-      const name = document.createElement('span');
-      name.className = 'resource-name';
-      name.textContent = row.label;
-      const value = document.createElement('strong');
-      value.textContent = `${row.roundedValue}`;
-      const delta = document.createElement('small');
-      delta.textContent = formatRate(row.rate);
-      delta.className = row.rateClassName;
-
-      const labelWrap = document.createElement('div');
-      labelWrap.className = 'resource-meta';
-      labelWrap.append(name, value, delta);
-      card.append(iconNode, labelWrap);
+      const card = createResourceChipElement({
+        row,
+        icon,
+        formatRate,
+      });
       this.el.resourceList.appendChild(card);
     });
   }
@@ -107,10 +90,10 @@ export class GameUI {
     this.el.buildCategories.innerHTML = '';
     const rows = buildCategoryPillRows(categories, state.selectedCategory);
     rows.forEach((row) => {
-      const button = document.createElement('button');
-      button.className = `category-pill ${row.active ? 'active' : ''}`;
-      button.textContent = row.label;
-      button.addEventListener('click', () => onSelectCategory(row.id));
+      const button = createBuildCategoryButton({
+        row,
+        onSelectCategory,
+      });
       this.el.buildCategories.appendChild(button);
     });
   }
@@ -135,31 +118,12 @@ export class GameUI {
     });
 
     rows.forEach((row) => {
-      const card = document.createElement('button');
-      card.className = `build-card ${row.active ? 'active' : ''}`;
-      card.disabled = !row.unlocked;
-      card.type = 'button';
-      card.addEventListener('click', () => onToggleBuildType(row.id));
-
       const thumb = this.spriteFactory.getBuildingThumbnail(row.id, 58);
-      const thumbNode = document.createElement('canvas');
-      thumbNode.width = thumb.width;
-      thumbNode.height = thumb.height;
-      thumbNode.className = 'build-thumb';
-      thumbNode.getContext('2d').drawImage(thumb, 0, 0);
-
-      const title = document.createElement('strong');
-      title.textContent = row.name;
-      const subtitle = document.createElement('small');
-      subtitle.textContent = row.subtitle;
-      if (row.warning) {
-        subtitle.classList.add('warning');
-      }
-
-      const meta = document.createElement('span');
-      meta.className = 'build-meta';
-      meta.append(title, subtitle);
-      card.append(thumbNode, meta);
+      const card = createBuildCardElement({
+        row,
+        thumbnail: thumb,
+        onToggleBuildType,
+      });
       this.el.buildList.appendChild(card);
     });
   }
