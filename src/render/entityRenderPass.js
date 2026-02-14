@@ -4,20 +4,7 @@ import {
   createColonistInteractiveEntity,
   shouldRenderNightWindowGlow,
 } from './entityRenderPolicies.js';
-
-function createRoundedRectPath(ctx, x, y, width, height, radius = 8) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-}
+import { traceRoundedRectPath } from './canvasShapes.js';
 
 export function isRectVisibleInViewport({
   x,
@@ -90,10 +77,10 @@ export function buildEntityRenderPass({
         const barH = 5 * camera.zoom;
         const barX = screen.x - barW * 0.5;
         const barY = screen.y - drawH * 0.42;
-        createRoundedRectPath(ctx, barX, barY, barW, barH, 3);
+        traceRoundedRectPath(ctx, barX, barY, barW, barH, 3);
         ctx.fillStyle = 'rgba(38, 31, 24, 0.75)';
         ctx.fill();
-        createRoundedRectPath(ctx, barX, barY, barW * progress, barH, 3);
+        traceRoundedRectPath(ctx, barX, barY, barW * progress, barH, 3);
         ctx.fillStyle = 'rgba(89, 183, 120, 0.95)';
         ctx.fill();
         ctx.restore();
@@ -128,7 +115,7 @@ export function buildEntityRenderPass({
           ctx.save();
           ctx.globalAlpha = isNight * 0.35;
           ctx.fillStyle = 'rgba(255, 195, 116, 0.65)';
-          createRoundedRectPath(
+          traceRoundedRectPath(
             ctx,
             drawX + drawW * 0.42,
             drawY + drawH * 0.44,
