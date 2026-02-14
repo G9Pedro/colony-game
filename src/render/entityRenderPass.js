@@ -4,6 +4,7 @@ import {
   createColonistInteractiveEntity,
   shouldRenderNightWindowGlow,
 } from './entityRenderPolicies.js';
+import { computeColonistBobOffset, getColonistAnimationFrame } from './entityAnimationPolicies.js';
 import { traceRoundedRectPath } from './canvasShapes.js';
 import { isRectVisibleInViewport } from './entityVisibility.js';
 
@@ -128,12 +129,10 @@ export function buildEntityRenderPass({
     if (!renderState) {
       return;
     }
-    const frame = Math.floor((state.timeSeconds * 6 + colonist.age) % 3);
+    const frame = getColonistAnimationFrame(state.timeSeconds, colonist.age);
     const idle = colonist.task !== 'Working';
     const sprite = spriteFactory.getColonistSprite(colonist.job, frame, { idle });
-    const bob = idle
-      ? Math.sin((state.timeSeconds + colonist.age) * 2.5) * 1.5
-      : Math.sin((state.timeSeconds + colonist.age) * 11) * 1.4;
+    const bob = computeColonistBobOffset(state.timeSeconds, colonist.age, idle);
     const screen = camera.worldToScreen(renderState.x, renderState.z);
     const drawW = sprite.width * camera.zoom;
     const drawH = sprite.height * camera.zoom;
