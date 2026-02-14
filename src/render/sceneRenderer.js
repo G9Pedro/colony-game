@@ -7,6 +7,7 @@ import {
   persistRendererModePreference,
   readRendererModePreference,
 } from './rendererModePreference.js';
+import { instantiateSceneRenderer, syncSceneRendererSession } from './sceneRendererLifecycle.js';
 
 export class SceneRenderer {
   constructor(rootElement) {
@@ -45,32 +46,23 @@ export class SceneRenderer {
       this.activeRenderer.dispose();
     }
 
-    const normalizedMode = normalizeRendererMode(mode);
-    try {
-      this.activeRenderer = normalizedMode === 'three'
-        ? new LegacyThreeRenderer(this.rootElement)
-        : new IsometricRenderer(this.rootElement);
-      this.mode = normalizedMode;
-    } catch (error) {
-      this.activeRenderer = new IsometricRenderer(this.rootElement, {
-        quality: 'low',
-        effectsEnabled: false,
-      });
-      this.mode = 'isometric';
-    }
+    const result = instantiateSceneRenderer({
+      mode,
+      rootElement: this.rootElement,
+      createIsometricRenderer: (rootElement, options) => new IsometricRenderer(rootElement, options),
+      createThreeRenderer: (rootElement) => new LegacyThreeRenderer(rootElement),
+    });
+    this.activeRenderer = result.renderer;
+    this.mode = result.mode;
 
     persistRendererModePreference(this.mode);
-    this.activeRenderer.setGroundClickHandler(this._onGroundClick);
-    this.activeRenderer.setPlacementPreviewHandler(this._onPlacementPreview);
-    this.activeRenderer.setEntitySelectHandler(this._onEntitySelect);
-    if (this.preview) {
-      this.activeRenderer.updatePlacementMarker(this.preview.position, this.preview.valid);
-    } else {
-      this.activeRenderer.updatePlacementMarker(null, true);
-    }
-    if (this.lastState) {
-      this.activeRenderer.render(this.lastState);
-    }
+    syncSceneRendererSession(this.activeRenderer, {
+      onGroundClick: this._onGroundClick,
+      onPlacementPreview: this._onPlacementPreview,
+      onEntitySelect: this._onEntitySelect,
+      preview: this.preview,
+      lastState: this.lastState,
+    });
   }
 
   setRendererMode(mode) {
