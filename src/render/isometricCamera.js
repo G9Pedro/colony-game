@@ -1,15 +1,18 @@
+import { screenToWorldPoint, worldToScreenPoint } from './isometricProjection.js';
 import {
-  screenDeltaToWorldDelta,
-  screenToWorldPoint,
-  worldToScreenPoint,
-} from './isometricProjection.js';
-import {
-  computeCameraZoomStep,
-} from './isometricCameraPolicies.js';
-import {
-  applyCameraInertia,
   clampCameraCenter,
 } from './isometricCameraState.js';
+import {
+  captureIsometricCameraState,
+  centerIsometricCameraOn,
+  mapScreenPointToTile,
+  mapWorldPointToTile,
+  panIsometricCameraByScreenDelta,
+  projectIsometricCameraWorldPoint,
+  unprojectIsometricCameraScreenPoint,
+  updateIsometricCameraInertia,
+  zoomIsometricCameraAtScreenPoint,
+} from './isometricCameraTransforms.js';
 import {
   dispatchIsometricCameraDragEnd,
   dispatchIsometricCameraDragMove,
@@ -65,74 +68,31 @@ export class IsometricCamera {
   }
 
   worldToScreen(x, z) {
-    return worldToScreenPoint({
-      x,
-      z,
-      centerX: this.centerX,
-      centerZ: this.centerZ,
-      width: this.viewportWidth,
-      height: this.viewportHeight,
-      zoom: this.zoom,
-      tileWidth: this.tileWidth,
-      tileHeight: this.tileHeight,
-    });
+    return projectIsometricCameraWorldPoint(this, x, z);
   }
 
   screenToWorld(screenX, screenY) {
-    return screenToWorldPoint({
-      screenX,
-      screenY,
-      centerX: this.centerX,
-      centerZ: this.centerZ,
-      width: this.viewportWidth,
-      height: this.viewportHeight,
-      zoom: this.zoom,
-      tileWidth: this.tileWidth,
-      tileHeight: this.tileHeight,
-    });
+    return unprojectIsometricCameraScreenPoint(this, screenX, screenY);
   }
 
   worldToTile(x, z) {
-    return {
-      x: Math.round(x),
-      z: Math.round(z),
-    };
+    return mapWorldPointToTile(x, z);
   }
 
   screenToTile(screenX, screenY) {
-    const world = this.screenToWorld(screenX, screenY);
-    return this.worldToTile(world.x, world.z);
+    return mapScreenPointToTile(this, screenX, screenY);
   }
 
   panByScreenDelta(deltaX, deltaY) {
-    const worldDelta = screenDeltaToWorldDelta({
-      deltaX,
-      deltaY,
-      zoom: this.zoom,
-      tileWidth: this.tileWidth,
-      tileHeight: this.tileHeight,
-    });
-    if (!worldDelta) {
-      return;
-    }
-    this.centerX -= worldDelta.worldDeltaX;
-    this.centerZ -= worldDelta.worldDeltaZ;
-    this.clampCenter();
+    panIsometricCameraByScreenDelta(this, deltaX, deltaY);
   }
 
   zoomAt(delta, screenX, screenY) {
-    const before = this.screenToWorld(screenX, screenY);
-    const nextZoom = computeCameraZoomStep({
-      zoom: this.zoom,
+    zoomIsometricCameraAtScreenPoint(this, {
       delta,
-      minZoom: this.minZoom,
-      maxZoom: this.maxZoom,
+      screenX,
+      screenY,
     });
-    this.zoom = nextZoom;
-    const after = this.screenToWorld(screenX, screenY);
-    this.centerX += before.x - after.x;
-    this.centerZ += before.z - after.z;
-    this.clampCenter();
   }
 
   startDrag(screenX, screenY) {
@@ -168,42 +128,15 @@ export class IsometricCamera {
   }
 
   update(deltaSeconds) {
-    if (this.dragging || this.pinchState.active) {
-      return;
-    }
-    const nextState = applyCameraInertia({
-      centerX: this.centerX,
-      centerZ: this.centerZ,
-      velocityX: this.velocityX,
-      velocityZ: this.velocityZ,
-      deltaSeconds,
-    });
-    this.centerX = nextState.centerX;
-    this.centerZ = nextState.centerZ;
-    this.velocityX = nextState.velocityX;
-    this.velocityZ = nextState.velocityZ;
-    this.clampCenter();
+    updateIsometricCameraInertia(this, deltaSeconds);
   }
 
   centerOn(worldX, worldZ) {
-    this.centerX = worldX;
-    this.centerZ = worldZ;
-    this.velocityX = 0;
-    this.velocityZ = 0;
-    this.clampCenter();
+    centerIsometricCameraOn(this, worldX, worldZ);
   }
 
   getState() {
-    return {
-      centerX: this.centerX,
-      centerZ: this.centerZ,
-      zoom: this.zoom,
-      tileWidth: this.tileWidth,
-      tileHeight: this.tileHeight,
-      width: this.viewportWidth,
-      height: this.viewportHeight,
-      worldRadius: this.worldRadius,
-    };
+    return captureIsometricCameraState(this);
   }
 }
 
