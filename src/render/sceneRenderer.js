@@ -6,7 +6,7 @@ import {
   applySceneRendererPlacementPreviewHandler,
 } from './sceneRendererHandlers.js';
 import { defineSceneRendererCallbackProperties } from './sceneRendererProperties.js';
-import { resolveSceneRendererPreviewUpdate } from './sceneRendererPreviewState.js';
+import { applySceneRendererPreviewPosition, clearSceneRendererPreview } from './sceneRendererPreviewHandlers.js';
 import { buildSceneRendererCameraState, buildSceneRendererDebugStats } from './sceneRendererSnapshots.js';
 import {
   normalizeRendererMode,
@@ -80,18 +80,11 @@ export class SceneRenderer {
   }
 
   setPreviewPosition(position, valid = true) {
-    const previewUpdate = resolveSceneRendererPreviewUpdate(position, valid);
-    this.preview = previewUpdate.preview;
-    if (previewUpdate.shouldClear) {
-      this.activeRenderer?.clearPreview();
-      return;
-    }
-    this.activeRenderer?.setPreviewPosition(previewUpdate.position, previewUpdate.valid);
+    applySceneRendererPreviewPosition(this, position, valid);
   }
 
   clearPreview() {
-    this.preview = null;
-    this.activeRenderer?.clearPreview();
+    clearSceneRendererPreview(this);
   }
 
   updatePlacementMarker(position, valid = true) {
