@@ -5,9 +5,7 @@ import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
-import { collectBuildingEffectBursts } from './buildingEffects.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
-import { diffNewBuildingPlacements } from './buildingPlacementTracker.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
 import { normalizeCameraState } from './cameraState.js';
 import { resolveClickSelectionOutcome } from './clickSelection.js';
@@ -16,6 +14,11 @@ import { buildIsometricFrameContext } from './isometricFrameContext.js';
 import { runIsometricFrameDraw } from './isometricFrameDraw.js';
 import { runIsometricFrameDynamics } from './isometricFrameDynamics.js';
 import { InteractionController } from './interactionController.js';
+import {
+  emitAmbientBuildingEffects,
+  maybeEmitResourceGainFloatingText,
+  syncPlacementAnimationEffects,
+} from './isometricRuntimeEffects.js';
 import { ResourceGainTracker } from './resourceGainTracker.js';
 import { pickBestInteractiveEntityHit } from './interactionHitTest.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
@@ -212,20 +215,14 @@ export class IsometricRenderer {
   }
 
   syncBuildingAnimations(state, now) {
-    const { nextIds, newBuildings } = diffNewBuildingPlacements(state.buildings, this.knownBuildingIds);
-    newBuildings.forEach((building) => {
-      this.animations.registerPlacement(building.id, now, 320);
-      if (this.options.effectsEnabled) {
-        this.particles.emitBurst({
-          x: building.x,
-          z: building.z,
-          kind: 'dust',
-          count: 10,
-          color: 'rgba(193, 153, 104, 0.72)',
-        });
-      }
+    this.knownBuildingIds = syncPlacementAnimationEffects({
+      buildings: state.buildings,
+      knownBuildingIds: this.knownBuildingIds,
+      now,
+      animations: this.animations,
+      effectsEnabled: this.options.effectsEnabled,
+      particles: this.particles,
     });
-    this.knownBuildingIds = nextIds;
   }
 
   updateColonistInterpolation(state, deltaSeconds) {
@@ -234,17 +231,14 @@ export class IsometricRenderer {
 
   sampleResourceGains(state, deltaSeconds) {
     const gains = this.resourceGainTracker.sample(state.resources, deltaSeconds);
-
-    if (gains.length > 0 && this.options.effectsEnabled && this.qualityController.shouldRunOptionalEffects()) {
-      const { resource, delta } = gains[0];
-      const origin = state.buildings[Math.floor(Math.random() * Math.max(1, state.buildings.length))];
-      this.particles.emitFloatingText({
-        x: origin?.x ?? this.camera.centerX,
-        z: origin?.z ?? this.camera.centerZ,
-        text: `+${Math.floor(delta)} ${resource}`,
-        color: '#f4ead0',
-      });
-    }
+    maybeEmitResourceGainFloatingText({
+      gains,
+      state,
+      effectsEnabled: this.options.effectsEnabled,
+      shouldRunOptionalEffects: this.qualityController.shouldRunOptionalEffects(),
+      particles: this.particles,
+      camera: this.camera,
+    });
   }
 
   drawBackground(state, width, height, daylight) {
@@ -264,18 +258,14 @@ export class IsometricRenderer {
   }
 
   maybeEmitBuildingEffects(state, deltaSeconds) {
-    if (!this.options.effectsEnabled) {
-      return;
-    }
-    if (!this.qualityController.shouldRunOptionalEffects()) {
-      return;
-    }
-    const qualityMultiplier = this.qualityController.getParticleMultiplier();
-    const bursts = collectBuildingEffectBursts(state.buildings, {
+    emitAmbientBuildingEffects({
+      state,
       deltaSeconds,
-      qualityMultiplier,
+      effectsEnabled: this.options.effectsEnabled,
+      shouldRunOptionalEffects: this.qualityController.shouldRunOptionalEffects(),
+      qualityMultiplier: this.qualityController.getParticleMultiplier(),
+      particles: this.particles,
     });
-    bursts.forEach((burst) => this.particles.emitBurst(burst));
   }
 
   drawEntities(state, now, daylight) {
