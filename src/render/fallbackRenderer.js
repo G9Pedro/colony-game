@@ -1,4 +1,18 @@
 import { IsometricRenderer } from './isometricRenderer.js';
+import {
+  applyFallbackEntitySelectHandler,
+  applyFallbackGroundClickHandler,
+  applyFallbackPlacementPreviewHandler,
+  applyFallbackPreviewPosition,
+  buildFallbackCameraState,
+  buildFallbackDebugStats,
+  centerFallbackOnBuilding,
+  clearFallbackPreview,
+  disposeFallbackRenderer,
+  renderFallbackFrame,
+  resizeFallbackRenderer,
+  updateFallbackPlacementMarker,
+} from './fallbackRendererDispatch.js';
 import { createFallbackRendererDelegate } from './fallbackRendererRuntime.js';
 
 export class FallbackRenderer {
@@ -10,50 +24,50 @@ export class FallbackRenderer {
   }
 
   setGroundClickHandler(handler) {
-    this.delegate.setGroundClickHandler(handler);
+    applyFallbackGroundClickHandler(this, handler);
   }
 
   setPlacementPreviewHandler(handler) {
-    this.delegate.setPlacementPreviewHandler(handler);
+    applyFallbackPlacementPreviewHandler(this, handler);
   }
 
   setEntitySelectHandler(handler) {
-    this.delegate.setEntitySelectHandler(handler);
+    applyFallbackEntitySelectHandler(this, handler);
   }
 
   setPreviewPosition(position, valid = true) {
-    this.delegate.setPreviewPosition(position, valid);
+    applyFallbackPreviewPosition(this, position, valid);
   }
 
   clearPreview() {
-    this.delegate.clearPreview();
+    clearFallbackPreview(this);
   }
 
   updatePlacementMarker(position, valid = true) {
-    this.delegate.updatePlacementMarker(position, valid);
+    updateFallbackPlacementMarker(this, position, valid);
   }
 
   centerOnBuilding(building) {
-    this.delegate.centerOnBuilding(building);
+    centerFallbackOnBuilding(this, building);
   }
 
   getCameraState() {
-    return this.delegate.getCameraState();
+    return buildFallbackCameraState(this);
   }
 
   getDebugStats() {
-    return this.delegate.getDebugStats?.() ?? null;
+    return buildFallbackDebugStats(this);
   }
 
   resize() {
-    this.delegate.resize();
+    resizeFallbackRenderer(this);
   }
 
   render(state) {
-    this.delegate.render(state);
+    renderFallbackFrame(this, state);
   }
 
   dispose() {
-    this.delegate.dispose();
+    disposeFallbackRenderer(this);
   }
 }
