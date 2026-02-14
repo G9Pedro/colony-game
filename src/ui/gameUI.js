@@ -2,6 +2,12 @@ import { AnimationManager } from '../render/animations.js';
 import { getBuildingCardState } from './buildingAvailability.js';
 import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
+import {
+  buildMetricsSummaryRows,
+  getLatestInvariantWarning,
+  getRecentRunHistory,
+  getRunOutcomeLabel,
+} from './runStatsView.js';
 import { formatCost, formatRate, percent } from './uiFormatting.js';
 
 export class GameUI {
@@ -249,14 +255,14 @@ export class GameUI {
   }
 
   renderRunStats(state) {
-    const latestViolation = state.debug?.invariantViolations?.at?.(-1);
+    const latestViolation = getLatestInvariantWarning(state.debug);
+    const metricRows = buildMetricsSummaryRows(state.metrics);
+    const metricsMarkup = metricRows
+      .map((row) => `<div class="kv"><span>${row.label}</span><strong>${row.value}</strong></div>`)
+      .join('');
     this.el.metricsSummary.innerHTML = `
       <div class="panel-card">
-        <div class="kv"><span>Peak Population</span><strong>${state.metrics.peakPopulation}</strong></div>
-        <div class="kv"><span>Built Structures</span><strong>${state.metrics.buildingsConstructed}</strong></div>
-        <div class="kv"><span>Research Completed</span><strong>${state.metrics.researchCompleted}</strong></div>
-        <div class="kv"><span>Objectives Completed</span><strong>${state.metrics.objectivesCompleted}</strong></div>
-        <div class="kv"><span>Deaths</span><strong>${state.metrics.deaths}</strong></div>
+        ${metricsMarkup}
       </div>
     `;
     if (latestViolation) {
@@ -266,7 +272,7 @@ export class GameUI {
       this.el.metricsSummary.appendChild(warning);
     }
 
-    const history = [...(state.runSummaryHistory ?? [])].slice(-3).reverse();
+    const history = getRecentRunHistory(state.runSummaryHistory, 3);
     this.el.runHistory.innerHTML = '';
     if (history.length === 0) {
       this.el.runHistory.innerHTML = '<div class="panel-card"><small>No previous runs yet.</small></div>';
@@ -276,7 +282,7 @@ export class GameUI {
       const card = document.createElement('div');
       card.className = 'panel-card';
       card.innerHTML = `
-        <div class="kv"><strong>${run.outcome === 'won' ? 'Victory' : 'Defeat'}</strong><small>Day ${run.day}</small></div>
+        <div class="kv"><strong>${getRunOutcomeLabel(run.outcome)}</strong><small>Day ${run.day}</small></div>
         <small>${run.scenarioId}/${run.balanceProfileId ?? 'standard'} · peak ${run.peakPopulation} · ${run.buildingsConstructed} builds</small>
       `;
       this.el.runHistory.appendChild(card);
