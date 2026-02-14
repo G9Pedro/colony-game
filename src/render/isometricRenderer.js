@@ -6,7 +6,7 @@ import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
-import { buildEntityRenderPass } from './entityRenderPass.js';
+import { drawIsometricEntityPass } from './isometricEntityDraw.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { InteractionController } from './interactionController.js';
@@ -257,7 +257,7 @@ export class IsometricRenderer {
   }
 
   drawEntities(state, now, daylight) {
-    const pass = buildEntityRenderPass({
+    const result = drawIsometricEntityPass({
       state,
       now,
       daylight,
@@ -266,10 +266,12 @@ export class IsometricRenderer {
       animations: this.animations,
       particles: this.particles,
       colonistRenderState: this.colonistRenderState,
+      ctx: this.ctx,
+      setInteractiveEntities: (interactiveEntities) => {
+        this.interactiveEntities = interactiveEntities;
+      },
     });
-    this.interactiveEntities = pass.interactiveEntities;
-    pass.renderables.sort((a, b) => a.depth - b.depth);
-    pass.renderables.forEach((item) => item.draw(this.ctx));
+    return result;
   }
 
   render(state) {
