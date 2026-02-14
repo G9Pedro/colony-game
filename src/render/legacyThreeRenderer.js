@@ -15,10 +15,14 @@ import { buildLegacyEventSessionInvocation } from './legacyEventSessionInvocatio
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { dispatchLegacyFrame } from './legacyFrameDispatch.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
+import {
+  clearLegacyPreviewPosition,
+  setLegacyPreviewPosition,
+  updateLegacyPlacementPreview,
+} from './legacyPreviewHandlers.js';
 import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
 import { buildLegacyBuildingSyncInvocation, buildLegacyColonistSyncInvocation } from './legacyMeshSyncInvocation.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
-import { applyLegacyPreviewMarker } from './legacyRendererViewState.js';
 import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import { buildLegacyDisposeInvocation } from './legacyDisposeInvocation.js';
@@ -117,15 +121,15 @@ export class LegacyThreeRenderer {
   }
 
   setPreviewPosition(position, valid = true) {
-    applyLegacyPreviewMarker(this.previewMarker, position, valid);
+    setLegacyPreviewPosition(this, position, valid);
   }
 
   clearPreview() {
-    this.setPreviewPosition(null);
+    clearLegacyPreviewPosition(this);
   }
 
   updatePlacementMarker(position, valid) {
-    this.setPreviewPosition(position, valid);
+    updateLegacyPlacementPreview(this, position, valid);
   }
 
   centerOnBuilding(building) {
