@@ -20,6 +20,11 @@ import {
   buildIsometricHoverSelectionInvocation,
 } from './isometricSelectionState.js';
 import {
+  applyRendererEntitySelectHandler,
+  applyRendererGroundClickHandler,
+  applyRendererPlacementPreviewHandler,
+} from './rendererCallbackState.js';
+import {
   buildIsometricRendererCameraState,
   buildIsometricRendererDebugStats,
 } from './isometricRendererSnapshots.js';
@@ -80,15 +85,15 @@ export class IsometricRenderer {
   }
 
   setGroundClickHandler(handler) {
-    this.onGroundClick = handler;
+    applyRendererGroundClickHandler(this, handler);
   }
 
   setPlacementPreviewHandler(handler) {
-    this.onPlacementPreview = handler;
+    applyRendererPlacementPreviewHandler(this, handler);
   }
 
   setEntitySelectHandler(handler) {
-    this.onEntitySelect = handler;
+    applyRendererEntitySelectHandler(this, handler);
   }
 
   setPreviewPosition(position, valid = true) {

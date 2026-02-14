@@ -33,6 +33,11 @@ import { buildLegacyFrameInvocation } from './legacyFrameInvocation.js';
 import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import {
+  applyRendererEntitySelectHandler,
+  applyRendererGroundClickHandler,
+  applyRendererPlacementPreviewHandler,
+} from './rendererCallbackState.js';
+import {
   buildLegacyEntityPickerInvocation,
   buildLegacyGroundPickerInvocation,
 } from './legacyScreenPickerInvocation.js';
@@ -89,15 +94,15 @@ export class LegacyThreeRenderer {
   }
 
   setGroundClickHandler(handler) {
-    this.onGroundClick = handler;
+    applyRendererGroundClickHandler(this, handler);
   }
 
   setPlacementPreviewHandler(handler) {
-    this.onPlacementPreview = handler;
+    applyRendererPlacementPreviewHandler(this, handler);
   }
 
   setEntitySelectHandler(handler) {
-    this.onEntitySelect = handler;
+    applyRendererEntitySelectHandler(this, handler);
   }
 
   screenToGround(clientX, clientY) {
