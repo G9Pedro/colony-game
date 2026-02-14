@@ -5,6 +5,7 @@ import { buildUIGlobalActionInvocation } from './uiGlobalActionInvocation.js';
 import { runUiControllerRender } from './uiControllerRenderFlow.js';
 import { createUIControllerRuntime } from './uiControllerRuntime.js';
 import { renderUIRendererModeOptions } from './uiRendererModeOptions.js';
+import { applyUIControllerPersistenceCallbacks } from './uiControllerCallbacks.js';
 import {
   applyUIControllerSelectedBuildType,
   applyUIControllerSelectedEntity,
@@ -51,10 +52,7 @@ export class UIController {
   }
 
   setPersistenceCallbacks(callbacks) {
-    this.callbacks = {
-      ...this.callbacks,
-      ...callbacks,
-    };
+    applyUIControllerPersistenceCallbacks(this, callbacks);
   }
 
   attachRenderer(renderer) {
