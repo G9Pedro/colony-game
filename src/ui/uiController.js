@@ -4,6 +4,14 @@ import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
 import { runUiControllerRender } from './uiControllerRenderFlow.js';
 import { createUIControllerRuntime } from './uiControllerRuntime.js';
 import { renderUIRendererModeOptions } from './uiRendererModeOptions.js';
+import {
+  applyUIControllerSelectedBuildType,
+  applyUIControllerSelectedEntity,
+  attachUIRenderer,
+  hideUIControllerBanner,
+  pushUIControllerNotification,
+  showUIControllerBanner,
+} from './uiControllerState.js';
 
 export class UIController {
   constructor({
@@ -56,8 +64,7 @@ export class UIController {
   }
 
   attachRenderer(renderer) {
-    this.renderer = renderer;
-    this.el.rendererModeSelect.value = renderer.getRendererMode?.() ?? 'isometric';
+    attachUIRenderer(this, renderer);
   }
 
   setRendererModeOptions(modes, activeMode) {
@@ -65,11 +72,11 @@ export class UIController {
   }
 
   setSelectedEntity(entity) {
-    this.selectedEntity = entity;
+    applyUIControllerSelectedEntity(this, entity);
   }
 
   setSelectedBuildType(buildingType) {
-    this.selectedBuildType = buildingType;
+    applyUIControllerSelectedBuildType(this, buildingType);
   }
 
   setScenarioOptions(scenarios, currentScenarioId) {
@@ -81,16 +88,15 @@ export class UIController {
   }
 
   showBanner(message) {
-    this.el.messageBanner.classList.remove('hidden');
-    this.el.messageBanner.textContent = message;
+    showUIControllerBanner(this, message);
   }
 
   hideBanner() {
-    this.el.messageBanner.classList.add('hidden');
+    hideUIControllerBanner(this);
   }
 
   pushNotification(payload) {
-    this.notifications.push(payload);
+    pushUIControllerNotification(this, payload);
   }
 
   render(state) {
