@@ -2,6 +2,7 @@ import { AnimationManager } from '../render/animations.js';
 import { getBuildingCardState } from './buildingAvailability.js';
 import { buildColonistRows, buildConstructionQueueRows } from './colonyPanelsViewState.js';
 import { ResourceFlowTracker } from './resourceFlowTracker.js';
+import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
 import {
   buildMetricsSummaryRows,
@@ -70,19 +71,19 @@ export class GameUI {
   renderResourceBar(state) {
     this.updateResourceRates(state);
     this.el.resourceList.innerHTML = '';
+    const rows = buildResourceBarRows({
+      resourceDefinitions: this.resourceDefinitions,
+      resources: state.resources,
+      resourceRates: this.resourceRates,
+      mapDisplayedValue: (resourceId, value) => this.valueAnimator.tweenValue(`resource:${resourceId}`, value),
+    });
 
-    Object.entries(this.resourceDefinitions).forEach(([resource, definition]) => {
-      const displayed = this.valueAnimator.tweenValue(
-        `resource:${resource}`,
-        state.resources[resource] ?? 0,
-      );
-      const rounded = Math.floor(displayed);
-      const rate = this.resourceRates[resource] ?? 0;
+    rows.forEach((row) => {
 
       const card = document.createElement('div');
       card.className = 'resource-chip';
 
-      const icon = this.spriteFactory.getResourceIcon(resource, 20);
+      const icon = this.spriteFactory.getResourceIcon(row.id, 20);
       const iconNode = document.createElement('canvas');
       iconNode.width = icon.width;
       iconNode.height = icon.height;
@@ -91,12 +92,12 @@ export class GameUI {
 
       const name = document.createElement('span');
       name.className = 'resource-name';
-      name.textContent = definition.label;
+      name.textContent = row.label;
       const value = document.createElement('strong');
-      value.textContent = `${rounded}`;
+      value.textContent = `${row.roundedValue}`;
       const delta = document.createElement('small');
-      delta.textContent = formatRate(rate);
-      delta.className = rate >= 0 ? 'positive' : 'negative';
+      delta.textContent = formatRate(row.rate);
+      delta.className = row.rateClassName;
 
       const labelWrap = document.createElement('div');
       labelWrap.className = 'resource-meta';
