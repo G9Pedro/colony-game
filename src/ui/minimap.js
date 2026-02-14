@@ -1,5 +1,11 @@
 import { screenToWorldPoint } from '../render/isometricCamera.js';
 import { minimapPointToWorld, worldToMinimapPoint } from './minimapGeometry.js';
+import {
+  drawMinimapColonistDots,
+  drawMinimapSelectionRing,
+  drawMinimapSquareEntities,
+  drawMinimapSurface,
+} from './minimapPainter.js';
 
 export class Minimap {
   constructor(canvas, { onCenterRequest } = {}) {
@@ -135,79 +141,41 @@ export class Minimap {
   render(state, cameraState, selectedEntity = null) {
     this.worldRadius = state.maxWorldRadius ?? 30;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    drawMinimapSurface(this.ctx, this.canvas.width, this.canvas.height);
 
-    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-    gradient.addColorStop(0, '#6b5b3d');
-    gradient.addColorStop(1, '#4f422d');
-    this.ctx.fillStyle = gradient;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    this.ctx.strokeStyle = 'rgba(19, 14, 8, 0.55)';
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(0.5, 0.5, this.canvas.width - 1, this.canvas.height - 1);
-
-    state.buildings.forEach((building) => {
-      const point = worldToMinimapPoint({
-        x: building.x,
-        z: building.z,
-        worldRadius: this.worldRadius,
-        width: this.canvas.width,
-        height: this.canvas.height,
-      });
-      const x = point.x;
-      const y = point.y;
-      this.ctx.fillStyle = '#e6ccb2';
-      this.ctx.fillRect(x - 1.8, y - 1.8, 3.6, 3.6);
+    const projectBuilding = (building) => worldToMinimapPoint({
+      x: building.x,
+      z: building.z,
+      worldRadius: this.worldRadius,
+      width: this.canvas.width,
+      height: this.canvas.height,
     });
-    state.constructionQueue.forEach((item) => {
-      const point = worldToMinimapPoint({
-        x: item.x,
-        z: item.z,
-        worldRadius: this.worldRadius,
-        width: this.canvas.width,
-        height: this.canvas.height,
-      });
-      const x = point.x;
-      const y = point.y;
-      this.ctx.fillStyle = '#d8a65f';
-      this.ctx.fillRect(x - 1.8, y - 1.8, 3.6, 3.6);
+    drawMinimapSquareEntities(this.ctx, state.buildings, {
+      project: projectBuilding,
+      color: '#e6ccb2',
     });
-
-    state.colonists.forEach((colonist) => {
-      if (!colonist.alive) {
-        return;
-      }
-      const point = worldToMinimapPoint({
+    drawMinimapSquareEntities(this.ctx, state.constructionQueue, {
+      project: projectBuilding,
+      color: '#d8a65f',
+    });
+    drawMinimapColonistDots(this.ctx, state.colonists, {
+      project: (colonist) => worldToMinimapPoint({
         x: colonist.position.x,
         z: colonist.position.z,
         worldRadius: this.worldRadius,
         width: this.canvas.width,
         height: this.canvas.height,
-      });
-      const x = point.x;
-      const y = point.y;
-      this.ctx.fillStyle = '#9dd4f9';
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, 1.2, 0, Math.PI * 2);
-      this.ctx.fill();
+      }),
     });
-
-    if (selectedEntity) {
-      const point = worldToMinimapPoint({
-        x: selectedEntity.x ?? 0,
-        z: selectedEntity.z ?? 0,
+    drawMinimapSelectionRing(this.ctx, selectedEntity, {
+      project: (entity) => worldToMinimapPoint({
+        x: entity.x ?? 0,
+        z: entity.z ?? 0,
         worldRadius: this.worldRadius,
         width: this.canvas.width,
         height: this.canvas.height,
-      });
-      const x = point.x;
-      const y = point.y;
-      this.ctx.strokeStyle = 'rgba(255, 243, 188, 0.92)';
-      this.ctx.lineWidth = 1.3;
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, 4.2, 0, Math.PI * 2);
-      this.ctx.stroke();
-    }
+      }),
+    });
 
     if (cameraState?.projection === 'isometric') {
       this.drawViewport(cameraState);
