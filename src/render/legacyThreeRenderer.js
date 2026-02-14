@@ -17,6 +17,7 @@ import {
   toPointerLikeTouch,
   toRoundedGroundPoint,
 } from './legacyInteractionPrimitives.js';
+import { resolveLegacyPointerUpOutcome } from './legacyInteractionOutcomes.js';
 import { beginLegacyPointerDrag, endLegacyPointerDrag, updateLegacyPointerDrag } from './legacyPointerState.js';
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
@@ -207,27 +208,23 @@ export class LegacyThreeRenderer {
 
   handlePointerUp(event) {
     const dragEnd = endLegacyPointerDrag(this.dragState);
-    if (!dragEnd.active) {
+    const outcome = resolveLegacyPointerUpOutcome({
+      dragEnd,
+      pickEntity: (clientX, clientY) => this.screenToEntity(clientX, clientY),
+      pickGround: (clientX, clientY) => this.screenToGround(clientX, clientY),
+      roundGroundPoint: toRoundedGroundPoint,
+    });
+    if (outcome.type === 'none') {
       return;
     }
-
-    if (dragEnd.moved) {
+    if (outcome.type === 'select-entity') {
+      if (this.onEntitySelect) {
+        this.onEntitySelect(outcome.entity);
+      }
       return;
     }
-
-    const selectedEntity = this.screenToEntity(dragEnd.clientX, dragEnd.clientY);
-    if (selectedEntity && this.onEntitySelect) {
-      this.onEntitySelect(selectedEntity);
-      return;
-    }
-
-    const point = this.screenToGround(dragEnd.clientX, dragEnd.clientY);
-    const clickPoint = toRoundedGroundPoint(point);
-    if (!clickPoint) {
-      return;
-    }
-    if (this.onGroundClick) {
-      this.onGroundClick(clickPoint);
+    if (outcome.type === 'ground-click' && this.onGroundClick) {
+      this.onGroundClick(outcome.point);
     }
   }
 
