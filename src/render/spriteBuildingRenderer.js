@@ -2,6 +2,11 @@ import { drawBuildingDecoration } from './spriteBuildingDecorations.js';
 import { drawScaffoldOverlay, drawTextureNoise } from './spriteEffects.js';
 import { shadeColor } from './spriteMath.js';
 import { drawDiamond, drawIsoPrism } from './spritePrimitives.js';
+import {
+  buildBuildingSpriteMetrics,
+  resolveBuildingNoiseStrength,
+  resolveBuildingSurfaceColors,
+} from './spriteBuildingRenderingPolicies.js';
 
 export function buildBuildingSpriteGeometry({
   definition,
@@ -43,8 +48,7 @@ export function drawBuildingSpriteCanvas({
   const drawDecoration = deps.drawDecoration ?? drawBuildingDecoration;
   const drawScaffold = deps.drawScaffold ?? drawScaffoldOverlay;
 
-  const roofColor = override.roof ?? '#9a5f3b';
-  const wallColor = override.wall ?? '#a18b73';
+  const { roofColor, wallColor } = resolveBuildingSurfaceColors(override);
   const geometry = buildBuildingSpriteGeometry({
     definition,
     override,
@@ -76,7 +80,7 @@ export function drawBuildingSpriteCanvas({
     leftColor: shade(wallColor, 0.88),
     rightColor: shade(wallColor, 0.74),
   });
-  drawNoise(ctx, spriteWidth, spriteHeight, quality === 'high' ? 0.2 : 0.09, width + depth);
+  drawNoise(ctx, spriteWidth, spriteHeight, resolveBuildingNoiseStrength(quality), width + depth);
   drawDecoration(ctx, type, centerX, baseY, width, depth, prism.topCenterY);
 
   if (construction) {
@@ -85,11 +89,6 @@ export function drawBuildingSpriteCanvas({
     ctx.fillRect(0, 0, spriteWidth, spriteHeight);
   }
 
-  return {
-    anchorX: centerX,
-    anchorY: baseY + depth * 0.5 + 2,
-    width,
-    depth,
-  };
+  return buildBuildingSpriteMetrics({ centerX, baseY, width, depth });
 }
 
