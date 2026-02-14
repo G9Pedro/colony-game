@@ -26,6 +26,7 @@ import {
 import { handleLegacyPointerUpEvent } from './legacyPointerUpHandler.js';
 import { beginLegacyPointerDrag, updateLegacyPointerDrag } from './legacyPointerState.js';
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
+import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
 import {
   createLegacyGrid,
@@ -102,26 +103,28 @@ export class LegacyThreeRenderer {
   }
 
   bindEvents() {
-    this.boundResize = () => this.resize();
-    this.boundPointerDown = (event) => this.handlePointerDown(event);
-    this.boundPointerMove = (event) => this.handlePointerMove(event);
-    this.boundPointerUp = (event) => this.handlePointerUp(event);
-    this.boundWheel = (event) => this.handleWheel(event);
-    this.boundTouchStart = (event) => this.handleTouchStart(event);
-    this.boundTouchMove = (event) => this.handleTouchMove(event);
-    this.boundTouchEnd = () => this.handleTouchEnd();
-    this.unbindEvents = bindLegacyRendererEvents({
+    const session = createLegacyRendererEventSession({
       windowObject: window,
       domElement: this.renderer.domElement,
-      onResize: this.boundResize,
-      onPointerDown: this.boundPointerDown,
-      onPointerMove: this.boundPointerMove,
-      onPointerUp: this.boundPointerUp,
-      onWheel: this.boundWheel,
-      onTouchStart: this.boundTouchStart,
-      onTouchMove: this.boundTouchMove,
-      onTouchEnd: this.boundTouchEnd,
+      onResize: () => this.resize(),
+      onPointerDown: (event) => this.handlePointerDown(event),
+      onPointerMove: (event) => this.handlePointerMove(event),
+      onPointerUp: (event) => this.handlePointerUp(event),
+      onWheel: (event) => this.handleWheel(event),
+      onTouchStart: (event) => this.handleTouchStart(event),
+      onTouchMove: (event) => this.handleTouchMove(event),
+      onTouchEnd: () => this.handleTouchEnd(),
+      bindEvents: bindLegacyRendererEvents,
     });
+    this.boundResize = session.handlers.onResize;
+    this.boundPointerDown = session.handlers.onPointerDown;
+    this.boundPointerMove = session.handlers.onPointerMove;
+    this.boundPointerUp = session.handlers.onPointerUp;
+    this.boundWheel = session.handlers.onWheel;
+    this.boundTouchStart = session.handlers.onTouchStart;
+    this.boundTouchMove = session.handlers.onTouchMove;
+    this.boundTouchEnd = session.handlers.onTouchEnd;
+    this.unbindEvents = session.unbindEvents;
   }
 
   updateCamera() {
