@@ -2,6 +2,7 @@ import * as THREE from '../../node_modules/three/build/three.module.js';
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
+import { reconcileMeshMap, updateColonistMeshPose } from './legacyEntitySync.js';
 import { computeFrameDeltaSeconds, updateSmoothedFps } from './frameTiming.js';
 import {
   updateOrbitYawAndPitch,
@@ -358,53 +359,31 @@ export class LegacyThreeRenderer {
   }
 
   syncBuildings(state) {
-    const liveIds = new Set(state.buildings.map((building) => building.id));
-
-    for (const [id, mesh] of this.buildingMeshes.entries()) {
-      if (liveIds.has(id)) {
-        continue;
-      }
-      this.scene.remove(mesh);
-      mesh.geometry.dispose();
-      mesh.material.dispose();
-      this.buildingMeshes.delete(id);
-    }
-
-    for (const building of state.buildings) {
-      if (this.buildingMeshes.has(building.id)) {
-        continue;
-      }
-      const mesh = createBuildingMesh(building);
-      this.buildingMeshes.set(building.id, mesh);
-      this.scene.add(mesh);
-    }
+    reconcileMeshMap({
+      entities: state.buildings,
+      meshMap: this.buildingMeshes,
+      scene: this.scene,
+      getId: (building) => building.id,
+      createMesh: (building) => createBuildingMesh(building),
+    });
   }
 
   syncColonists(state) {
     const liveColonists = state.colonists.filter((colonist) => colonist.alive);
-    const liveIds = new Set(liveColonists.map((colonist) => colonist.id));
-
-    for (const [id, mesh] of this.colonistMeshes.entries()) {
-      if (liveIds.has(id)) {
-        continue;
-      }
-      this.scene.remove(mesh);
-      mesh.geometry.dispose();
-      mesh.material.dispose();
-      this.colonistMeshes.delete(id);
-    }
+    reconcileMeshMap({
+      entities: liveColonists,
+      meshMap: this.colonistMeshes,
+      scene: this.scene,
+      getId: (colonist) => colonist.id,
+      createMesh: (colonist) => createColonistMesh(colonist),
+    });
 
     for (const colonist of liveColonists) {
-      let mesh = this.colonistMeshes.get(colonist.id);
+      const mesh = this.colonistMeshes.get(colonist.id);
       if (!mesh) {
-        mesh = createColonistMesh(colonist);
-        this.colonistMeshes.set(colonist.id, mesh);
-        this.scene.add(mesh);
+        continue;
       }
-
-      mesh.position.x = colonist.position.x;
-      mesh.position.z = colonist.position.z;
-      mesh.position.y = 0.3 + Math.sin((state.timeSeconds + colonist.age) * 2) * 0.04;
+      updateColonistMeshPose(mesh, colonist, state.timeSeconds);
     }
   }
 
