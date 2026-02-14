@@ -33,6 +33,7 @@ import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import { centerLegacyCameraOnBuilding, resizeLegacyRendererViewport } from './legacyRendererViewport.js';
 import { pickLegacyEntityAtClient, pickLegacyGroundAtClient } from './legacyScreenPickers.js';
+import { applyRendererFrameState } from './rendererFrameState.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -193,8 +194,7 @@ export class LegacyThreeRenderer {
       state,
       now: performance.now(),
     }));
-    this.lastFrameAt = frame.nextLastFrameAt;
-    this.smoothedFps = frame.nextSmoothedFps;
+    applyRendererFrameState(this, frame);
   }
 
   dispose() {

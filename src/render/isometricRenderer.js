@@ -9,6 +9,7 @@ import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
 import { createIsometricPreviewState, resolveIsometricPreviewUpdate } from './isometricPreviewState.js';
+import { applyRendererFrameState } from './rendererFrameState.js';
 import {
   applyIsometricSelectedEntity,
   buildIsometricClickSelectionInvocation,
@@ -206,8 +207,7 @@ export class IsometricRenderer {
       state,
       now: performance.now(),
     }));
-    this.lastFrameAt = frame.nextLastFrameAt;
-    this.smoothedFps = frame.nextSmoothedFps;
+    applyRendererFrameState(this, frame);
   }
 }
 
