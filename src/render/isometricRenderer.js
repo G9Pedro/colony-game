@@ -6,8 +6,6 @@ import { updateColonistRenderState } from './colonistInterpolation.js';
 import { drawIsometricEntityPass } from './isometricEntityDraw.js';
 import { buildIsometricEntityDrawInvocation } from './isometricEntityDrawInvocation.js';
 import { createIsometricInteractionSession } from './isometricInteractionSession.js';
-import { normalizeCameraState } from './cameraState.js';
-import { createDebugStats } from './debugStats.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
 import { createIsometricPreviewState, resolveIsometricPreviewUpdate } from './isometricPreviewState.js';
 import {
@@ -21,7 +19,10 @@ import {
   buildIsometricClickSelectionInvocation,
   buildIsometricHoverSelectionInvocation,
 } from './isometricSelectionState.js';
-import { buildIsometricCameraStatePayload, buildIsometricDebugStatsPayload } from './isometricRendererViewState.js';
+import {
+  buildIsometricRendererCameraState,
+  buildIsometricRendererDebugStats,
+} from './isometricRendererSnapshots.js';
 import {
   emitAmbientBuildingEffects,
   maybeEmitResourceGainFloatingText,
@@ -110,16 +111,11 @@ export class IsometricRenderer {
   }
 
   getCameraState() {
-    return normalizeCameraState(buildIsometricCameraStatePayload(this.camera.getState()));
+    return buildIsometricRendererCameraState(this);
   }
 
   getDebugStats() {
-    return createDebugStats(buildIsometricDebugStatsPayload({
-      smoothedFps: this.smoothedFps,
-      quality: this.qualityController.getQuality(),
-      particleCount: this.particles.particles.length,
-      particleCap: this.particles.maxParticles,
-    }));
+    return buildIsometricRendererDebugStats(this);
   }
 
   updateHoverSelection(localX, localY) {
