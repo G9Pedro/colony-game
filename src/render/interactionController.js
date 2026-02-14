@@ -1,19 +1,6 @@
-export function mapClientToLocalPoint(clientX, clientY, rect) {
-  return {
-    x: clientX - rect.left,
-    y: clientY - rect.top,
-  };
-}
+import { mapClientToLocalPoint, resolveInteractionPoint } from './interactionPointResolver.js';
 
-function buildWorldPoint(camera, canvas, clientX, clientY) {
-  const rect = canvas.getBoundingClientRect();
-  const local = mapClientToLocalPoint(clientX, clientY, rect);
-  return {
-    local,
-    world: camera.screenToWorld(local.x, local.y),
-    tile: camera.screenToTile(local.x, local.y),
-  };
-}
+export { mapClientToLocalPoint };
 
 export class InteractionController {
   constructor({
@@ -78,7 +65,12 @@ export class InteractionController {
   }
 
   handlePointerMove(event) {
-    const point = buildWorldPoint(this.camera, this.canvas, event.clientX, event.clientY);
+    const point = resolveInteractionPoint({
+      camera: this.camera,
+      canvas: this.canvas,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
     this.onHover(point);
     this.onPreview(point);
 
@@ -100,7 +92,12 @@ export class InteractionController {
       return;
     }
 
-    const point = buildWorldPoint(this.camera, this.canvas, event.clientX, event.clientY);
+    const point = resolveInteractionPoint({
+      camera: this.camera,
+      canvas: this.canvas,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
     this.onClick(point);
   }
 
@@ -112,7 +109,12 @@ export class InteractionController {
 
   handleWheel(event) {
     event.preventDefault();
-    const point = buildWorldPoint(this.camera, this.canvas, event.clientX, event.clientY);
+    const point = resolveInteractionPoint({
+      camera: this.camera,
+      canvas: this.canvas,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
     this.camera.zoomAt(event.deltaY * 0.0012, point.local.x, point.local.y);
   }
 
@@ -145,7 +147,12 @@ export class InteractionController {
     this.touchState.lastX = touch.clientX;
     this.touchState.lastY = touch.clientY;
     this.camera.dragTo(touch.clientX, touch.clientY);
-    const point = buildWorldPoint(this.camera, this.canvas, touch.clientX, touch.clientY);
+    const point = resolveInteractionPoint({
+      camera: this.camera,
+      canvas: this.canvas,
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+    });
     this.onHover(point);
     this.onPreview(point);
   }
@@ -162,7 +169,12 @@ export class InteractionController {
       return;
     }
 
-    const point = buildWorldPoint(this.camera, this.canvas, this.touchState.lastX, this.touchState.lastY);
+    const point = resolveInteractionPoint({
+      camera: this.camera,
+      canvas: this.canvas,
+      clientX: this.touchState.lastX,
+      clientY: this.touchState.lastY,
+    });
     this.onClick(point);
   }
 }
