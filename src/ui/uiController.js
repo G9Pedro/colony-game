@@ -1,5 +1,6 @@
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { createUIControllerDefaultCallbacks, createUIControllerElements } from './uiControllerElements.js';
+import { buildUiControllerRenderInvocation } from './uiControllerRenderInvocation.js';
 import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
 import { runUiControllerRender } from './uiControllerRenderFlow.js';
 import { createUIControllerRuntime } from './uiControllerRuntime.js';
@@ -99,21 +100,6 @@ export class UIController {
   }
 
   render(state) {
-    runUiControllerRender({
-      state,
-      selectedBuildType: this.selectedBuildType,
-      selectedEntity: this.selectedEntity,
-      engine: this.engine,
-      renderer: this.renderer,
-      elements: this.el,
-      gameUI: this.gameUI,
-      minimap: this.minimap,
-      pushNotification: (payload) => this.pushNotification(payload),
-      setSelectedBuildType: (buildingType) => {
-        this.selectedBuildType = buildingType;
-      },
-      showBanner: (message) => this.showBanner(message),
-      hideBanner: () => this.hideBanner(),
-    });
+    runUiControllerRender(buildUiControllerRenderInvocation(this, state));
   }
 }
