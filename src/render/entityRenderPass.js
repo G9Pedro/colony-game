@@ -1,3 +1,10 @@
+import {
+  computeConstructionProgress,
+  createBuildingInteractiveEntity,
+  createColonistInteractiveEntity,
+  shouldRenderNightWindowGlow,
+} from './entityRenderPolicies.js';
+
 function createRoundedRectPath(ctx, x, y, width, height, radius = 8) {
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
@@ -10,10 +17,6 @@ function createRoundedRectPath(ctx, x, y, width, height, radius = 8) {
   ctx.lineTo(x, y + radius);
   ctx.quadraticCurveTo(x, y, x + radius, y);
   ctx.closePath();
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
 }
 
 export function isRectVisibleInViewport({
@@ -54,7 +57,7 @@ export function buildEntityRenderPass({
     const sprite = spriteFactory.getBuildingSprite(item.type, { construction: true });
     const completeSprite = spriteFactory.getBuildingSprite(item.type, { construction: false });
     const screen = camera.worldToScreen(item.x, item.z);
-    const progress = clamp(item.progress / Math.max(0.1, item.buildTime), 0, 1);
+    const progress = computeConstructionProgress(item.progress, item.buildTime);
     const drawX = screen.x - sprite.anchorX * camera.zoom;
     const drawY = screen.y - sprite.anchorY * camera.zoom;
     const drawW = sprite.canvas.width * camera.zoom;
@@ -121,7 +124,7 @@ export function buildEntityRenderPass({
       depth: building.x + building.z + 0.15,
       draw: (ctx) => {
         ctx.drawImage(sprite.canvas, drawX, drawY, drawW, drawH);
-        if (isNight > 0.45 && ['house', 'apartment', 'library', 'school', 'hut'].includes(building.type)) {
+        if (shouldRenderNightWindowGlow(daylight, building.type)) {
           ctx.save();
           ctx.globalAlpha = isNight * 0.35;
           ctx.fillStyle = 'rgba(255, 195, 116, 0.65)';
@@ -139,20 +142,13 @@ export function buildEntityRenderPass({
       },
     });
 
-    interactiveEntities.push({
-      entity: {
-        type: 'building',
-        id: building.id,
-        buildingType: building.type,
-        x: building.x,
-        z: building.z,
-      },
-      centerX: screen.x,
-      centerY: screen.y - drawH * 0.15,
-      halfWidth: Math.max(14, drawW * 0.2),
-      halfHeight: Math.max(12, drawH * 0.2),
+    interactiveEntities.push(createBuildingInteractiveEntity({
+      building,
+      screen,
+      drawW,
+      drawH,
       depth: building.x + building.z + 0.15,
-    });
+    }));
   });
 
   state.colonists.forEach((colonist) => {
@@ -192,20 +188,14 @@ export function buildEntityRenderPass({
       },
     });
 
-    interactiveEntities.push({
-      entity: {
-        type: 'colonist',
-        id: colonist.id,
-        colonistId: colonist.id,
-        x: renderState.x,
-        z: renderState.z,
-      },
-      centerX: screen.x,
-      centerY: screen.y - drawH * 0.2,
-      halfWidth: Math.max(8, drawW * 0.35),
-      halfHeight: Math.max(10, drawH * 0.5),
+    interactiveEntities.push(createColonistInteractiveEntity({
+      colonist,
+      renderState,
+      screen,
+      drawW,
+      drawH,
       depth: renderState.x + renderState.z + 0.28,
-    });
+    }));
   });
 
   renderables.push(...particles.buildRenderables(camera));
