@@ -6,6 +6,7 @@ import { GameUI } from './gameUI.js';
 import { Minimap } from './minimap.js';
 import { NotificationCenter } from './notifications.js';
 import { formatRenderStatsLabel } from './renderStatsLabel.js';
+import { buildUiControllerHudState, toggleBuildSelection } from './uiControllerViewState.js';
 import { buildTopSummary, getRendererModeLabel, getStatusBannerMessage } from './uiViewState.js';
 
 export class UIController {
@@ -207,7 +208,7 @@ export class UIController {
       state,
       selectedBuildType: this.selectedBuildType,
       onToggleBuildType: (buildingType) => {
-        this.selectedBuildType = this.selectedBuildType === buildingType ? null : buildingType;
+        this.selectedBuildType = toggleBuildSelection(this.selectedBuildType, buildingType);
         this.engine.setSelectedBuildingType(this.selectedBuildType);
       },
       onSelectCategory: (category) => this.engine.setSelectedCategory(category),
@@ -237,15 +238,19 @@ export class UIController {
     this.gameUI.renderSelection(this.selectedEntity, state);
 
     this.minimap.render(state, this.renderer?.getCameraState?.(), this.selectedEntity);
-    this.el.scenarioSelect.value = state.scenarioId;
-    this.el.balanceProfileSelect.value = state.balanceProfileId;
-    this.el.rendererModeSelect.value = this.renderer?.getRendererMode?.() ?? 'isometric';
-    const renderStats = this.renderer?.getDebugStats?.();
-    this.el.renderStatsLabel.textContent = formatRenderStatsLabel(renderStats);
+    const hudState = buildUiControllerHudState({
+      state,
+      renderer: this.renderer,
+      formatRenderStatsLabel,
+      getStatusBannerMessage,
+    });
+    this.el.scenarioSelect.value = hudState.scenarioId;
+    this.el.balanceProfileSelect.value = hudState.balanceProfileId;
+    this.el.rendererModeSelect.value = hudState.rendererMode;
+    this.el.renderStatsLabel.textContent = hudState.renderStatsLabel;
 
-    const bannerMessage = getStatusBannerMessage(state.status);
-    if (bannerMessage) {
-      this.showBanner(bannerMessage);
+    if (hudState.bannerMessage) {
+      this.showBanner(hudState.bannerMessage);
     } else {
       this.hideBanner();
     }
