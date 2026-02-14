@@ -26,8 +26,6 @@ import {
 import { handleLegacyPointerUpEvent } from './legacyPointerUpHandler.js';
 import { beginLegacyPointerDrag, updateLegacyPointerDrag } from './legacyPointerState.js';
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
-import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
-import { pickEntitySelectionFromClient, pickGroundPointFromClient } from './legacyRaycastSession.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
 import {
   createLegacyGrid,
@@ -41,6 +39,7 @@ import {
   buildLegacyCameraStatePayload,
   buildLegacyDebugStatsPayload,
 } from './legacyRendererViewState.js';
+import { pickLegacyEntityAtClient, pickLegacyGroundAtClient } from './legacyScreenPickers.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -156,7 +155,7 @@ export class LegacyThreeRenderer {
   }
 
   screenToGround(clientX, clientY) {
-    return pickGroundPointFromClient({
+    return pickLegacyGroundAtClient({
       clientX,
       clientY,
       domElement: this.renderer.domElement,
@@ -164,25 +163,19 @@ export class LegacyThreeRenderer {
       raycaster: this.raycaster,
       camera: this.camera,
       groundPlane: this.groundPlane,
-      toNdc: clientToNdc,
     });
   }
 
   screenToEntity(clientX, clientY) {
-    const targets = [
-      ...this.buildingMeshes.values(),
-      ...this.colonistMeshes.values(),
-    ];
-    return pickEntitySelectionFromClient({
+    return pickLegacyEntityAtClient({
       clientX,
       clientY,
       domElement: this.renderer.domElement,
       mouse: this.mouse,
       raycaster: this.raycaster,
       camera: this.camera,
-      targets,
-      toNdc: clientToNdc,
-      mapSelectionFromObject: buildEntitySelectionFromObject,
+      buildingMeshes: this.buildingMeshes,
+      colonistMeshes: this.colonistMeshes,
     });
   }
 
