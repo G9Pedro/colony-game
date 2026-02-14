@@ -6,13 +6,12 @@ import { updateColonistRenderState } from './colonistInterpolation.js';
 import { drawIsometricEntityPass } from './isometricEntityDraw.js';
 import { buildIsometricEntityDrawInvocation } from './isometricEntityDrawInvocation.js';
 import { createIsometricInteractionSession } from './isometricInteractionSession.js';
-import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
 import { applyRendererFrameState } from './rendererFrameState.js';
 import {
-  applyIsometricSelectedEntity,
-  buildIsometricClickSelectionInvocation,
-  buildIsometricHoverSelectionInvocation,
-} from './isometricSelectionState.js';
+  dispatchIsometricClickSelection,
+  dispatchIsometricEntitySelection,
+  dispatchIsometricHoverSelection,
+} from './isometricSelectionDispatch.js';
 import {
   applyRendererEntitySelectHandler,
   applyRendererGroundClickHandler,
@@ -123,15 +122,15 @@ export class IsometricRenderer {
   }
 
   updateHoverSelection(localX, localY) {
-    updateIsometricHoverSelection(buildIsometricHoverSelectionInvocation(this, localX, localY));
+    dispatchIsometricHoverSelection(this, localX, localY);
   }
 
   setSelectedEntity(entity) {
-    applyIsometricSelectedEntity(this, entity);
+    dispatchIsometricEntitySelection(this, entity);
   }
 
   handleClick(localX, localY, tile) {
-    handleIsometricClickSelection(buildIsometricClickSelectionInvocation(this, localX, localY, tile));
+    dispatchIsometricClickSelection(this, localX, localY, tile);
   }
 
   syncBuildingAnimations(state, now) {
