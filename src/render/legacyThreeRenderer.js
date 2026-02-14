@@ -1,5 +1,5 @@
 import * as THREE from '../../node_modules/three/build/three.module.js';
-import { dispatchLegacyCameraUpdate, dispatchLegacyCenterOnBuilding } from './legacyCameraDispatch.js';
+import { dispatchLegacyCameraUpdate } from './legacyCameraDispatch.js';
 import {
   dispatchLegacyPointerMove,
   dispatchLegacyPointerUp,
@@ -12,22 +12,24 @@ import { disposeLegacyRendererRuntime } from './legacyRendererLifecycle.js';
 import { beginLegacyPointerDrag } from './legacyPointerState.js';
 import { dispatchLegacyFrame } from './legacyFrameDispatch.js';
 import { dispatchLegacyBuildingSync, dispatchLegacyColonistSync } from './legacyMeshSyncDispatch.js';
-import {
-  clearLegacyPreviewPosition,
-  setLegacyPreviewPosition,
-  updateLegacyPlacementPreview,
-} from './legacyPreviewHandlers.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import { buildLegacyDisposeInvocation } from './legacyDisposeInvocation.js';
-import { dispatchLegacyEntityPick, dispatchLegacyGroundPick } from './legacyPickerDispatch.js';
 import {
   applyRendererEntitySelectHandler,
   applyRendererGroundClickHandler,
   applyRendererPlacementPreviewHandler,
 } from './rendererCallbackState.js';
-import { resizeLegacyRendererViewport } from './legacyRendererViewport.js';
 import { initializeLegacyThreeRenderer } from './legacyRendererInitialization.js';
 import { dispatchLegacyEventSessionBind } from './legacyEventSessionDispatch.js';
+import {
+  dispatchLegacyCameraCenter,
+  dispatchLegacyEntityPickAtScreen,
+  dispatchLegacyGroundPickAtScreen,
+  dispatchLegacyPlacementMarker,
+  dispatchLegacyPreviewClear,
+  dispatchLegacyPreviewSet,
+  dispatchLegacyViewportResize,
+} from './legacyRendererSurfaceDispatch.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -49,7 +51,7 @@ export class LegacyThreeRenderer {
   }
 
   resize() {
-    resizeLegacyRendererViewport(this.rootElement, this.camera, this.renderer);
+    dispatchLegacyViewportResize(this);
   }
 
   setGroundClickHandler(handler) {
@@ -65,11 +67,11 @@ export class LegacyThreeRenderer {
   }
 
   screenToGround(clientX, clientY) {
-    return dispatchLegacyGroundPick(this, clientX, clientY);
+    return dispatchLegacyGroundPickAtScreen(this, clientX, clientY);
   }
 
   screenToEntity(clientX, clientY) {
-    return dispatchLegacyEntityPick(this, clientX, clientY);
+    return dispatchLegacyEntityPickAtScreen(this, clientX, clientY);
   }
 
   handlePointerDown(event) {
@@ -101,19 +103,19 @@ export class LegacyThreeRenderer {
   }
 
   setPreviewPosition(position, valid = true) {
-    setLegacyPreviewPosition(this, position, valid);
+    dispatchLegacyPreviewSet(this, position, valid);
   }
 
   clearPreview() {
-    clearLegacyPreviewPosition(this);
+    dispatchLegacyPreviewClear(this);
   }
 
   updatePlacementMarker(position, valid) {
-    updateLegacyPlacementPreview(this, position, valid);
+    dispatchLegacyPlacementMarker(this, position, valid);
   }
 
   centerOnBuilding(building) {
-    dispatchLegacyCenterOnBuilding(this, building);
+    dispatchLegacyCameraCenter(this, building);
   }
 
   getCameraState() {
