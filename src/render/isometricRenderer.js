@@ -4,9 +4,9 @@ import { createIsometricRendererRuntime } from './isometricRendererRuntime.js';
 import { disposeIsometricRenderer, resizeIsometricViewport } from './isometricRendererLifecycle.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
 import { drawIsometricEntityPass } from './isometricEntityDraw.js';
+import { createIsometricInteractionSession } from './isometricInteractionSession.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
-import { InteractionController } from './interactionController.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
 import { createIsometricPreviewState, resolveIsometricPreviewUpdate } from './isometricPreviewState.js';
 import { buildIsometricCameraStatePayload, buildIsometricDebugStatsPayload } from './isometricRendererViewState.js';
@@ -29,21 +29,7 @@ export class IsometricRenderer {
       documentObject: document,
       performanceObject: performance,
     }));
-    this.interactionController = new InteractionController({
-      canvas: this.canvas,
-      camera: this.camera,
-      onPreview: (point) => {
-        if (this.onPlacementPreview) {
-          this.onPlacementPreview({ x: point.tile.x, z: point.tile.z });
-        }
-      },
-      onHover: (point) => {
-        this.updateHoverSelection(point.local.x, point.local.y);
-      },
-      onClick: (point) => {
-        this.handleClick(point.local.x, point.local.y, point.tile);
-      },
-    });
+    this.interactionController = createIsometricInteractionSession({ renderer: this });
 
     this.boundResize = () => this.resize();
     window.addEventListener('resize', this.boundResize);
