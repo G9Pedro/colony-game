@@ -1,8 +1,6 @@
-import { createIsometricRendererRuntime } from './isometricRendererRuntime.js';
 import { dispatchIsometricFrame } from './isometricFrameDispatch.js';
 import { dispatchIsometricDispose, dispatchIsometricResize } from './isometricLifecycleDispatch.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
-import { createIsometricInteractionSession } from './isometricInteractionSession.js';
 import {
   dispatchIsometricClickSelection,
   dispatchIsometricEntitySelection,
@@ -34,25 +32,17 @@ import {
   dispatchIsometricSelectionDraw,
   dispatchIsometricTerrainDraw,
 } from './isometricDrawDispatch.js';
+import { initializeIsometricRenderer } from './isometricRendererInitialization.js';
 
 export class IsometricRenderer {
   constructor(rootElement, options = {}) {
-    this.rootElement = rootElement;
-    this.onGroundClick = null;
-    this.onPlacementPreview = null;
-    this.onEntitySelect = null;
-    Object.assign(this, createIsometricRendererRuntime({
+    initializeIsometricRenderer(this, {
       rootElement,
       options,
       documentObject: document,
       performanceObject: performance,
-    }));
-    this.interactionController = createIsometricInteractionSession({ renderer: this });
-
-    this.boundResize = () => this.resize();
-    window.addEventListener('resize', this.boundResize);
-
-    this.resize();
+      windowObject: window,
+    });
   }
 
   resize() {
