@@ -5,27 +5,9 @@ import {
   shouldRenderNightWindowGlow,
 } from './entityRenderPolicies.js';
 import { traceRoundedRectPath } from './canvasShapes.js';
+import { isRectVisibleInViewport } from './entityVisibility.js';
 
-export function isRectVisibleInViewport({
-  x,
-  y,
-  width,
-  height,
-  viewportWidth,
-  viewportHeight,
-  padding = 48,
-}) {
-  if (x + width < -padding) {
-    return false;
-  }
-  if (y + height < -padding) {
-    return false;
-  }
-  if (x > viewportWidth + padding) {
-    return false;
-  }
-  return y <= viewportHeight + padding;
-}
+export { isRectVisibleInViewport };
 
 export function buildEntityRenderPass({
   state,

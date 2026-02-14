@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isRectVisibleInViewport } from '../src/render/entityRenderPass.js';
+import { isRectVisibleInViewport } from '../src/render/entityVisibility.js';
 
 test('isRectVisibleInViewport rejects rectangles fully outside viewport', () => {
   const visible = isRectVisibleInViewport({
