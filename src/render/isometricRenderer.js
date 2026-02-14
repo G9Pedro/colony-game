@@ -13,6 +13,7 @@ import { normalizeCameraState } from './cameraState.js';
 import { resolveClickSelectionOutcome } from './clickSelection.js';
 import { createDebugStats } from './debugStats.js';
 import { buildIsometricFrameContext } from './isometricFrameContext.js';
+import { runIsometricFrameDynamics } from './isometricFrameDynamics.js';
 import { InteractionController } from './interactionController.js';
 import { ResourceGainTracker } from './resourceGainTracker.js';
 import { pickBestInteractiveEntityHit } from './interactionHitTest.js';
@@ -308,15 +309,19 @@ export class IsometricRenderer {
     });
     this.lastFrameAt = frame.nextLastFrameAt;
     this.smoothedFps = frame.nextSmoothedFps;
-    this.qualityController.recordFrame(frame.deltaSeconds);
-    this.camera.setWorldRadius(state.maxWorldRadius);
-    this.camera.update(frame.deltaSeconds);
-    this.particles.setQuality(this.qualityController.getParticleMultiplier());
-    this.particles.update(frame.deltaSeconds);
-    this.sampleResourceGains(state, frame.deltaSeconds);
-    this.syncBuildingAnimations(state, frame.now);
-    this.updateColonistInterpolation(state, frame.deltaSeconds);
-    this.maybeEmitBuildingEffects(state, frame.deltaSeconds);
+    runIsometricFrameDynamics({
+      state,
+      frame,
+      qualityController: this.qualityController,
+      camera: this.camera,
+      particles: this.particles,
+      sampleResourceGains: (nextState, deltaSeconds) => this.sampleResourceGains(nextState, deltaSeconds),
+      syncBuildingAnimations: (nextState, now) => this.syncBuildingAnimations(nextState, now),
+      updateColonistInterpolation: (nextState, deltaSeconds) =>
+        this.updateColonistInterpolation(nextState, deltaSeconds),
+      maybeEmitBuildingEffects: (nextState, deltaSeconds) =>
+        this.maybeEmitBuildingEffects(nextState, deltaSeconds),
+    });
 
     this.drawBackground(state, frame.width, frame.height, frame.daylight);
     this.drawTerrain(state);
