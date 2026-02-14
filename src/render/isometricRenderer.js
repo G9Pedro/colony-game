@@ -10,6 +10,7 @@ import { updateColonistRenderState } from './colonistInterpolation.js';
 import { diffNewBuildingPlacements } from './buildingPlacementTracker.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
 import { normalizeCameraState } from './cameraState.js';
+import { resolveClickSelectionOutcome } from './clickSelection.js';
 import { createDebugStats } from './debugStats.js';
 import { InteractionController } from './interactionController.js';
 import { ResourceGainTracker } from './resourceGainTracker.js';
@@ -188,17 +189,17 @@ export class IsometricRenderer {
   handleClick(localX, localY, tile) {
     const hit = this.hitTestEntity(localX, localY);
     const selectedBuildingType = this.lastState?.selectedBuildingType;
-
-    if (!selectedBuildingType && hit?.entity) {
-      this.setSelectedEntity(hit.entity);
-      return;
-    }
-
-    if (!selectedBuildingType) {
+    const outcome = resolveClickSelectionOutcome({
+      selectedBuildingType,
+      hitEntity: hit?.entity ?? null,
+    });
+    if (outcome.selectionAction === 'set') {
+      this.setSelectedEntity(outcome.selectedEntity);
+    } else if (outcome.selectionAction === 'clear') {
       this.setSelectedEntity(null);
     }
 
-    if (this.onGroundClick) {
+    if (outcome.shouldGroundClick && this.onGroundClick) {
       this.onGroundClick({ x: tile.x, z: tile.z });
     }
   }
