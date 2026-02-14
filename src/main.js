@@ -13,6 +13,7 @@ import {
 } from './mainNotifications.js';
 import { createMainPersistenceCallbacks } from './mainPersistenceCallbacks.js';
 import { bindMainRendererInteractions } from './mainRendererBindings.js';
+import { bootstrapMainUI } from './mainUIBootstrap.js';
 import { FallbackRenderer } from './render/fallbackRenderer.js';
 import { SceneRenderer } from './render/sceneRenderer.js';
 import { UIController } from './ui/uiController.js';
@@ -40,10 +41,13 @@ const ui = new UIController({
   researchDefinitions: RESEARCH_DEFINITIONS,
   resourceDefinitions: RESOURCE_DEFINITIONS,
 });
-ui.attachRenderer(renderer);
-ui.setRendererModeOptions(renderer.getAvailableModes?.() ?? ['isometric'], renderer.getRendererMode?.() ?? 'isometric');
-ui.setScenarioOptions(Object.values(SCENARIO_DEFINITIONS), engine.state.scenarioId);
-ui.setBalanceProfileOptions(Object.values(BALANCE_PROFILE_DEFINITIONS), engine.state.balanceProfileId);
+bootstrapMainUI({
+  ui,
+  renderer,
+  engine,
+  scenarioDefinitions: SCENARIO_DEFINITIONS,
+  balanceProfileDefinitions: BALANCE_PROFILE_DEFINITIONS,
+});
 
 const notify = createMainNotifier({ ui });
 registerEngineNotifications(engine, notify);
