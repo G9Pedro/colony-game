@@ -5,6 +5,13 @@ import {
   PREWARM_RESOURCE_KEYS,
 } from './spriteFactoryConstants.js';
 import { getOrCreateCachedSprite } from './spriteCache.js';
+import {
+  buildBuildingSpriteCacheKey,
+  buildBuildingThumbnailCacheKey,
+  buildColonistSpriteCacheKey,
+  buildResourceIconCacheKey,
+  buildTerrainTileCacheKey,
+} from './spriteCacheKeys.js';
 import { createSpriteCanvas, getSpriteContext2D } from './spriteCanvasFactory.js';
 import { drawBuildingSpriteCanvas } from './spriteBuildingRenderer.js';
 import { drawColonistSprite } from './spriteColonistRenderer.js';
@@ -34,7 +41,7 @@ export class SpriteFactory {
   }
 
   getTerrainTile(kind = 'grass', variant = 0) {
-    const key = `${kind}:${variant}`;
+    const key = buildTerrainTileCacheKey(kind, variant);
     return getOrCreateCachedSprite(this.terrainTiles, key, () => {
       const canvas = createSpriteCanvas(this.tileWidth + 6, this.tileHeight + 6);
       const ctx = getSpriteContext2D(canvas);
@@ -52,7 +59,7 @@ export class SpriteFactory {
   }
 
   getBuildingSprite(type, { construction = false } = {}) {
-    const key = `${type}:${construction ? 'construction' : 'complete'}`;
+    const key = buildBuildingSpriteCacheKey(type, construction);
     return getOrCreateCachedSprite(this.buildingSprites, key, () => {
       const definition = BUILDING_DEFINITIONS[type];
       const override = BUILDING_STYLE_OVERRIDES[type] ?? {};
@@ -79,7 +86,7 @@ export class SpriteFactory {
   }
 
   getBuildingThumbnail(type, size = 56) {
-    const key = `${type}:thumb:${size}`;
+    const key = buildBuildingThumbnailCacheKey(type, size);
     return getOrCreateCachedSprite(this.buildingSprites, key, () => {
       const source = this.getBuildingSprite(type).canvas;
       const canvas = createSpriteCanvas(size, size);
@@ -90,7 +97,7 @@ export class SpriteFactory {
   }
 
   getColonistSprite(job = 'laborer', frame = 0, { idle = false } = {}) {
-    const key = `${job}:${frame}:${idle ? 1 : 0}`;
+    const key = buildColonistSpriteCacheKey(job, frame, idle);
     return getOrCreateCachedSprite(this.colonistSprites, key, () => {
       const canvas = createSpriteCanvas(24, 30);
       const ctx = getSpriteContext2D(canvas);
@@ -100,7 +107,7 @@ export class SpriteFactory {
   }
 
   getResourceIcon(resourceKey, size = 20) {
-    const key = `${resourceKey}:${size}`;
+    const key = buildResourceIconCacheKey(resourceKey, size);
     return getOrCreateCachedSprite(this.resourceIcons, key, () => {
       const canvas = createSpriteCanvas(size, size);
       const ctx = getSpriteContext2D(canvas);
