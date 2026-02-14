@@ -29,6 +29,11 @@ import {
   createLegacyPreviewMarker,
 } from './legacySceneSetup.js';
 import { beginLegacyPinch, endLegacyPinch, updateLegacyPinch } from './legacyTouchState.js';
+import {
+  applyLegacyPreviewMarker,
+  buildLegacyCameraStatePayload,
+  buildLegacyDebugStatsPayload,
+} from './legacyRendererViewState.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -280,18 +285,11 @@ export class LegacyThreeRenderer {
   }
 
   setPreviewPosition(position, valid = true) {
-    if (!position) {
-      this.clearPreview();
-      return;
-    }
-    this.previewMarker.visible = true;
-    this.previewMarker.position.x = position.x;
-    this.previewMarker.position.z = position.z;
-    this.previewMarker.material.color.setHex(valid ? 0x22c55e : 0xef4444);
+    applyLegacyPreviewMarker(this.previewMarker, position, valid);
   }
 
   clearPreview() {
-    this.previewMarker.visible = false;
+    this.setPreviewPosition(null);
   }
 
   updatePlacementMarker(position, valid) {
@@ -307,29 +305,15 @@ export class LegacyThreeRenderer {
   }
 
   getCameraState() {
-    return normalizeCameraState({
-      mode: 'three',
-      projection: 'perspective',
-      centerX: this.cameraTarget.x,
-      centerZ: this.cameraTarget.z,
-      zoom: 1,
-      width: this.rootElement.clientWidth,
-      height: this.rootElement.clientHeight,
-      worldRadius: 30,
-    }, {
+    const payload = buildLegacyCameraStatePayload(this.rootElement, this.cameraTarget, 30);
+    return normalizeCameraState(payload, {
       mode: 'three',
       projection: 'perspective',
     });
   }
 
   getDebugStats() {
-    return createDebugStats({
-      mode: 'three',
-      fps: this.smoothedFps,
-      quality: 1,
-      particles: 0,
-      particleCap: 0,
-    });
+    return createDebugStats(buildLegacyDebugStatsPayload(this.smoothedFps));
   }
 
   syncBuildings(state) {
