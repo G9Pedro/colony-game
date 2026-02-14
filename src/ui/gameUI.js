@@ -2,12 +2,9 @@ import { AnimationManager } from '../render/animations.js';
 import { getBuildingCardState } from './buildingAvailability.js';
 import { buildBuildCardRows, buildCategoryPillRows } from './buildMenuViewState.js';
 import { renderColonistPanel, renderConstructionQueuePanel, renderResearchPanels } from './colonyPanelsDom.js';
-import { buildObjectiveHint, buildObjectiveRows } from './objectivesViewState.js';
+import { renderObjectivesPanel, renderRunStatsPanel, renderSelectionPanel } from './infoPanelsDom.js';
 import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildResourceBarRows } from './resourceBarViewState.js';
-import { buildSelectionPanelViewModel } from './selectionPanelViewState.js';
-import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
-import { buildRunStatsPanelViewModel } from './runStatsPanelViewState.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
@@ -155,79 +152,34 @@ export class GameUI {
   }
 
   renderObjectives(state, objectives, rewardMultiplier, formatObjectiveReward, getCurrentObjectiveIds) {
-    this.el.objectivesList.innerHTML = '';
-    const rows = buildObjectiveRows({
-      objectives,
-      completedObjectiveIds: state.objectives.completed,
-      rewardMultiplier,
-      formatObjectiveReward,
-    });
-    rows.forEach((row) => {
-      const card = document.createElement('div');
-      card.className = `panel-card ${row.completed ? 'completed' : ''}`;
-      card.innerHTML = `
-        <div class="kv"><strong>${row.title}</strong><small>${row.completed ? 'Done' : 'Active'}</small></div>
-        <small>${row.description}</small>
-        <small class="reward-label">Reward: ${row.rewardLabel}</small>
-      `;
-      this.el.objectivesList.appendChild(card);
-    });
-    this.el.hintBadge.textContent = buildObjectiveHint({
+    renderObjectivesPanel({
+      listElement: this.el.objectivesList,
+      hintElement: this.el.hintBadge,
       state,
       objectives,
+      rewardMultiplier,
+      formatObjectiveReward,
       getCurrentObjectiveIds,
     });
   }
 
   renderRunStats(state) {
-    const panel = buildRunStatsPanelViewModel(state, 3);
-    const metricsMarkup = panel.metricsRows
-      .map((row) => `<div class="kv"><span>${row.label}</span><strong>${row.value}</strong></div>`)
-      .join('');
-    this.el.metricsSummary.innerHTML = `
-      <div class="panel-card">
-        ${metricsMarkup}
-      </div>
-    `;
-    if (panel.warningMessage) {
-      const warning = document.createElement('div');
-      warning.className = 'panel-card warning';
-      warning.textContent = panel.warningMessage;
-      this.el.metricsSummary.appendChild(warning);
-    }
-
-    this.el.runHistory.innerHTML = '';
-    if (panel.historyRows.length === 0) {
-      this.el.runHistory.innerHTML = '<div class="panel-card"><small>No previous runs yet.</small></div>';
-      return;
-    }
-    panel.historyRows.forEach((run) => {
-      const card = document.createElement('div');
-      card.className = 'panel-card';
-      card.innerHTML = `
-        <div class="kv"><strong>${run.outcomeLabel}</strong><small>${run.dayLabel}</small></div>
-        <small>${run.summary}</small>
-      `;
-      this.el.runHistory.appendChild(card);
+    renderRunStatsPanel({
+      metricsElement: this.el.metricsSummary,
+      historyElement: this.el.runHistory,
+      state,
+      historyLimit: 3,
     });
   }
 
   renderSelection(selection, state) {
-    const panel = buildSelectionPanelViewModel({
+    renderSelectionPanel({
+      titleElement: this.el.infoPanelTitle,
+      bodyElement: this.el.infoPanelBody,
       selection,
       state,
       buildingDefinitions: this.buildingDefinitions,
-      buildBuildingSelectionDetails,
-      buildColonistSelectionDetails,
     });
-    this.el.infoPanelTitle.textContent = panel.title;
-    if (panel.message) {
-      this.el.infoPanelBody.innerHTML = `<small>${panel.message}</small>`;
-      return;
-    }
-    this.el.infoPanelBody.innerHTML = panel.rows
-      .map((row) => `<div class="kv"><span>${row.label}</span><strong>${row.value}</strong></div>`)
-      .join('');
   }
 }
 
