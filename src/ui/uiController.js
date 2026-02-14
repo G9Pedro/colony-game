@@ -14,6 +14,10 @@ import {
   pushUIControllerNotification,
   showUIControllerBanner,
 } from './uiControllerState.js';
+import {
+  applyUIControllerBalanceProfileOptions,
+  applyUIControllerScenarioOptions,
+} from './uiControllerGameOptions.js';
 
 export class UIController {
   constructor({
@@ -72,11 +76,11 @@ export class UIController {
   }
 
   setScenarioOptions(scenarios, currentScenarioId) {
-    this.gameUI.setScenarioOptions(scenarios, currentScenarioId);
+    applyUIControllerScenarioOptions(this, scenarios, currentScenarioId);
   }
 
   setBalanceProfileOptions(profiles, currentProfileId) {
-    this.gameUI.setBalanceProfileOptions(profiles, currentProfileId);
+    applyUIControllerBalanceProfileOptions(this, profiles, currentProfileId);
   }
 
   showBanner(message) {
