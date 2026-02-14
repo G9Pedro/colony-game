@@ -2,6 +2,7 @@ import * as THREE from '../../node_modules/three/build/three.module.js';
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
+import { computeFrameDeltaSeconds, updateSmoothedFps } from './frameTiming.js';
 
 const BUILDING_Y_BASE = 0.01;
 
@@ -412,12 +413,9 @@ export class LegacyThreeRenderer {
 
   render(state) {
     const now = performance.now();
-    const deltaSeconds = Math.min(0.2, (now - this.lastFrameAt) / 1000);
+    const deltaSeconds = computeFrameDeltaSeconds(now, this.lastFrameAt, 0.2);
     this.lastFrameAt = now;
-    if (deltaSeconds > 0) {
-      const instantFps = 1 / deltaSeconds;
-      this.smoothedFps = this.smoothedFps * 0.9 + instantFps * 0.1;
-    }
+    this.smoothedFps = updateSmoothedFps(this.smoothedFps, deltaSeconds, 0.9);
     this.syncBuildings(state);
     this.syncColonists(state);
     this.renderer.render(this.scene, this.camera);

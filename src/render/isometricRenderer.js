@@ -1,5 +1,6 @@
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { AnimationManager } from './animations.js';
+import { computeFrameDeltaSeconds, updateSmoothedFps } from './frameTiming.js';
 import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
@@ -301,12 +302,9 @@ export class IsometricRenderer {
   render(state) {
     this.lastState = state;
     const now = performance.now();
-    const deltaSeconds = Math.min(0.12, (now - this.lastFrameAt) / 1000);
+    const deltaSeconds = computeFrameDeltaSeconds(now, this.lastFrameAt, 0.12);
     this.lastFrameAt = now;
-    if (deltaSeconds > 0) {
-      const instantFps = 1 / deltaSeconds;
-      this.smoothedFps = this.smoothedFps * 0.9 + instantFps * 0.1;
-    }
+    this.smoothedFps = updateSmoothedFps(this.smoothedFps, deltaSeconds, 0.9);
     this.qualityController.recordFrame(deltaSeconds);
     this.camera.setWorldRadius(state.maxWorldRadius);
     this.camera.update(deltaSeconds);
