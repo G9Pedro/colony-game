@@ -22,6 +22,7 @@ import { beginLegacyPointerDrag, endLegacyPointerDrag, updateLegacyPointerDrag }
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
 import { pickEntitySelectionFromClient, pickGroundPointFromClient } from './legacyRaycastSession.js';
+import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
 import {
   createLegacyGrid,
   createLegacyGroundPlane,
@@ -317,32 +318,27 @@ export class LegacyThreeRenderer {
   }
 
   syncBuildings(state) {
-    reconcileMeshMap({
-      entities: state.buildings,
-      meshMap: this.buildingMeshes,
+    syncLegacyBuildingMeshes({
+      state,
+      buildingMeshes: this.buildingMeshes,
       scene: this.scene,
-      getId: (building) => building.id,
-      createMesh: (building) => createLegacyBuildingMesh(building, BUILDING_DEFINITIONS, THREE),
+      three: THREE,
+      buildingDefinitions: BUILDING_DEFINITIONS,
+      reconcileMeshMap,
+      createLegacyBuildingMesh,
     });
   }
 
   syncColonists(state) {
-    const liveColonists = state.colonists.filter((colonist) => colonist.alive);
-    reconcileMeshMap({
-      entities: liveColonists,
-      meshMap: this.colonistMeshes,
+    syncLegacyColonistMeshes({
+      state,
+      colonistMeshes: this.colonistMeshes,
       scene: this.scene,
-      getId: (colonist) => colonist.id,
-      createMesh: (colonist) => createLegacyColonistMesh(colonist, THREE),
+      three: THREE,
+      reconcileMeshMap,
+      createLegacyColonistMesh,
+      updateColonistMeshPose,
     });
-
-    for (const colonist of liveColonists) {
-      const mesh = this.colonistMeshes.get(colonist.id);
-      if (!mesh) {
-        continue;
-      }
-      updateColonistMeshPose(mesh, colonist, state.timeSeconds);
-    }
   }
 
   render(state) {
