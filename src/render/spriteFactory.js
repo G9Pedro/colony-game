@@ -11,6 +11,7 @@ import { shadeColor } from './spriteMath.js';
 import { drawDiamond, drawIsoPrism } from './spritePrimitives.js';
 import { drawScaffoldOverlay, drawTextureNoise } from './spriteEffects.js';
 import { drawBuildingDecoration } from './spriteBuildingDecorations.js';
+import { drawTerrainTileSprite } from './spriteTerrainRenderer.js';
 
 export class SpriteFactory {
   constructor({ quality = 'balanced' } = {}) {
@@ -54,16 +55,15 @@ export class SpriteFactory {
     }
     const canvas = createSpriteCanvas(this.tileWidth + 6, this.tileHeight + 6);
     const ctx = getSpriteContext2D(canvas);
-    const cx = canvas.width * 0.5;
-    const cy = canvas.height * 0.5;
-
-    const baseColor = kind === 'path'
-      ? '#8a6f4d'
-      : kind === 'dirt'
-        ? '#6f593f'
-        : ['#5f8f3a', '#5a8a37', '#64953d', '#588634'][variant % 4];
-    drawDiamond(ctx, cx, cy, this.tileWidth, this.tileHeight, baseColor, 'rgba(40, 30, 18, 0.2)');
-    drawTextureNoise(ctx, canvas.width, canvas.height, kind === 'grass' ? 0.12 : 0.08, variant + 3);
+    drawTerrainTileSprite({
+      ctx,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      tileWidth: this.tileWidth,
+      tileHeight: this.tileHeight,
+      kind,
+      variant,
+    });
     this.terrainTiles.set(key, canvas);
     return canvas;
   }
