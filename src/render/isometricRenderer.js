@@ -6,25 +6,11 @@ import {
   dispatchIsometricHoverSelection,
 } from './isometricSelectionDispatch.js';
 import {
-  applyRendererEntitySelectHandler,
-  applyRendererGroundClickHandler,
-  applyRendererPlacementPreviewHandler,
-} from './rendererCallbackState.js';
-import {
-  buildIsometricRendererCameraState,
-  buildIsometricRendererDebugStats,
-} from './isometricRendererSnapshots.js';
-import {
   dispatchIsometricAmbientEffects,
   dispatchIsometricColonistInterpolation,
   dispatchIsometricPlacementAnimationSync,
   dispatchIsometricResourceGainSampling,
 } from './isometricRuntimeDispatch.js';
-import {
-  applyIsometricPreviewPosition,
-  clearIsometricPreview,
-  updateIsometricPreviewMarker,
-} from './isometricPreviewHandlers.js';
 import {
   dispatchIsometricBackgroundDraw,
   dispatchIsometricEntityDraw,
@@ -33,6 +19,17 @@ import {
   dispatchIsometricTerrainDraw,
 } from './isometricDrawDispatch.js';
 import { initializeIsometricRenderer } from './isometricRendererInitialization.js';
+import {
+  buildIsometricCameraSnapshot,
+  buildIsometricDebugSnapshot,
+  dispatchIsometricCenterOnBuilding,
+  dispatchIsometricEntitySelectHandler,
+  dispatchIsometricGroundClickHandler,
+  dispatchIsometricPlacementMarker,
+  dispatchIsometricPlacementPreviewHandler,
+  dispatchIsometricPreviewClear,
+  dispatchIsometricPreviewSet,
+} from './isometricRendererSurfaceDispatch.js';
 
 export class IsometricRenderer {
   constructor(rootElement, options = {}) {
@@ -54,42 +51,39 @@ export class IsometricRenderer {
   }
 
   setGroundClickHandler(handler) {
-    applyRendererGroundClickHandler(this, handler);
+    dispatchIsometricGroundClickHandler(this, handler);
   }
 
   setPlacementPreviewHandler(handler) {
-    applyRendererPlacementPreviewHandler(this, handler);
+    dispatchIsometricPlacementPreviewHandler(this, handler);
   }
 
   setEntitySelectHandler(handler) {
-    applyRendererEntitySelectHandler(this, handler);
+    dispatchIsometricEntitySelectHandler(this, handler);
   }
 
   setPreviewPosition(position, valid = true) {
-    applyIsometricPreviewPosition(this, position, valid);
+    dispatchIsometricPreviewSet(this, position, valid);
   }
 
   clearPreview() {
-    clearIsometricPreview(this);
+    dispatchIsometricPreviewClear(this);
   }
 
   updatePlacementMarker(position, valid) {
-    updateIsometricPreviewMarker(this, position, valid);
+    dispatchIsometricPlacementMarker(this, position, valid);
   }
 
   centerOnBuilding(building) {
-    if (!building) {
-      return;
-    }
-    this.camera.centerOn(building.x, building.z);
+    dispatchIsometricCenterOnBuilding(this, building);
   }
 
   getCameraState() {
-    return buildIsometricRendererCameraState(this);
+    return buildIsometricCameraSnapshot(this);
   }
 
   getDebugStats() {
-    return buildIsometricRendererDebugStats(this);
+    return buildIsometricDebugSnapshot(this);
   }
 
   updateHoverSelection(localX, localY) {
