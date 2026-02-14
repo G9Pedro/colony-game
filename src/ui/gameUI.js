@@ -1,4 +1,5 @@
 import { AnimationManager } from '../render/animations.js';
+import { getBuildingCardState } from './buildingAvailability.js';
 import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
 
@@ -144,14 +145,11 @@ export class GameUI {
     );
 
     candidates.forEach((definition) => {
-      const unlocked = isBuildingUnlocked(state, definition);
-      const canAfford = Object.entries(definition.cost).every(
-        ([resource, amount]) => (state.resources[resource] ?? 0) >= amount,
-      );
+      const cardState = getBuildingCardState(state, definition, isBuildingUnlocked, formatCost);
 
       const card = document.createElement('button');
       card.className = `build-card ${selectedBuildType === definition.id ? 'active' : ''}`;
-      card.disabled = !unlocked;
+      card.disabled = !cardState.unlocked;
       card.type = 'button';
       card.addEventListener('click', () => onToggleBuildType(definition.id));
 
@@ -165,10 +163,8 @@ export class GameUI {
       const title = document.createElement('strong');
       title.textContent = definition.name;
       const subtitle = document.createElement('small');
-      subtitle.textContent = !unlocked
-        ? `Requires ${definition.requiredTech}`
-        : `${definition.buildTime}s · ${formatCost(definition.cost)}`;
-      if (unlocked && !canAfford) {
+      subtitle.textContent = cardState.subtitle;
+      if (cardState.warning) {
         subtitle.classList.add('warning');
       }
 
