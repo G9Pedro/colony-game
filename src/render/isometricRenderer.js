@@ -10,6 +10,7 @@ import { buildEntityRenderPass } from './entityRenderPass.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { InteractionController } from './interactionController.js';
+import { ResourceGainTracker } from './resourceGainTracker.js';
 import {
   createIndustrialSmokeBurst,
   createMysticSparkleBurst,
@@ -18,7 +19,7 @@ import {
 } from './effectPolicies.js';
 import { pickBestInteractiveEntityHit } from './interactionHitTest.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
-import { getDaylightFactor, getResourceGains, getSeasonTint } from './stateVisuals.js';
+import { getDaylightFactor, getSeasonTint } from './stateVisuals.js';
 import { TerrainLayerRenderer } from './terrainLayer.js';
 
 export class IsometricRenderer {
@@ -64,8 +65,7 @@ export class IsometricRenderer {
     this.lastFrameAt = performance.now();
     this.smoothedFps = 60;
     this.devicePixelRatio = 1;
-    this.previousResources = null;
-    this.resourceSampleCooldown = 0;
+    this.resourceGainTracker = new ResourceGainTracker({ cooldownSeconds: 1.1, minDelta: 3 });
     this.lastState = null;
     this.selectedEntity = null;
     this.hoveredEntity = null;
@@ -233,18 +233,7 @@ export class IsometricRenderer {
   }
 
   sampleResourceGains(state, deltaSeconds) {
-    this.resourceSampleCooldown -= deltaSeconds;
-    if (this.resourceSampleCooldown > 0) {
-      return;
-    }
-    this.resourceSampleCooldown = 1.1;
-
-    if (!this.previousResources) {
-      this.previousResources = { ...state.resources };
-      return;
-    }
-
-    const gains = getResourceGains(state.resources, this.previousResources, 3);
+    const gains = this.resourceGainTracker.sample(state.resources, deltaSeconds);
 
     if (gains.length > 0 && this.options.effectsEnabled && this.qualityController.shouldRunOptionalEffects()) {
       const { resource, delta } = gains[0];
@@ -256,7 +245,6 @@ export class IsometricRenderer {
         color: '#f4ead0',
       });
     }
-    this.previousResources = { ...state.resources };
   }
 
   drawBackground(state, width, height, daylight) {
