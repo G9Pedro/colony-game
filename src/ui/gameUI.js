@@ -6,6 +6,7 @@ import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { renderGameUIBuildCards, renderGameUIBuildCategories } from './gameUIBuildMenuDom.js';
 import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
+import { renderGameUIResourceBar } from './gameUIResourceBarDom.js';
 import {
   buildGameUIColonistPanelInvocation,
   buildGameUIConstructionQueueInvocation,
@@ -73,22 +74,16 @@ export class GameUI {
 
   renderResourceBar(state) {
     this.updateResourceRates(state);
-    this.el.resourceList.innerHTML = '';
-    const rows = buildResourceBarRows({
+    renderGameUIResourceBar({
+      elements: this.el,
       resourceDefinitions: this.resourceDefinitions,
       resources: state.resources,
       resourceRates: this.resourceRates,
-      mapDisplayedValue: (resourceId, value) => this.valueAnimator.tweenValue(`resource:${resourceId}`, value),
-    });
-
-    rows.forEach((row) => {
-      const icon = this.spriteFactory.getResourceIcon(row.id, 20);
-      const card = createResourceChipElement({
-        row,
-        icon,
-        formatRate,
-      });
-      this.el.resourceList.appendChild(card);
+      valueAnimator: this.valueAnimator,
+      spriteFactory: this.spriteFactory,
+      buildResourceBarRows,
+      createResourceChipElement,
+      formatRate,
     });
   }
 
