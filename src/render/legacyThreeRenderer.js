@@ -2,31 +2,20 @@ import * as THREE from '../../node_modules/three/build/three.module.js';
 import { applyLegacyCameraPose, computeLegacyCameraPosition } from './legacyCameraPose.js';
 import { runLegacyFrame } from './legacyFrameRender.js';
 import {
-  handleLegacyPointerMoveEvent,
-  handleLegacyTouchEndEvent,
-  handleLegacyTouchMoveEvent,
-  handleLegacyTouchStartEvent,
-  handleLegacyWheelEvent,
-} from './legacyInteractionHandlers.js';
-import { handleLegacyPointerUpEvent } from './legacyPointerUpHandler.js';
+  dispatchLegacyPointerMove,
+  dispatchLegacyPointerUp,
+  dispatchLegacyTouchEnd,
+  dispatchLegacyTouchMove,
+  dispatchLegacyTouchStart,
+  dispatchLegacyWheel,
+} from './legacyInteractionDispatch.js';
+import { bindLegacyRendererEvents, disposeLegacyRendererRuntime } from './legacyRendererLifecycle.js';
 import { beginLegacyPointerDrag } from './legacyPointerState.js';
-import {
-  bindLegacyRendererEvents,
-  disposeLegacyRendererRuntime,
-} from './legacyRendererLifecycle.js';
 import { createLegacyRendererBaseState } from './legacyRendererBaseState.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
 import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
 import { buildLegacyBuildingSyncInvocation, buildLegacyColonistSyncInvocation } from './legacyMeshSyncInvocation.js';
-import {
-  buildLegacyPointerMoveInvocation,
-  buildLegacyPointerUpInvocation,
-  buildLegacyTouchEndInvocation,
-  buildLegacyTouchMoveInvocation,
-  buildLegacyTouchStartInvocation,
-  buildLegacyWheelInvocation,
-} from './legacyInteractionInvocation.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
 import { applyLegacyPreviewMarker } from './legacyRendererViewState.js';
 import { buildLegacyFrameInvocation } from './legacyFrameInvocation.js';
@@ -118,27 +107,27 @@ export class LegacyThreeRenderer {
   }
 
   handlePointerMove(event) {
-    handleLegacyPointerMoveEvent(buildLegacyPointerMoveInvocation(this, event));
+    dispatchLegacyPointerMove(this, event);
   }
 
   handlePointerUp(event) {
-    handleLegacyPointerUpEvent(buildLegacyPointerUpInvocation(this, event));
+    dispatchLegacyPointerUp(this, event);
   }
 
   handleWheel(event) {
-    handleLegacyWheelEvent(buildLegacyWheelInvocation(this, event));
+    dispatchLegacyWheel(this, event);
   }
 
   handleTouchStart(event) {
-    handleLegacyTouchStartEvent(buildLegacyTouchStartInvocation(this, event));
+    dispatchLegacyTouchStart(this, event);
   }
 
   handleTouchMove(event) {
-    handleLegacyTouchMoveEvent(buildLegacyTouchMoveInvocation(this, event));
+    dispatchLegacyTouchMove(this, event);
   }
 
   handleTouchEnd() {
-    handleLegacyTouchEndEvent(buildLegacyTouchEndInvocation(this));
+    dispatchLegacyTouchEnd(this);
   }
 
   setPreviewPosition(position, valid = true) {
