@@ -5,10 +5,7 @@ import {
   PREWARM_RESOURCE_KEYS,
 } from './spriteFactoryConstants.js';
 import { createSpriteCanvas, getSpriteContext2D } from './spriteCanvasFactory.js';
-import { shadeColor } from './spriteMath.js';
-import { drawDiamond, drawIsoPrism } from './spritePrimitives.js';
-import { drawScaffoldOverlay, drawTextureNoise } from './spriteEffects.js';
-import { drawBuildingDecoration } from './spriteBuildingDecorations.js';
+import { drawBuildingSpriteCanvas } from './spriteBuildingRenderer.js';
 import { drawColonistSprite } from './spriteColonistRenderer.js';
 import { drawResourceIconSprite } from './spriteResourceIconRenderer.js';
 import { drawTerrainTileSprite } from './spriteTerrainRenderer.js';
@@ -76,52 +73,24 @@ export class SpriteFactory {
 
     const definition = BUILDING_DEFINITIONS[type];
     const override = BUILDING_STYLE_OVERRIDES[type] ?? {};
-    const roofColor = override.roof ?? '#9a5f3b';
-    const wallColor = override.wall ?? '#a18b73';
-    const footprintScale = override.footprint ?? 1;
-    const heightScale = override.height ?? 0.85;
     const spriteWidth = 160;
     const spriteHeight = 160;
     const canvas = createSpriteCanvas(spriteWidth, spriteHeight);
     const ctx = getSpriteContext2D(canvas);
-
-    const centerX = spriteWidth * 0.5;
-    const baseY = spriteHeight - 44;
-    const width = Math.max(38, definition.size[0] * 22 * footprintScale);
-    const depth = Math.max(18, definition.size[2] * 11 * footprintScale);
-    const height = Math.max(18, definition.size[1] * 18 * heightScale);
-
-    ctx.fillStyle = 'rgba(12, 10, 7, 0.17)';
-    ctx.beginPath();
-    ctx.ellipse(centerX, baseY + depth * 0.48, width * 0.5, depth * 0.3, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    drawDiamond(ctx, centerX, baseY, width, depth, shadeColor(wallColor, 0.68), 'rgba(35, 23, 12, 0.22)');
-    const prism = drawIsoPrism(ctx, {
-      cx: centerX,
-      baseY,
-      width,
-      depth,
-      height,
-      topColor: shadeColor(roofColor, 1.1),
-      leftColor: shadeColor(wallColor, 0.88),
-      rightColor: shadeColor(wallColor, 0.74),
+    const spriteMetrics = drawBuildingSpriteCanvas({
+      ctx,
+      type,
+      definition,
+      override,
+      quality: this.quality,
+      construction,
+      spriteWidth,
+      spriteHeight,
     });
-    drawTextureNoise(ctx, spriteWidth, spriteHeight, this.quality === 'high' ? 0.2 : 0.09, width + depth);
-    drawBuildingDecoration(ctx, type, centerX, baseY, width, depth, prism.topCenterY);
-
-    if (construction) {
-      drawScaffoldOverlay(ctx, spriteWidth, spriteHeight);
-      ctx.fillStyle = 'rgba(234, 211, 156, 0.24)';
-      ctx.fillRect(0, 0, spriteWidth, spriteHeight);
-    }
 
     const sprite = {
       canvas,
-      anchorX: centerX,
-      anchorY: baseY + depth * 0.5 + 2,
-      width,
-      depth,
+      ...spriteMetrics,
     };
     this.buildingSprites.set(key, sprite);
     return sprite;
