@@ -13,6 +13,13 @@ import {
   updateRadiusFromWheel,
 } from './legacyThreeCameraControls.js';
 import {
+  handleLegacyPointerMoveEvent,
+  handleLegacyTouchEndEvent,
+  handleLegacyTouchMoveEvent,
+  handleLegacyTouchStartEvent,
+  handleLegacyWheelEvent,
+} from './legacyInteractionHandlers.js';
+import {
   getTouchDistance,
   hasPointerMovedBeyondThreshold,
   toPointerLikeTouch,
@@ -186,26 +193,17 @@ export class LegacyThreeRenderer {
   }
 
   handlePointerMove(event) {
-    const point = this.screenToGround(event.clientX, event.clientY);
-    if (point && this.onPlacementPreview) {
-      this.onPlacementPreview({ x: Math.round(point.x), z: Math.round(point.z) });
-    }
-
-    const dragUpdate = updateLegacyPointerDrag(
-      this.dragState,
-      event.clientX,
-      event.clientY,
+    handleLegacyPointerMoveEvent({
+      event,
+      screenToGround: (clientX, clientY) => this.screenToGround(clientX, clientY),
+      onPlacementPreview: this.onPlacementPreview,
+      dragState: this.dragState,
+      updateLegacyPointerDrag,
       hasPointerMovedBeyondThreshold,
-      1,
-    );
-    if (!dragUpdate.active) {
-      return;
-    }
-
-    const nextPolar = updateOrbitYawAndPitch(this.cameraPolar, dragUpdate.dx, dragUpdate.dy, 0.0055);
-    this.cameraPolar.yaw = nextPolar.yaw;
-    this.cameraPolar.pitch = nextPolar.pitch;
-    this.updateCamera();
+      cameraPolar: this.cameraPolar,
+      updateOrbitYawAndPitch,
+      updateCamera: () => this.updateCamera(),
+    });
   }
 
   handlePointerUp(event) {
@@ -231,53 +229,45 @@ export class LegacyThreeRenderer {
   }
 
   handleWheel(event) {
-    event.preventDefault();
-    this.cameraPolar.radius = updateRadiusFromWheel(this.cameraPolar.radius, event.deltaY, 0.03);
-    this.updateCamera();
+    handleLegacyWheelEvent({
+      event,
+      cameraPolar: this.cameraPolar,
+      updateRadiusFromWheel,
+      updateCamera: () => this.updateCamera(),
+    });
   }
 
   handleTouchStart(event) {
-    if (event.touches.length === 2) {
-      const [first, second] = event.touches;
-      beginLegacyPinch(this.touchState, first, second, getTouchDistance);
-      return;
-    }
-
-    if (event.touches.length === 1) {
-      const touch = event.touches[0];
-      this.handlePointerDown(toPointerLikeTouch(touch));
-    }
+    handleLegacyTouchStartEvent({
+      event,
+      touchState: this.touchState,
+      beginLegacyPinch,
+      getTouchDistance,
+      toPointerLikeTouch,
+      handlePointerDown: (pointerLikeTouch) => this.handlePointerDown(pointerLikeTouch),
+    });
   }
 
   handleTouchMove(event) {
-    event.preventDefault();
-    if (event.touches.length === 2 && this.touchState.isPinching) {
-      const [first, second] = event.touches;
-      const pinchUpdate = updateLegacyPinch(
-        this.touchState,
-        first,
-        second,
-        getTouchDistance,
-        updateRadiusFromPinch,
-        this.cameraPolar.radius,
-        0.04,
-      );
-      this.cameraPolar.radius = pinchUpdate.radius;
-      this.updateCamera();
-      return;
-    }
-
-    if (event.touches.length === 1) {
-      const touch = event.touches[0];
-      this.handlePointerMove(toPointerLikeTouch(touch));
-    }
+    handleLegacyTouchMoveEvent({
+      event,
+      touchState: this.touchState,
+      getTouchDistance,
+      updateRadiusFromPinch,
+      updateLegacyPinch,
+      cameraPolar: this.cameraPolar,
+      updateCamera: () => this.updateCamera(),
+      toPointerLikeTouch,
+      handlePointerMove: (pointerLikeTouch) => this.handlePointerMove(pointerLikeTouch),
+    });
   }
 
   handleTouchEnd() {
-    endLegacyPinch(this.touchState);
-    this.handlePointerUp({
-      clientX: this.dragState.lastX,
-      clientY: this.dragState.lastY,
+    handleLegacyTouchEndEvent({
+      touchState: this.touchState,
+      endLegacyPinch,
+      dragState: this.dragState,
+      handlePointerUp: (pointerLikeTouch) => this.handlePointerUp(pointerLikeTouch),
     });
   }
 
