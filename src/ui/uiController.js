@@ -6,6 +6,7 @@ import { GameUI } from './gameUI.js';
 import { Minimap } from './minimap.js';
 import { NotificationCenter } from './notifications.js';
 import { formatRenderStatsLabel } from './renderStatsLabel.js';
+import { buildTopSummary, getRendererModeLabel, getStatusBannerMessage } from './uiViewState.js';
 
 export class UIController {
   constructor({
@@ -152,7 +153,7 @@ export class UIController {
     modes.forEach((mode) => {
       const option = document.createElement('option');
       option.value = mode;
-      option.textContent = mode === 'isometric' ? 'Isometric' : 'Three.js';
+      option.textContent = getRendererModeLabel(mode);
       option.selected = mode === activeMode;
       this.el.rendererModeSelect.appendChild(option);
     });
@@ -188,16 +189,17 @@ export class UIController {
   }
 
   render(state) {
-    const alivePopulation = state.colonists.filter((colonist) => colonist.alive).length;
-    const populationCap = getPopulationCapacity(state);
-    const avgMorale = getAverageMorale(state);
-    const storageUsed = getUsedStorage(state);
-    const storageCap = getStorageCapacity(state);
+    const topSummary = buildTopSummary(state, {
+      getPopulationCapacity,
+      getAverageMorale,
+      getUsedStorage,
+      getStorageCapacity,
+    });
 
     this.gameUI.renderTopState(state, {
-      populationText: `${alivePopulation} / ${populationCap}`,
-      morale: Math.floor(avgMorale).toString(),
-      storageText: `${Math.floor(storageUsed)} / ${storageCap}`,
+      populationText: topSummary.populationText,
+      morale: topSummary.moraleText,
+      storageText: topSummary.storageText,
     });
     this.gameUI.renderSpeedButtons(state);
     this.gameUI.renderResourceBar(state);
@@ -241,10 +243,9 @@ export class UIController {
     const renderStats = this.renderer?.getDebugStats?.();
     this.el.renderStatsLabel.textContent = formatRenderStatsLabel(renderStats);
 
-    if (state.status === 'won') {
-      this.showBanner('Victory! Colony Charter Achieved.');
-    } else if (state.status === 'lost') {
-      this.showBanner('Defeat. Reset to start a new colony.');
+    const bannerMessage = getStatusBannerMessage(state.status);
+    if (bannerMessage) {
+      this.showBanner(bannerMessage);
     } else {
       this.hideBanner();
     }
