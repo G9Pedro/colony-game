@@ -2,6 +2,8 @@ import { IsometricRenderer } from './isometricRenderer.js';
 import { LegacyThreeRenderer } from './legacyThreeRenderer.js';
 import { normalizeCameraState } from './cameraState.js';
 import { normalizeDebugStats } from './debugStats.js';
+import { defineSceneRendererCallbackProperties } from './sceneRendererProperties.js';
+import { resolveSceneRendererPreviewUpdate } from './sceneRendererPreviewState.js';
 import {
   normalizeRendererMode,
   persistRendererModePreference,
@@ -19,24 +21,7 @@ export class SceneRenderer {
     this.mode = normalizeRendererMode(readRendererModePreference() ?? 'isometric');
     this.activeRenderer = null;
     this.lastState = null;
-    Object.defineProperty(this, 'onGroundClick', {
-      configurable: true,
-      enumerable: true,
-      get: () => this._onGroundClick,
-      set: (handler) => this.setGroundClickHandler(handler),
-    });
-    Object.defineProperty(this, 'onPlacementPreview', {
-      configurable: true,
-      enumerable: true,
-      get: () => this._onPlacementPreview,
-      set: (handler) => this.setPlacementPreviewHandler(handler),
-    });
-    Object.defineProperty(this, 'onEntitySelect', {
-      configurable: true,
-      enumerable: true,
-      get: () => this._onEntitySelect,
-      set: (handler) => this.setEntitySelectHandler(handler),
-    });
+    defineSceneRendererCallbackProperties(this);
 
     this.initializeRenderer(this.mode);
   }
@@ -98,12 +83,13 @@ export class SceneRenderer {
   }
 
   setPreviewPosition(position, valid = true) {
-    if (!position) {
-      this.clearPreview();
+    const previewUpdate = resolveSceneRendererPreviewUpdate(position, valid);
+    this.preview = previewUpdate.preview;
+    if (previewUpdate.shouldClear) {
+      this.activeRenderer?.clearPreview();
       return;
     }
-    this.preview = { position, valid };
-    this.activeRenderer?.setPreviewPosition(position, valid);
+    this.activeRenderer?.setPreviewPosition(previewUpdate.position, previewUpdate.valid);
   }
 
   clearPreview() {
@@ -112,10 +98,6 @@ export class SceneRenderer {
   }
 
   updatePlacementMarker(position, valid = true) {
-    if (!position) {
-      this.clearPreview();
-      return;
-    }
     this.setPreviewPosition(position, valid);
   }
 
