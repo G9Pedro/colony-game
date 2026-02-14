@@ -5,29 +5,26 @@ import { createLegacyBuildingMesh, createLegacyColonistMesh } from './legacyMesh
 import { reconcileMeshMap, updateColonistMeshPose } from './legacyEntitySync.js';
 import { runLegacyFrame } from './legacyFrameRender.js';
 import {
-  updateOrbitYawAndPitch,
-  updateRadiusFromPinch,
-  updateRadiusFromWheel,
-} from './legacyThreeCameraControls.js';
-import {
   handleLegacyPointerMoveEvent,
   handleLegacyTouchEndEvent,
   handleLegacyTouchMoveEvent,
   handleLegacyTouchStartEvent,
   handleLegacyWheelEvent,
 } from './legacyInteractionHandlers.js';
-import {
-  getTouchDistance,
-  hasPointerMovedBeyondThreshold,
-  toPointerLikeTouch,
-} from './legacyInteractionPrimitives.js';
 import { handleLegacyPointerUpEvent } from './legacyPointerUpHandler.js';
-import { beginLegacyPointerDrag, updateLegacyPointerDrag } from './legacyPointerState.js';
+import { beginLegacyPointerDrag } from './legacyPointerState.js';
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
+import {
+  buildLegacyPointerMoveInvocation,
+  buildLegacyPointerUpInvocation,
+  buildLegacyTouchEndInvocation,
+  buildLegacyTouchMoveInvocation,
+  buildLegacyTouchStartInvocation,
+  buildLegacyWheelInvocation,
+} from './legacyInteractionInvocation.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
-import { beginLegacyPinch, endLegacyPinch, updateLegacyPinch } from './legacyTouchState.js';
 import { applyLegacyPreviewMarker } from './legacyRendererViewState.js';
 import { buildLegacyFrameInvocation } from './legacyFrameInvocation.js';
 import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
@@ -140,71 +137,27 @@ export class LegacyThreeRenderer {
   }
 
   handlePointerMove(event) {
-    handleLegacyPointerMoveEvent({
-      event,
-      screenToGround: (clientX, clientY) => this.screenToGround(clientX, clientY),
-      onPlacementPreview: this.onPlacementPreview,
-      dragState: this.dragState,
-      updateLegacyPointerDrag,
-      hasPointerMovedBeyondThreshold,
-      cameraPolar: this.cameraPolar,
-      updateOrbitYawAndPitch,
-      updateCamera: () => this.updateCamera(),
-    });
+    handleLegacyPointerMoveEvent(buildLegacyPointerMoveInvocation(this, event));
   }
 
   handlePointerUp(event) {
-    handleLegacyPointerUpEvent({
-      event,
-      dragState: this.dragState,
-      onEntitySelect: this.onEntitySelect,
-      onGroundClick: this.onGroundClick,
-      screenToEntity: (clientX, clientY) => this.screenToEntity(clientX, clientY),
-      screenToGround: (clientX, clientY) => this.screenToGround(clientX, clientY),
-    });
+    handleLegacyPointerUpEvent(buildLegacyPointerUpInvocation(this, event));
   }
 
   handleWheel(event) {
-    handleLegacyWheelEvent({
-      event,
-      cameraPolar: this.cameraPolar,
-      updateRadiusFromWheel,
-      updateCamera: () => this.updateCamera(),
-    });
+    handleLegacyWheelEvent(buildLegacyWheelInvocation(this, event));
   }
 
   handleTouchStart(event) {
-    handleLegacyTouchStartEvent({
-      event,
-      touchState: this.touchState,
-      beginLegacyPinch,
-      getTouchDistance,
-      toPointerLikeTouch,
-      handlePointerDown: (pointerLikeTouch) => this.handlePointerDown(pointerLikeTouch),
-    });
+    handleLegacyTouchStartEvent(buildLegacyTouchStartInvocation(this, event));
   }
 
   handleTouchMove(event) {
-    handleLegacyTouchMoveEvent({
-      event,
-      touchState: this.touchState,
-      getTouchDistance,
-      updateRadiusFromPinch,
-      updateLegacyPinch,
-      cameraPolar: this.cameraPolar,
-      updateCamera: () => this.updateCamera(),
-      toPointerLikeTouch,
-      handlePointerMove: (pointerLikeTouch) => this.handlePointerMove(pointerLikeTouch),
-    });
+    handleLegacyTouchMoveEvent(buildLegacyTouchMoveInvocation(this, event));
   }
 
   handleTouchEnd() {
-    handleLegacyTouchEndEvent({
-      touchState: this.touchState,
-      endLegacyPinch,
-      dragState: this.dragState,
-      handlePointerUp: (pointerLikeTouch) => this.handlePointerUp(pointerLikeTouch),
-    });
+    handleLegacyTouchEndEvent(buildLegacyTouchEndInvocation(this));
   }
 
   setPreviewPosition(position, valid = true) {
