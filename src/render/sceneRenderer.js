@@ -5,7 +5,6 @@ import {
   applySceneRendererGroundClickHandler,
   applySceneRendererPlacementPreviewHandler,
 } from './sceneRendererHandlers.js';
-import { defineSceneRendererCallbackProperties } from './sceneRendererProperties.js';
 import {
   applySceneRendererPreviewPosition,
   clearSceneRendererPreview,
@@ -21,26 +20,16 @@ import {
   resizeSceneRenderer,
 } from './sceneRendererRuntimeDispatch.js';
 import { buildSceneRendererModeInitializationInvocation } from './sceneRendererModeInvocation.js';
+import { initializeSceneRenderer } from './sceneRendererInitialization.js';
 import {
   normalizeRendererMode,
   persistRendererModePreference,
-  readRendererModePreference,
 } from './rendererModePreference.js';
 import { initializeSceneRendererMode } from './sceneRendererLifecycle.js';
 
 export class SceneRenderer {
   constructor(rootElement) {
-    this.rootElement = rootElement;
-    this._onGroundClick = null;
-    this._onPlacementPreview = null;
-    this._onEntitySelect = null;
-    this.preview = null;
-    this.mode = normalizeRendererMode(readRendererModePreference() ?? 'isometric');
-    this.activeRenderer = null;
-    this.lastState = null;
-    defineSceneRendererCallbackProperties(this);
-
-    this.initializeRenderer(this.mode);
+    initializeSceneRenderer(this, { rootElement });
   }
 
   initializeRenderer(mode) {
