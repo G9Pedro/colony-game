@@ -4,6 +4,7 @@ import { runIsometricFrame } from './isometricFramePipeline.js';
 import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
+import { disposeIsometricRenderer, resizeIsometricViewport } from './isometricRendererLifecycle.js';
 import { SpriteFactory } from './spriteFactory.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
 import { drawIsometricEntityPass } from './isometricEntityDraw.js';
@@ -96,25 +97,32 @@ export class IsometricRenderer {
   }
 
   resize() {
-    const width = Math.max(1, this.rootElement.clientWidth);
-    const height = Math.max(1, this.rootElement.clientHeight);
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.devicePixelRatio = dpr;
-    this.canvas.width = Math.floor(width * dpr);
-    this.canvas.height = Math.floor(height * dpr);
-    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.scale(dpr, dpr);
-    this.camera.setViewport(width, height);
-    this.terrainLayer.resize(width, height, dpr);
+    const viewport = resizeIsometricViewport({
+      rootElement: this.rootElement,
+      canvas: this.canvas,
+      ctx: this.ctx,
+      camera: this.camera,
+      terrainLayer: this.terrainLayer,
+      windowObject: window,
+      maxPixelRatio: 2,
+    });
+    this.devicePixelRatio = viewport.dpr;
   }
 
   dispose() {
-    window.removeEventListener('resize', this.boundResize);
-    this.interactionController.dispose();
+    disposeIsometricRenderer({
+      windowObject: window,
+      boundResize: this.boundResize,
+      interactionController: this.interactionController,
+      canvas: this.canvas,
+      clearInteractiveEntities: () => {
+        this.interactiveEntities = [];
+      },
+      clearTerrainLayer: () => {
+        this.terrainLayer = null;
+      },
+    });
     this.interactionController = null;
-    this.canvas.remove();
-    this.interactiveEntities = [];
-    this.terrainLayer = null;
   }
 
   setGroundClickHandler(handler) {
