@@ -14,9 +14,11 @@ import {
   buildPinchGestureState,
   clampCameraCenter,
 } from './isometricCameraState.js';
-
-const DEFAULT_TILE_WIDTH = 64;
-const DEFAULT_TILE_HEIGHT = 32;
+import {
+  createIsometricCameraRuntimeState,
+  DEFAULT_TILE_HEIGHT,
+  DEFAULT_TILE_WIDTH,
+} from './isometricCameraRuntime.js';
 
 export { screenToWorldPoint, worldToScreenPoint };
 
@@ -35,25 +37,9 @@ export class IsometricCamera {
     this.minZoom = minZoom;
     this.maxZoom = maxZoom;
     this.worldRadius = worldRadius;
-
-    this.viewportWidth = 1;
-    this.viewportHeight = 1;
-    this.centerX = 0;
-    this.centerZ = 0;
-    this.velocityX = 0;
-    this.velocityZ = 0;
-    this.dragging = false;
-    this.dragLastX = 0;
-    this.dragLastY = 0;
-    this.lastDragAt = performance.now();
-    this.dragDistance = 0;
-
-    this.pinchState = {
-      active: false,
-      distance: 0,
-      midpointX: 0,
-      midpointY: 0,
-    };
+    Object.assign(this, createIsometricCameraRuntimeState({
+      now: performance.now(),
+    }));
   }
 
   setViewport(width, height) {
