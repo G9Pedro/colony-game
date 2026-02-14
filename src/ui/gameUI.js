@@ -1,18 +1,17 @@
 import { AnimationManager } from '../render/animations.js';
 import { getBuildingCardState } from './buildingAvailability.js';
 import { buildBuildCardRows, buildCategoryPillRows } from './buildMenuViewState.js';
-import { buildColonistRows, buildConstructionQueueRows } from './colonyPanelsViewState.js';
+import { renderColonistPanel, renderConstructionQueuePanel, renderResearchPanels } from './colonyPanelsDom.js';
 import { buildObjectiveHint, buildObjectiveRows } from './objectivesViewState.js';
 import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildSelectionPanelViewModel } from './selectionPanelViewState.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
 import { buildRunStatsPanelViewModel } from './runStatsPanelViewState.js';
-import { buildActiveResearchViewModel, buildResearchOptionViewModels } from './researchViewState.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
-import { formatCost, formatRate, percent } from './uiFormatting.js';
+import { formatCost, formatRate } from './uiFormatting.js';
 
 export class GameUI {
   constructor({ elements, buildingDefinitions, researchDefinitions, resourceDefinitions, spriteFactory }) {
@@ -129,74 +128,29 @@ export class GameUI {
   }
 
   renderResearch(state, getAvailableResearch, onStartResearch) {
-    this.el.researchCurrent.innerHTML = '';
-    const activeResearch = buildActiveResearchViewModel(
-      state.research,
-      this.researchDefinitions,
-      percent,
-    );
-    if (activeResearch) {
-      this.el.researchCurrent.innerHTML = `
-        <div class="panel-card">
-          <div class="kv"><strong>${activeResearch.name}</strong><small>${Math.floor(activeResearch.progress)}%</small></div>
-          <div class="progress-track"><span style="width:${activeResearch.progress}%"></span></div>
-        </div>
-      `;
-    } else {
-      this.el.researchCurrent.innerHTML = '<div class="panel-card"><small>No active research</small></div>';
-    }
-
-    this.el.researchList.innerHTML = '';
-    const options = buildResearchOptionViewModels({
+    renderResearchPanels({
+      currentElement: this.el.researchCurrent,
+      listElement: this.el.researchList,
       state,
       researchDefinitions: this.researchDefinitions,
       getAvailableResearch,
-    });
-    options.forEach((item) => {
-      const card = document.createElement('div');
-      card.className = 'panel-card';
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'secondary';
-      button.textContent = `Research ${item.name}`;
-      button.disabled = item.disabled;
-      button.addEventListener('click', () => onStartResearch(item.id));
-      const text = document.createElement('small');
-      text.textContent = `${item.description} · ${item.cost} knowledge`;
-      card.append(button, text);
-      this.el.researchList.appendChild(card);
+      onStartResearch,
     });
   }
 
   renderConstructionQueue(state) {
-    this.el.constructionList.innerHTML = '';
-    if (state.constructionQueue.length === 0) {
-      this.el.constructionList.innerHTML = '<div class="panel-card"><small>No active construction</small></div>';
-      return;
-    }
-    const rows = buildConstructionQueueRows(state.constructionQueue, this.buildingDefinitions, percent);
-    rows.forEach((row) => {
-      const card = document.createElement('div');
-      card.className = 'panel-card';
-      card.innerHTML = `
-        <div class="kv"><strong>${row.name}</strong><small>${Math.floor(row.progress)}%</small></div>
-        <div class="progress-track"><span style="width:${row.progress}%"></span></div>
-      `;
-      this.el.constructionList.appendChild(card);
+    renderConstructionQueuePanel({
+      listElement: this.el.constructionList,
+      state,
+      buildingDefinitions: this.buildingDefinitions,
     });
   }
 
   renderColonists(state) {
-    this.el.colonistList.innerHTML = '';
-    const rows = buildColonistRows(state.colonists, 18);
-    rows.forEach((row) => {
-      const card = document.createElement('div');
-      card.className = 'panel-card';
-      card.innerHTML = `
-        <div class="kv"><strong>${row.name}</strong><small>${row.job}</small></div>
-        <small>${row.task} · H${row.health} F${row.hunger} R${row.rest} M${row.morale}</small>
-      `;
-      this.el.colonistList.appendChild(card);
+    renderColonistPanel({
+      listElement: this.el.colonistList,
+      state,
+      limit: 18,
     });
   }
 
