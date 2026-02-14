@@ -12,6 +12,7 @@ import {
 import { bindLegacyRendererEvents, disposeLegacyRendererRuntime } from './legacyRendererLifecycle.js';
 import { beginLegacyPointerDrag } from './legacyPointerState.js';
 import { createLegacyRendererBaseState } from './legacyRendererBaseState.js';
+import { buildLegacyEventSessionInvocation } from './legacyEventSessionInvocation.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
 import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
@@ -57,19 +58,10 @@ export class LegacyThreeRenderer {
   }
 
   bindEvents() {
-    const session = createLegacyRendererEventSession({
+    const session = createLegacyRendererEventSession(buildLegacyEventSessionInvocation(this, {
       windowObject: window,
-      domElement: this.renderer.domElement,
-      onResize: () => this.resize(),
-      onPointerDown: (event) => this.handlePointerDown(event),
-      onPointerMove: (event) => this.handlePointerMove(event),
-      onPointerUp: (event) => this.handlePointerUp(event),
-      onWheel: (event) => this.handleWheel(event),
-      onTouchStart: (event) => this.handleTouchStart(event),
-      onTouchMove: (event) => this.handleTouchMove(event),
-      onTouchEnd: () => this.handleTouchEnd(),
       bindEvents: bindLegacyRendererEvents,
-    });
+    }));
     applyLegacyRendererEventSession(this, session);
   }
 
