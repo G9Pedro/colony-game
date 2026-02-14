@@ -8,6 +8,7 @@ import { NotificationCenter } from './notifications.js';
 import { formatRenderStatsLabel } from './renderStatsLabel.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
+import { applyHudStateToElements, syncBannerState } from './uiControllerDomState.js';
 import { buildUiControllerHudState, toggleBuildSelection } from './uiControllerViewState.js';
 import { buildTopSummary, getRendererModeLabel, getStatusBannerMessage } from './uiViewState.js';
 
@@ -213,15 +214,11 @@ export class UIController {
       formatRenderStatsLabel,
       getStatusBannerMessage,
     });
-    this.el.scenarioSelect.value = hudState.scenarioId;
-    this.el.balanceProfileSelect.value = hudState.balanceProfileId;
-    this.el.rendererModeSelect.value = hudState.rendererMode;
-    this.el.renderStatsLabel.textContent = hudState.renderStatsLabel;
-
-    if (hudState.bannerMessage) {
-      this.showBanner(hudState.bannerMessage);
-    } else {
-      this.hideBanner();
-    }
+    applyHudStateToElements(this.el, hudState);
+    syncBannerState({
+      bannerMessage: hudState.bannerMessage,
+      showBanner: (message) => this.showBanner(message),
+      hideBanner: () => this.hideBanner(),
+    });
   }
 }
