@@ -1,12 +1,11 @@
-import { AnimationManager } from '../render/animations.js';
 import { getBuildingCardState } from './buildingAvailability.js';
 import { buildBuildCardRows, buildCategoryPillRows } from './buildMenuViewState.js';
 import { renderColonistPanel, renderConstructionQueuePanel, renderResearchPanels } from './colonyPanelsDom.js';
 import { renderObjectivesPanel, renderRunStatsPanel, renderSelectionPanel } from './infoPanelsDom.js';
-import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
+import { createGameUIRuntime } from './gameUIRuntime.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
 import { formatCost, formatRate } from './uiFormatting.js';
 
@@ -17,9 +16,7 @@ export class GameUI {
     this.researchDefinitions = researchDefinitions;
     this.resourceDefinitions = resourceDefinitions;
     this.spriteFactory = spriteFactory;
-    this.valueAnimator = new AnimationManager();
-    this.resourceFlowTracker = new ResourceFlowTracker({ minElapsedSeconds: 1.2, hoursPerDay: 24 });
-    this.resourceRates = {};
+    Object.assign(this, createGameUIRuntime());
   }
 
   setScenarioOptions(scenarios, currentScenarioId) {
