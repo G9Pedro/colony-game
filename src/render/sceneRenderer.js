@@ -9,6 +9,13 @@ import { defineSceneRendererCallbackProperties } from './sceneRendererProperties
 import { applySceneRendererPreviewPosition, clearSceneRendererPreview } from './sceneRendererPreviewHandlers.js';
 import { buildSceneRendererCameraState, buildSceneRendererDebugStats } from './sceneRendererSnapshots.js';
 import {
+  centerSceneRendererOnBuilding,
+  disposeSceneRenderer,
+  getSceneRendererAvailableModes,
+  renderSceneRendererFrame,
+  resizeSceneRenderer,
+} from './sceneRendererRuntimeDispatch.js';
+import {
   normalizeRendererMode,
   persistRendererModePreference,
   readRendererModePreference,
@@ -64,7 +71,7 @@ export class SceneRenderer {
   }
 
   getAvailableModes() {
-    return ['isometric', 'three'];
+    return getSceneRendererAvailableModes();
   }
 
   setGroundClickHandler(handler) {
@@ -92,11 +99,11 @@ export class SceneRenderer {
   }
 
   centerOnBuilding(building) {
-    this.activeRenderer?.centerOnBuilding(building);
+    centerSceneRendererOnBuilding(this, building);
   }
 
   resize() {
-    this.activeRenderer?.resize();
+    resizeSceneRenderer(this);
   }
 
   getCameraState() {
@@ -108,12 +115,10 @@ export class SceneRenderer {
   }
 
   render(state) {
-    this.lastState = state;
-    this.activeRenderer.render(state);
+    renderSceneRendererFrame(this, state);
   }
 
   dispose() {
-    this.activeRenderer?.dispose();
-    this.activeRenderer = null;
+    disposeSceneRenderer(this);
   }
 }
