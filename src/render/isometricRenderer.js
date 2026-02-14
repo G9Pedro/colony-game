@@ -1,5 +1,6 @@
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { AnimationManager } from './animations.js';
+import { buildIsometricFrameInvocation } from './isometricFrameInvocation.js';
 import { runIsometricFrame } from './isometricFramePipeline.js';
 import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
@@ -273,31 +274,11 @@ export class IsometricRenderer {
 
   render(state) {
     this.lastState = state;
-    const frame = runIsometricFrame({
+    const frame = runIsometricFrame(buildIsometricFrameInvocation({
+      renderer: this,
       state,
       now: performance.now(),
-      lastFrameAt: this.lastFrameAt,
-      smoothedFps: this.smoothedFps,
-      camera: this.camera,
-      qualityController: this.qualityController,
-      particles: this.particles,
-      sampleResourceGains: (nextState, deltaSeconds) => this.sampleResourceGains(nextState, deltaSeconds),
-      syncBuildingAnimations: (nextState, now) => this.syncBuildingAnimations(nextState, now),
-      updateColonistInterpolation: (nextState, deltaSeconds) =>
-        this.updateColonistInterpolation(nextState, deltaSeconds),
-      maybeEmitBuildingEffects: (nextState, deltaSeconds) =>
-        this.maybeEmitBuildingEffects(nextState, deltaSeconds),
-      drawBackground: (nextState, width, height, daylight) =>
-        this.drawBackground(nextState, width, height, daylight),
-      drawTerrain: (nextState) => this.drawTerrain(nextState),
-      drawEntities: (nextState, now, daylight) => this.drawEntities(nextState, now, daylight),
-      drawPreview: () => this.drawPreview(),
-      hoveredEntity: this.hoveredEntity,
-      selectedEntity: this.selectedEntity,
-      drawSelectionOverlay: (entity, alpha) => this.drawSelectionOverlay(entity, alpha),
-      getSelectionPulse: (now) => this.animations.getSelectionPulse(now),
-      ctx: this.ctx,
-    });
+    }));
     this.lastFrameAt = frame.nextLastFrameAt;
     this.smoothedFps = frame.nextSmoothedFps;
   }
