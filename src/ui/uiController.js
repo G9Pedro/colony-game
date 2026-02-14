@@ -1,19 +1,23 @@
-import { BUILDING_CATEGORIES } from '../content/buildings.js';
-import { getAvailableResearch, getAverageMorale, getPopulationCapacity, getStorageCapacity, getUsedStorage, isBuildingUnlocked } from '../game/selectors.js';
-import { formatObjectiveReward, getCurrentObjectiveIds, getObjectiveDefinitions, getObjectiveRewardMultiplier } from '../systems/objectiveSystem.js';
-
-function formatCost(cost) {
-  return Object.entries(cost)
-    .map(([resource, amount]) => `${amount} ${resource}`)
-    .join(', ');
-}
-
-function percent(part, whole) {
-  if (whole <= 0) {
-    return 0;
-  }
-  return Math.max(0, Math.min(100, (part / whole) * 100));
-}
+import { createUIControllerDefaultCallbacks, createUIControllerElements } from './uiControllerElements.js';
+import { buildUiControllerRenderInvocation } from './uiControllerRenderInvocation.js';
+import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
+import { buildUIGlobalActionInvocation } from './uiGlobalActionInvocation.js';
+import { runUiControllerRender } from './uiControllerRenderFlow.js';
+import { createUIControllerRuntime } from './uiControllerRuntime.js';
+import { renderUIRendererModeOptions } from './uiRendererModeOptions.js';
+import { applyUIControllerPersistenceCallbacks } from './uiControllerCallbacks.js';
+import {
+  applyUIControllerSelectedBuildType,
+  applyUIControllerSelectedEntity,
+  attachUIRenderer,
+  hideUIControllerBanner,
+  pushUIControllerNotification,
+  showUIControllerBanner,
+} from './uiControllerState.js';
+import {
+  applyUIControllerBalanceProfileOptions,
+  applyUIControllerScenarioOptions,
+} from './uiControllerGameOptions.js';
 
 export class UIController {
   constructor({
@@ -27,380 +31,71 @@ export class UIController {
     this.researchDefinitions = researchDefinitions;
     this.resourceDefinitions = resourceDefinitions;
     this.selectedBuildType = null;
+    this.selectedEntity = null;
+    this.renderer = null;
 
-    this.el = {
-      scenarioSelect: document.getElementById('scenario-select'),
-      balanceProfileSelect: document.getElementById('balance-profile-select'),
-      pauseBtn: document.getElementById('pause-btn'),
-      speedButtons: [
-        document.getElementById('speed-1-btn'),
-        document.getElementById('speed-2-btn'),
-        document.getElementById('speed-4-btn'),
-      ],
-      saveBtn: document.getElementById('save-btn'),
-      loadBtn: document.getElementById('load-btn'),
-      exportBtn: document.getElementById('export-btn'),
-      importBtn: document.getElementById('import-btn'),
-      importFileInput: document.getElementById('import-file-input'),
-      resetBtn: document.getElementById('reset-btn'),
-      hireBtn: document.getElementById('hire-btn'),
-      statusLabel: document.getElementById('status-label'),
-      dayLabel: document.getElementById('day-label'),
-      populationLabel: document.getElementById('population-label'),
-      moraleLabel: document.getElementById('morale-label'),
-      storageLabel: document.getElementById('storage-label'),
-      resourceList: document.getElementById('resource-list'),
-      buildCategories: document.getElementById('build-categories'),
-      buildList: document.getElementById('build-list'),
-      researchCurrent: document.getElementById('research-current'),
-      researchList: document.getElementById('research-list'),
-      objectivesList: document.getElementById('objectives-list'),
-      constructionList: document.getElementById('construction-list'),
-      colonistList: document.getElementById('colonist-list'),
-      metricsSummary: document.getElementById('metrics-summary'),
-      runHistory: document.getElementById('run-history'),
-      notifications: document.getElementById('notifications'),
-      messageBanner: document.getElementById('message-banner'),
-      hintBadge: document.getElementById('hint-badge'),
-    };
+    this.el = createUIControllerElements(document);
 
-    this.callbacks = {
-      onSave: () => {},
-      onLoad: () => {},
-      onExport: () => {},
-      onImport: async () => {},
-      onReset: () => {},
-      onScenarioChange: () => {},
-      onBalanceProfileChange: () => {},
-    };
+    this.callbacks = createUIControllerDefaultCallbacks();
+
+    Object.assign(this, createUIControllerRuntime({
+      elements: this.el,
+      buildingDefinitions: this.buildingDefinitions,
+      researchDefinitions: this.researchDefinitions,
+      resourceDefinitions: this.resourceDefinitions,
+      onCenterRequest: (point) => {
+        this.renderer?.centerOnBuilding(point);
+      },
+    }));
+
     this.bindGlobalActions();
   }
 
   bindGlobalActions() {
-    this.el.pauseBtn.addEventListener('click', () => this.engine.togglePause());
-    this.el.speedButtons[0].addEventListener('click', () => this.engine.setSpeed(1));
-    this.el.speedButtons[1].addEventListener('click', () => this.engine.setSpeed(2));
-    this.el.speedButtons[2].addEventListener('click', () => this.engine.setSpeed(4));
-    this.el.hireBtn.addEventListener('click', () => {
-      const result = this.engine.hireColonist();
-      if (!result.ok) {
-        this.pushNotification({ kind: 'error', message: result.message });
-      }
-    });
-
-    this.el.saveBtn.addEventListener('click', () => this.callbacks.onSave());
-    this.el.loadBtn.addEventListener('click', () => this.callbacks.onLoad());
-    this.el.exportBtn.addEventListener('click', () => this.callbacks.onExport());
-    this.el.importBtn.addEventListener('click', () => this.el.importFileInput.click());
-    this.el.importFileInput.addEventListener('change', async (event) => {
-      const [file] = event.target.files;
-      if (!file) {
-        return;
-      }
-      await this.callbacks.onImport(file);
-      event.target.value = '';
-    });
-    this.el.resetBtn.addEventListener('click', () => this.callbacks.onReset());
-    this.el.scenarioSelect.addEventListener('change', (event) =>
-      this.callbacks.onScenarioChange(event.target.value),
-    );
-    this.el.balanceProfileSelect.addEventListener('change', (event) =>
-      this.callbacks.onBalanceProfileChange(event.target.value),
-    );
+    bindUIGlobalActions(buildUIGlobalActionInvocation(this));
   }
 
   setPersistenceCallbacks(callbacks) {
-    this.callbacks = {
-      ...this.callbacks,
-      ...callbacks,
-    };
+    applyUIControllerPersistenceCallbacks(this, callbacks);
+  }
+
+  attachRenderer(renderer) {
+    attachUIRenderer(this, renderer);
+  }
+
+  setRendererModeOptions(modes, activeMode) {
+    renderUIRendererModeOptions(this, modes, activeMode);
+  }
+
+  setSelectedEntity(entity) {
+    applyUIControllerSelectedEntity(this, entity);
   }
 
   setSelectedBuildType(buildingType) {
-    this.selectedBuildType = buildingType;
+    applyUIControllerSelectedBuildType(this, buildingType);
   }
 
   setScenarioOptions(scenarios, currentScenarioId) {
-    this.el.scenarioSelect.innerHTML = '';
-    scenarios.forEach((scenario) => {
-      const option = document.createElement('option');
-      option.value = scenario.id;
-      option.textContent = scenario.name;
-      option.selected = scenario.id === currentScenarioId;
-      this.el.scenarioSelect.appendChild(option);
-    });
+    applyUIControllerScenarioOptions(this, scenarios, currentScenarioId);
   }
 
   setBalanceProfileOptions(profiles, currentProfileId) {
-    this.el.balanceProfileSelect.innerHTML = '';
-    profiles.forEach((profile) => {
-      const option = document.createElement('option');
-      option.value = profile.id;
-      option.textContent = profile.name;
-      option.selected = profile.id === currentProfileId;
-      this.el.balanceProfileSelect.appendChild(option);
-    });
-  }
-
-  renderCategories(state) {
-    this.el.buildCategories.innerHTML = '';
-    for (const category of BUILDING_CATEGORIES) {
-      const button = document.createElement('button');
-      button.textContent = category;
-      button.className = category === state.selectedCategory ? 'active' : '';
-      button.addEventListener('click', () => this.engine.setSelectedCategory(category));
-      this.el.buildCategories.appendChild(button);
-    }
-  }
-
-  renderBuildList(state) {
-    this.el.buildList.innerHTML = '';
-    const buildings = Object.values(this.buildingDefinitions).filter(
-      (definition) => definition.category === state.selectedCategory,
-    );
-
-    for (const definition of buildings) {
-      const unlocked = isBuildingUnlocked(state, definition);
-      const canAfford = Object.entries(definition.cost).every(
-        ([resource, amount]) => (state.resources[resource] ?? 0) >= amount,
-      );
-
-      const card = document.createElement('div');
-      card.className = 'card';
-
-      const button = document.createElement('button');
-      button.textContent = `${definition.name} (${definition.buildTime}s)`;
-      button.disabled = !unlocked;
-      button.className = this.selectedBuildType === definition.id ? 'active' : '';
-      button.addEventListener('click', () => {
-        this.selectedBuildType = this.selectedBuildType === definition.id ? null : definition.id;
-        this.engine.setSelectedBuildingType(this.selectedBuildType);
-      });
-
-      const meta = document.createElement('small');
-      if (!unlocked) {
-        meta.textContent = `Requires: ${definition.requiredTech}`;
-      } else if (!canAfford) {
-        meta.textContent = `Need: ${formatCost(definition.cost)}`;
-      } else {
-        meta.textContent = `Cost: ${formatCost(definition.cost)}`;
-      }
-
-      card.append(button, meta);
-      this.el.buildList.appendChild(card);
-    }
-  }
-
-  renderResources(state) {
-    this.el.resourceList.innerHTML = '';
-    for (const [resource, definition] of Object.entries(this.resourceDefinitions)) {
-      const amount = state.resources[resource] ?? 0;
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `<div class="kv"><span>${definition.label}</span><strong>${Math.floor(amount)}</strong></div>`;
-      this.el.resourceList.appendChild(card);
-    }
-  }
-
-  renderResearch(state) {
-    if (state.research.current) {
-      const tech = this.researchDefinitions[state.research.current];
-      const progress = percent(state.research.progress, tech.time);
-      this.el.researchCurrent.innerHTML = `
-        <div class="card">
-          <strong>${tech.name}</strong>
-          <div class="progress"><span style="width: ${progress}%"></span></div>
-          <small>${Math.floor(progress)}% complete</small>
-        </div>
-      `;
-    } else {
-      this.el.researchCurrent.innerHTML = '<div class="card"><small>No active research</small></div>';
-    }
-
-    this.el.researchList.innerHTML = '';
-    const researchItems = getAvailableResearch(state, this.researchDefinitions);
-    for (const item of researchItems) {
-      if (state.research.current === item.id || state.research.completed.includes(item.id)) {
-        continue;
-      }
-      const card = document.createElement('div');
-      card.className = 'card';
-      const button = document.createElement('button');
-      button.textContent = `Research ${item.name}`;
-      button.disabled = state.resources.knowledge < item.cost || !!state.research.current;
-      button.addEventListener('click', () => {
-        const result = this.engine.beginResearch(item.id);
-        if (!result.ok) {
-          this.pushNotification({ kind: 'error', message: result.message });
-        }
-      });
-      const info = document.createElement('small');
-      info.textContent = `${item.description} Cost: ${item.cost} knowledge`;
-      card.append(button, info);
-      this.el.researchList.appendChild(card);
-    }
-  }
-
-  renderObjectives(state) {
-    this.el.objectivesList.innerHTML = '';
-    const objectives = getObjectiveDefinitions();
-    const rewardMultiplier = getObjectiveRewardMultiplier(state);
-    for (const objective of objectives) {
-      const completed = state.objectives.completed.includes(objective.id);
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="kv"><strong>${objective.title}</strong><small>${completed ? 'Done' : 'Active'}</small></div>
-        <small>${objective.description}</small>
-        <small style="color:#38bdf8;">Reward: ${formatObjectiveReward(objective, rewardMultiplier)}</small>
-      `;
-      if (completed) {
-        card.style.borderColor = 'rgba(34, 197, 94, 0.65)';
-      }
-      this.el.objectivesList.appendChild(card);
-    }
-
-    const remainingObjectiveIds = getCurrentObjectiveIds(state);
-    if (remainingObjectiveIds.length === 0) {
-      this.el.hintBadge.textContent = 'All objectives completed. Push for charter victory!';
-      return;
-    }
-    const nextObjective = objectives.find((objective) => objective.id === remainingObjectiveIds[0]);
-    this.el.hintBadge.textContent = `Current objective: ${nextObjective.title}`;
-  }
-
-  renderConstructionQueue(state) {
-    if (state.constructionQueue.length === 0) {
-      this.el.constructionList.textContent = 'No active construction';
-      return;
-    }
-
-    this.el.constructionList.innerHTML = '';
-    for (const item of state.constructionQueue) {
-      const building = this.buildingDefinitions[item.type];
-      const progress = percent(item.progress, item.buildTime);
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <strong>${building.name}</strong>
-        <div class="progress"><span style="width: ${progress}%"></span></div>
-        <small>${Math.floor(progress)}% complete</small>
-      `;
-      this.el.constructionList.appendChild(card);
-    }
-  }
-
-  renderColonists(state) {
-    this.el.colonistList.innerHTML = '';
-    const aliveColonists = state.colonists.filter((colonist) => colonist.alive);
-    for (const colonist of aliveColonists.slice(0, 14)) {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <strong>${colonist.name}</strong>
-        <div class="kv"><span>${colonist.job}</span><small>${colonist.task}</small></div>
-        <small>H ${Math.floor(colonist.needs.health)} · F ${Math.floor(colonist.needs.hunger)} · R ${Math.floor(colonist.needs.rest)} · M ${Math.floor(colonist.needs.morale)}</small>
-      `;
-      this.el.colonistList.appendChild(card);
-    }
-  }
-
-  renderRunStats(state) {
-    const latestViolation = state.debug?.invariantViolations?.at?.(-1);
-    this.el.metricsSummary.innerHTML = `
-      <div class="card">
-        <div class="kv"><span>Peak Population</span><strong>${state.metrics.peakPopulation}</strong></div>
-        <div class="kv"><span>Built Structures</span><strong>${state.metrics.buildingsConstructed}</strong></div>
-        <div class="kv"><span>Research Completed</span><strong>${state.metrics.researchCompleted}</strong></div>
-        <div class="kv"><span>Objectives Completed</span><strong>${state.metrics.objectivesCompleted}</strong></div>
-        <div class="kv"><span>Deaths</span><strong>${state.metrics.deaths}</strong></div>
-        <div class="kv"><span>Invariant Violations</span><strong>${state.debug?.invariantViolations?.length ?? 0}</strong></div>
-      </div>
-    `;
-
-    if (latestViolation) {
-      const warningCard = document.createElement('div');
-      warningCard.className = 'card';
-      warningCard.style.borderColor = 'rgba(239, 68, 68, 0.6)';
-      warningCard.innerHTML = `<small><strong>Latest invariant issue:</strong> ${latestViolation.message}</small>`;
-      this.el.metricsSummary.appendChild(warningCard);
-    }
-
-    const history = [...(state.runSummaryHistory ?? [])].slice(-3).reverse();
-    if (history.length === 0) {
-      this.el.runHistory.innerHTML = '<div class="card"><small>No previous completed runs yet.</small></div>';
-      return;
-    }
-
-    this.el.runHistory.innerHTML = '';
-    history.forEach((run) => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="kv"><strong>${run.outcome === 'won' ? 'Victory' : 'Defeat'}</strong><small>Day ${run.day}</small></div>
-        <small>${run.scenarioId}/${run.balanceProfileId ?? 'standard'} · peak ${run.peakPopulation} pop · ${run.buildingsConstructed} builds</small>
-      `;
-      this.el.runHistory.appendChild(card);
-    });
-  }
-
-  renderStatus(state) {
-    const alivePopulation = state.colonists.filter((colonist) => colonist.alive).length;
-    const populationCap = getPopulationCapacity(state);
-    const avgMorale = getAverageMorale(state);
-    const storageUsed = getUsedStorage(state);
-    const storageCap = getStorageCapacity(state);
-
-    this.el.statusLabel.textContent = state.status;
-    this.el.dayLabel.textContent = String(state.day);
-    this.el.populationLabel.textContent = `${alivePopulation} / ${populationCap}`;
-    this.el.moraleLabel.textContent = Math.floor(avgMorale).toString();
-    this.el.storageLabel.textContent = `${Math.floor(storageUsed)} / ${storageCap}`;
-    this.el.pauseBtn.textContent = state.paused ? 'Resume' : 'Pause';
-    this.el.speedButtons.forEach((button, index) => {
-      const speed = index === 0 ? 1 : index === 1 ? 2 : 4;
-      button.classList.toggle('active', state.speed === speed);
-    });
-    this.el.scenarioSelect.value = state.scenarioId;
-    this.el.balanceProfileSelect.value = state.balanceProfileId;
-
-    if (state.status === 'won') {
-      this.showBanner('Victory! Colony Charter Achieved.');
-    } else if (state.status === 'lost') {
-      this.showBanner('Defeat. Reset to start a new colony.');
-    } else {
-      this.hideBanner();
-    }
+    applyUIControllerBalanceProfileOptions(this, profiles, currentProfileId);
   }
 
   showBanner(message) {
-    this.el.messageBanner.classList.remove('hidden');
-    this.el.messageBanner.textContent = message;
+    showUIControllerBanner(this, message);
   }
 
   hideBanner() {
-    this.el.messageBanner.classList.add('hidden');
+    hideUIControllerBanner(this);
   }
 
-  pushNotification({ kind = 'warn', message }) {
-    const toast = document.createElement('div');
-    toast.className = `toast ${kind}`;
-    toast.textContent = message;
-    this.el.notifications.appendChild(toast);
-    setTimeout(() => {
-      toast.remove();
-    }, 3500);
+  pushNotification(payload) {
+    pushUIControllerNotification(this, payload);
   }
 
   render(state) {
-    this.renderStatus(state);
-    this.renderResources(state);
-    this.renderCategories(state);
-    this.renderBuildList(state);
-    this.renderResearch(state);
-    this.renderObjectives(state);
-    this.renderConstructionQueue(state);
-    this.renderColonists(state);
-    this.renderRunStats(state);
+    runUiControllerRender(buildUiControllerRenderInvocation(this, state));
   }
 }
