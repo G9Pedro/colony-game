@@ -5,6 +5,14 @@ import {
   createInteractionControllerEventBindings,
   unbindInteractionControllerEvents,
 } from './interactionControllerLifecycle.js';
+import {
+  clearInteractionDrag,
+  createInteractionDragState,
+  createInteractionTouchState,
+  setInteractionPinching,
+  startInteractionDrag,
+  updateInteractionTouchPosition,
+} from './interactionControllerState.js';
 
 export { mapClientToLocalPoint };
 
@@ -22,15 +30,8 @@ export class InteractionController {
     this.onHover = onHover;
     this.onClick = onClick;
 
-    this.dragState = {
-      active: false,
-      pointerId: null,
-    };
-    this.touchState = {
-      pinching: false,
-      lastX: 0,
-      lastY: 0,
-    };
+    this.dragState = createInteractionDragState();
+    this.touchState = createInteractionTouchState();
 
     applyInteractionControllerEventBindings(this, createInteractionControllerEventBindings(this));
     bindInteractionControllerEvents(this.canvas, this);
@@ -41,8 +42,7 @@ export class InteractionController {
   }
 
   handlePointerDown(event) {
-    this.dragState.active = true;
-    this.dragState.pointerId = event.pointerId;
+    startInteractionDrag(this.dragState, event.pointerId);
     this.camera.startDrag(event.clientX, event.clientY);
   }
 
@@ -67,8 +67,7 @@ export class InteractionController {
       return;
     }
 
-    this.dragState.active = false;
-    this.dragState.pointerId = null;
+    clearInteractionDrag(this.dragState);
     const dragResult = this.camera.endDrag();
     if (!dragResult.wasClick) {
       return;
@@ -84,8 +83,7 @@ export class InteractionController {
   }
 
   handlePointerCancel() {
-    this.dragState.active = false;
-    this.dragState.pointerId = null;
+    clearInteractionDrag(this.dragState);
     this.camera.endDrag();
   }
 
@@ -102,7 +100,7 @@ export class InteractionController {
 
   handleTouchStart(event) {
     if (event.touches.length === 2) {
-      this.touchState.pinching = true;
+      setInteractionPinching(this.touchState, true);
       this.camera.endDrag();
       this.camera.beginPinch(event.touches[0], event.touches[1]);
       return;
@@ -110,8 +108,7 @@ export class InteractionController {
 
     if (event.touches.length === 1) {
       const touch = event.touches[0];
-      this.touchState.lastX = touch.clientX;
-      this.touchState.lastY = touch.clientY;
+      updateInteractionTouchPosition(this.touchState, touch.clientX, touch.clientY);
       this.camera.startDrag(touch.clientX, touch.clientY);
     }
   }
@@ -126,8 +123,7 @@ export class InteractionController {
       return;
     }
     const touch = event.touches[0];
-    this.touchState.lastX = touch.clientX;
-    this.touchState.lastY = touch.clientY;
+    updateInteractionTouchPosition(this.touchState, touch.clientX, touch.clientY);
     this.camera.dragTo(touch.clientX, touch.clientY);
     const point = resolveInteractionPoint({
       camera: this.camera,
@@ -141,7 +137,7 @@ export class InteractionController {
 
   handleTouchEnd() {
     if (this.touchState.pinching) {
-      this.touchState.pinching = false;
+      setInteractionPinching(this.touchState, false);
       this.camera.endPinch();
       return;
     }
