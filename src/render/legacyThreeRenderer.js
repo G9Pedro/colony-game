@@ -14,6 +14,7 @@ import {
   bindLegacyRendererEvents,
   disposeLegacyRendererRuntime,
 } from './legacyRendererLifecycle.js';
+import { createLegacyRendererBaseState } from './legacyRendererBaseState.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
 import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
@@ -41,15 +42,11 @@ import { applyRendererFrameState } from './rendererFrameState.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
-    this.rootElement = rootElement;
-    this.onGroundClick = null;
-    this.onPlacementPreview = null;
-    this.onEntitySelect = null;
-    this.lastFrameAt = performance.now();
-    this.smoothedFps = 60;
-
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x9ad6f7);
+    Object.assign(this, createLegacyRendererBaseState({
+      rootElement,
+      three: THREE,
+      performanceObject: performance,
+    }));
 
     const runtime = createLegacyRendererRuntime({
       rootElement,
