@@ -1,6 +1,7 @@
 import { createUIControllerDefaultCallbacks, createUIControllerElements } from './uiControllerElements.js';
 import { buildUiControllerRenderInvocation } from './uiControllerRenderInvocation.js';
 import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
+import { buildUIGlobalActionInvocation } from './uiGlobalActionInvocation.js';
 import { runUiControllerRender } from './uiControllerRenderFlow.js';
 import { createUIControllerRuntime } from './uiControllerRuntime.js';
 import { renderUIRendererModeOptions } from './uiRendererModeOptions.js';
@@ -46,14 +47,7 @@ export class UIController {
   }
 
   bindGlobalActions() {
-    bindUIGlobalActions({
-      elements: this.el,
-      engine: this.engine,
-      getCallbacks: () => this.callbacks,
-      pushNotification: (payload) => {
-        this.pushNotification(payload);
-      },
-    });
+    bindUIGlobalActions(buildUIGlobalActionInvocation(this));
   }
 
   setPersistenceCallbacks(callbacks) {
