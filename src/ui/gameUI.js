@@ -4,6 +4,7 @@ import { buildColonistRows, buildConstructionQueueRows } from './colonyPanelsVie
 import { buildObjectiveHint, buildObjectiveRows } from './objectivesViewState.js';
 import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildResourceBarRows } from './resourceBarViewState.js';
+import { buildSelectionPanelViewModel } from './selectionPanelViewState.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
 import {
   buildMetricsSummaryRows,
@@ -300,37 +301,21 @@ export class GameUI {
   }
 
   renderSelection(selection, state) {
-    this.el.infoPanelBody.innerHTML = '';
-    if (!selection) {
-      this.el.infoPanelTitle.textContent = 'Selection';
-      this.el.infoPanelBody.innerHTML = '<small>Tap a building or colonist to inspect details.</small>';
+    const panel = buildSelectionPanelViewModel({
+      selection,
+      state,
+      buildingDefinitions: this.buildingDefinitions,
+      buildBuildingSelectionDetails,
+      buildColonistSelectionDetails,
+    });
+    this.el.infoPanelTitle.textContent = panel.title;
+    if (panel.message) {
+      this.el.infoPanelBody.innerHTML = `<small>${panel.message}</small>`;
       return;
     }
-
-    if (selection.type === 'building') {
-      const details = buildBuildingSelectionDetails(selection, state, this.buildingDefinitions);
-      this.el.infoPanelTitle.textContent = details.title;
-      if (details.message) {
-        this.el.infoPanelBody.innerHTML = `<small>${details.message}</small>`;
-        return;
-      }
-      this.el.infoPanelBody.innerHTML = details.rows
-        .map((row) => `<div class="kv"><span>${row.label}</span><strong>${row.value}</strong></div>`)
-        .join('');
-      return;
-    }
-
-    if (selection.type === 'colonist') {
-      const details = buildColonistSelectionDetails(selection, state);
-      this.el.infoPanelTitle.textContent = details.title;
-      if (details.message) {
-        this.el.infoPanelBody.innerHTML = `<small>${details.message}</small>`;
-        return;
-      }
-      this.el.infoPanelBody.innerHTML = details.rows
-        .map((row) => `<div class="kv"><span>${row.label}</span><strong>${row.value}</strong></div>`)
-        .join('');
-    }
+    this.el.infoPanelBody.innerHTML = panel.rows
+      .map((row) => `<div class="kv"><span>${row.label}</span><strong>${row.value}</strong></div>`)
+      .join('');
   }
 }
 
