@@ -1,7 +1,5 @@
 import { IsometricRenderer } from './isometricRenderer.js';
 import { LegacyThreeRenderer } from './legacyThreeRenderer.js';
-import { normalizeCameraState } from './cameraState.js';
-import { normalizeDebugStats } from './debugStats.js';
 import {
   applySceneRendererEntitySelectHandler,
   applySceneRendererGroundClickHandler,
@@ -9,6 +7,7 @@ import {
 } from './sceneRendererHandlers.js';
 import { defineSceneRendererCallbackProperties } from './sceneRendererProperties.js';
 import { resolveSceneRendererPreviewUpdate } from './sceneRendererPreviewState.js';
+import { buildSceneRendererCameraState, buildSceneRendererDebugStats } from './sceneRendererSnapshots.js';
 import {
   normalizeRendererMode,
   persistRendererModePreference,
@@ -108,16 +107,11 @@ export class SceneRenderer {
   }
 
   getCameraState() {
-    const rawCameraState = this.activeRenderer?.getCameraState?.();
-    return normalizeCameraState(rawCameraState, {
-      mode: this.mode,
-      projection: this.mode === 'three' ? 'perspective' : 'isometric',
-    });
+    return buildSceneRendererCameraState(this);
   }
 
   getDebugStats() {
-    const rawStats = this.activeRenderer?.getDebugStats?.();
-    return normalizeDebugStats(rawStats, this.mode);
+    return buildSceneRendererDebugStats(this);
   }
 
   render(state) {
