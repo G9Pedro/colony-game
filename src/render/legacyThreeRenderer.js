@@ -2,6 +2,7 @@ import * as THREE from '../../node_modules/three/build/three.module.js';
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
+import { applyLegacyCameraPose, computeLegacyCameraPosition } from './legacyCameraPose.js';
 import { createLegacyBuildingMesh, createLegacyColonistMesh } from './legacyMeshFactory.js';
 import { reconcileMeshMap, updateColonistMeshPose } from './legacyEntitySync.js';
 import { computeFrameDeltaSeconds, updateSmoothedFps } from './frameTiming.js';
@@ -125,13 +126,8 @@ export class LegacyThreeRenderer {
   }
 
   updateCamera() {
-    const { radius, yaw, pitch } = this.cameraPolar;
-    const x = Math.cos(yaw) * Math.cos(pitch) * radius + this.cameraTarget.x;
-    const y = Math.sin(pitch) * radius;
-    const z = Math.sin(yaw) * Math.cos(pitch) * radius + this.cameraTarget.z;
-
-    this.camera.position.set(x, y, z);
-    this.camera.lookAt(this.cameraTarget);
+    const position = computeLegacyCameraPosition(this.cameraPolar, this.cameraTarget);
+    applyLegacyCameraPose(this.camera, this.cameraTarget, position);
   }
 
   resize() {
