@@ -1,16 +1,11 @@
-import { BUILDING_CATEGORIES } from '../content/buildings.js';
-import { getAvailableResearch, getAverageMorale, getPopulationCapacity, getStorageCapacity, getUsedStorage, isBuildingUnlocked } from '../game/selectors.js';
 import { SpriteFactory } from '../render/spriteFactory.js';
-import { formatObjectiveReward, getCurrentObjectiveIds, getObjectiveDefinitions, getObjectiveRewardMultiplier } from '../systems/objectiveSystem.js';
 import { GameUI } from './gameUI.js';
 import { Minimap } from './minimap.js';
 import { NotificationCenter } from './notifications.js';
-import { formatRenderStatsLabel } from './renderStatsLabel.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
-import { applyHudStateToElements, syncBannerState } from './uiControllerDomState.js';
-import { buildUiControllerHudState, toggleBuildSelection } from './uiControllerViewState.js';
-import { buildTopSummary, getRendererModeLabel, getStatusBannerMessage } from './uiViewState.js';
+import { runUiControllerRender } from './uiControllerRenderFlow.js';
+import { getRendererModeLabel } from './uiViewState.js';
 
 export class UIController {
   constructor({
@@ -160,63 +155,19 @@ export class UIController {
   }
 
   render(state) {
-    const topSummary = buildTopSummary(state, {
-      getPopulationCapacity,
-      getAverageMorale,
-      getUsedStorage,
-      getStorageCapacity,
-    });
-
-    this.gameUI.renderTopState(state, {
-      populationText: topSummary.populationText,
-      morale: topSummary.moraleText,
-      storageText: topSummary.storageText,
-    });
-    this.gameUI.renderSpeedButtons(state);
-    this.gameUI.renderResourceBar(state);
-    this.gameUI.renderBuildList({
+    runUiControllerRender({
       state,
       selectedBuildType: this.selectedBuildType,
-      onToggleBuildType: (buildingType) => {
-        this.selectedBuildType = toggleBuildSelection(this.selectedBuildType, buildingType);
-        this.engine.setSelectedBuildingType(this.selectedBuildType);
-      },
-      onSelectCategory: (category) => this.engine.setSelectedCategory(category),
-      categories: BUILDING_CATEGORIES,
-      isBuildingUnlocked,
-    });
-    this.gameUI.renderResearch(
-      state,
-      getAvailableResearch,
-      (researchId) => {
-        const result = this.engine.beginResearch(researchId);
-        if (!result.ok) {
-          this.pushNotification({ kind: 'error', message: result.message });
-        }
-      },
-    );
-    this.gameUI.renderObjectives(
-      state,
-      getObjectiveDefinitions(),
-      getObjectiveRewardMultiplier(state),
-      formatObjectiveReward,
-      getCurrentObjectiveIds,
-    );
-    this.gameUI.renderConstructionQueue(state);
-    this.gameUI.renderColonists(state);
-    this.gameUI.renderRunStats(state);
-    this.gameUI.renderSelection(this.selectedEntity, state);
-
-    this.minimap.render(state, this.renderer?.getCameraState?.(), this.selectedEntity);
-    const hudState = buildUiControllerHudState({
-      state,
+      selectedEntity: this.selectedEntity,
+      engine: this.engine,
       renderer: this.renderer,
-      formatRenderStatsLabel,
-      getStatusBannerMessage,
-    });
-    applyHudStateToElements(this.el, hudState);
-    syncBannerState({
-      bannerMessage: hudState.bannerMessage,
+      elements: this.el,
+      gameUI: this.gameUI,
+      minimap: this.minimap,
+      pushNotification: (payload) => this.pushNotification(payload),
+      setSelectedBuildType: (buildingType) => {
+        this.selectedBuildType = buildingType;
+      },
       showBanner: (message) => this.showBanner(message),
       hideBanner: () => this.hideBanner(),
     });
