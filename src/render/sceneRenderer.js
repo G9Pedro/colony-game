@@ -2,6 +2,11 @@ import { IsometricRenderer } from './isometricRenderer.js';
 import { LegacyThreeRenderer } from './legacyThreeRenderer.js';
 import { normalizeCameraState } from './cameraState.js';
 import { normalizeDebugStats } from './debugStats.js';
+import {
+  applySceneRendererEntitySelectHandler,
+  applySceneRendererGroundClickHandler,
+  applySceneRendererPlacementPreviewHandler,
+} from './sceneRendererHandlers.js';
 import { defineSceneRendererCallbackProperties } from './sceneRendererProperties.js';
 import { resolveSceneRendererPreviewUpdate } from './sceneRendererPreviewState.js';
 import {
@@ -64,18 +69,15 @@ export class SceneRenderer {
   }
 
   setGroundClickHandler(handler) {
-    this._onGroundClick = handler;
-    this.activeRenderer?.setGroundClickHandler(handler);
+    applySceneRendererGroundClickHandler(this, handler);
   }
 
   setPlacementPreviewHandler(handler) {
-    this._onPlacementPreview = handler;
-    this.activeRenderer?.setPlacementPreviewHandler(handler);
+    applySceneRendererPlacementPreviewHandler(this, handler);
   }
 
   setEntitySelectHandler(handler) {
-    this._onEntitySelect = handler;
-    this.activeRenderer?.setEntitySelectHandler(handler);
+    applySceneRendererEntitySelectHandler(this, handler);
   }
 
   setPreviewPosition(position, valid = true) {
