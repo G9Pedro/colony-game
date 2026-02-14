@@ -16,6 +16,7 @@ import {
   toPointerLikeTouch,
   toRoundedGroundPoint,
 } from './legacyInteractionPrimitives.js';
+import { beginLegacyPointerDrag, endLegacyPointerDrag, updateLegacyPointerDrag } from './legacyPointerState.js';
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
 import { pickEntitySelectionFromClient, pickGroundPointFromClient } from './legacyRaycastSession.js';
@@ -182,10 +183,7 @@ export class LegacyThreeRenderer {
   }
 
   handlePointerDown(event) {
-    this.dragState.active = true;
-    this.dragState.moved = false;
-    this.dragState.lastX = event.clientX;
-    this.dragState.lastY = event.clientY;
+    beginLegacyPointerDrag(this.dragState, event.clientX, event.clientY);
   }
 
   handlePointerMove(event) {
@@ -194,40 +192,40 @@ export class LegacyThreeRenderer {
       this.onPlacementPreview({ x: Math.round(point.x), z: Math.round(point.z) });
     }
 
-    if (!this.dragState.active) {
+    const dragUpdate = updateLegacyPointerDrag(
+      this.dragState,
+      event.clientX,
+      event.clientY,
+      hasPointerMovedBeyondThreshold,
+      1,
+    );
+    if (!dragUpdate.active) {
       return;
     }
-    const dx = event.clientX - this.dragState.lastX;
-    const dy = event.clientY - this.dragState.lastY;
-    if (hasPointerMovedBeyondThreshold(dx, dy, 1)) {
-      this.dragState.moved = true;
-    }
-    this.dragState.lastX = event.clientX;
-    this.dragState.lastY = event.clientY;
 
-    const nextPolar = updateOrbitYawAndPitch(this.cameraPolar, dx, dy, 0.0055);
+    const nextPolar = updateOrbitYawAndPitch(this.cameraPolar, dragUpdate.dx, dragUpdate.dy, 0.0055);
     this.cameraPolar.yaw = nextPolar.yaw;
     this.cameraPolar.pitch = nextPolar.pitch;
     this.updateCamera();
   }
 
   handlePointerUp(event) {
-    if (!this.dragState.active) {
-      return;
-    }
-    this.dragState.active = false;
-
-    if (this.dragState.moved) {
+    const dragEnd = endLegacyPointerDrag(this.dragState);
+    if (!dragEnd.active) {
       return;
     }
 
-    const selectedEntity = this.screenToEntity(event.clientX, event.clientY);
+    if (dragEnd.moved) {
+      return;
+    }
+
+    const selectedEntity = this.screenToEntity(dragEnd.clientX, dragEnd.clientY);
     if (selectedEntity && this.onEntitySelect) {
       this.onEntitySelect(selectedEntity);
       return;
     }
 
-    const point = this.screenToGround(event.clientX, event.clientY);
+    const point = this.screenToGround(dragEnd.clientX, dragEnd.clientY);
     const clickPoint = toRoundedGroundPoint(point);
     if (!clickPoint) {
       return;
