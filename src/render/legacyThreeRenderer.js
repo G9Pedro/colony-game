@@ -8,13 +8,10 @@ import {
   dispatchLegacyTouchStart,
   dispatchLegacyWheel,
 } from './legacyInteractionDispatch.js';
-import { bindLegacyRendererEvents, disposeLegacyRendererRuntime } from './legacyRendererLifecycle.js';
+import { disposeLegacyRendererRuntime } from './legacyRendererLifecycle.js';
 import { beginLegacyPointerDrag } from './legacyPointerState.js';
-import { buildLegacyEventSessionInvocation } from './legacyEventSessionInvocation.js';
-import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { dispatchLegacyFrame } from './legacyFrameDispatch.js';
 import { dispatchLegacyBuildingSync, dispatchLegacyColonistSync } from './legacyMeshSyncDispatch.js';
-import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
 import {
   clearLegacyPreviewPosition,
   setLegacyPreviewPosition,
@@ -30,6 +27,7 @@ import {
 } from './rendererCallbackState.js';
 import { resizeLegacyRendererViewport } from './legacyRendererViewport.js';
 import { initializeLegacyThreeRenderer } from './legacyRendererInitialization.js';
+import { dispatchLegacyEventSessionBind } from './legacyEventSessionDispatch.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -43,11 +41,7 @@ export class LegacyThreeRenderer {
   }
 
   bindEvents() {
-    const session = createLegacyRendererEventSession(buildLegacyEventSessionInvocation(this, {
-      windowObject: window,
-      bindEvents: bindLegacyRendererEvents,
-    }));
-    applyLegacyRendererEventSession(this, session);
+    dispatchLegacyEventSessionBind(this);
   }
 
   updateCamera() {
