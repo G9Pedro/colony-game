@@ -1,4 +1,10 @@
-import { buildPathTileSet, buildStructureTileSet, buildTerrainSignature, getTerrainBoundsFromCorners } from './terrainUtils.js';
+import { buildPathTileSet, buildStructureTileSet, buildTerrainSignature } from './terrainUtils.js';
+import {
+  buildTerrainLayerCacheSnapshot,
+  createTerrainLayerCacheState,
+  createTerrainLayerRefreshPayload,
+} from './terrainLayerCache.js';
+import { resolveTerrainLayerBounds } from './terrainLayerBounds.js';
 import { paintTerrainTiles } from './terrainTilePainter.js';
 export { resolveTerrainKind } from './terrainTilePolicies.js';
 
@@ -43,20 +49,7 @@ export class TerrainLayerRenderer {
     this.spriteFactory = spriteFactory;
     this.canvas = document.createElement('canvas');
     this.ctx = this.canvas.getContext('2d', { alpha: true });
-    this.cache = {
-      valid: false,
-      centerX: 0,
-      centerZ: 0,
-      zoom: 0,
-      minX: 0,
-      maxX: 0,
-      minZ: 0,
-      maxZ: 0,
-      buildingSignature: '',
-      width: 0,
-      height: 0,
-      dpr: 1,
-    };
+    this.cache = createTerrainLayerCacheState();
   }
 
   resize(width, height, dpr) {
@@ -68,13 +61,7 @@ export class TerrainLayerRenderer {
   }
 
   getBounds(camera) {
-    const corners = [
-      camera.screenToWorld(0, 0),
-      camera.screenToWorld(camera.viewportWidth, 0),
-      camera.screenToWorld(0, camera.viewportHeight),
-      camera.screenToWorld(camera.viewportWidth, camera.viewportHeight),
-    ];
-    return getTerrainBoundsFromCorners(corners, 3);
+    return resolveTerrainLayerBounds(camera);
   }
 
   rebuild(state, camera, dpr, bounds, signature) {
@@ -92,40 +79,24 @@ export class TerrainLayerRenderer {
       pathTileSet,
     });
 
-    const { minX, maxX, minZ, maxZ } = bounds;
-
-    this.cache = {
-      valid: true,
-      centerX: camera.centerX,
-      centerZ: camera.centerZ,
-      zoom: camera.zoom,
-      minX,
-      maxX,
-      minZ,
-      maxZ,
-      buildingSignature: signature,
-      width: camera.viewportWidth,
-      height: camera.viewportHeight,
+    this.cache = buildTerrainLayerCacheSnapshot({
+      camera,
+      bounds,
       dpr,
-    };
+      signature,
+    });
   }
 
   draw(targetCtx, state, camera, dpr = 1) {
     const bounds = this.getBounds(camera);
     const signature = buildTerrainSignature(state);
-    if (shouldRefreshTerrainCache(this.cache, {
-      centerX: camera.centerX,
-      centerZ: camera.centerZ,
-      zoom: camera.zoom,
-      minX: bounds.minX,
-      maxX: bounds.maxX,
-      minZ: bounds.minZ,
-      maxZ: bounds.maxZ,
-      width: camera.viewportWidth,
-      height: camera.viewportHeight,
+    const refreshPayload = createTerrainLayerRefreshPayload({
+      camera,
+      bounds,
       dpr,
       signature,
-    })) {
+    });
+    if (shouldRefreshTerrainCache(this.cache, refreshPayload)) {
       this.rebuild(state, camera, dpr, bounds, signature);
     }
 
