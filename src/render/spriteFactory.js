@@ -6,20 +6,7 @@ import {
   PREWARM_RESOURCE_KEYS,
   RESOURCE_GLYPHS,
 } from './spriteFactoryConstants.js';
-
-function createCanvas(width, height) {
-  if (typeof OffscreenCanvas !== 'undefined') {
-    return new OffscreenCanvas(width, height);
-  }
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  return canvas;
-}
-
-function getContext2D(canvas) {
-  return canvas.getContext('2d', { alpha: true });
-}
+import { createSpriteCanvas, getSpriteContext2D } from './spriteCanvasFactory.js';
 
 function shadeColor(hexColor, factor) {
   const normalized = hexColor.replace('#', '');
@@ -298,8 +285,8 @@ export class SpriteFactory {
     if (this.terrainTiles.has(key)) {
       return this.terrainTiles.get(key);
     }
-    const canvas = createCanvas(this.tileWidth + 6, this.tileHeight + 6);
-    const ctx = getContext2D(canvas);
+    const canvas = createSpriteCanvas(this.tileWidth + 6, this.tileHeight + 6);
+    const ctx = getSpriteContext2D(canvas);
     const cx = canvas.width * 0.5;
     const cy = canvas.height * 0.5;
 
@@ -328,8 +315,8 @@ export class SpriteFactory {
     const heightScale = override.height ?? 0.85;
     const spriteWidth = 160;
     const spriteHeight = 160;
-    const canvas = createCanvas(spriteWidth, spriteHeight);
-    const ctx = getContext2D(canvas);
+    const canvas = createSpriteCanvas(spriteWidth, spriteHeight);
+    const ctx = getSpriteContext2D(canvas);
 
     const centerX = spriteWidth * 0.5;
     const baseY = spriteHeight - 44;
@@ -379,8 +366,8 @@ export class SpriteFactory {
       return this.buildingSprites.get(key);
     }
     const source = this.getBuildingSprite(type).canvas;
-    const canvas = createCanvas(size, size);
-    const ctx = getContext2D(canvas);
+    const canvas = createSpriteCanvas(size, size);
+    const ctx = getSpriteContext2D(canvas);
     ctx.drawImage(source, 22, 26, source.width - 44, source.height - 34, 0, 0, size, size);
     this.buildingSprites.set(key, canvas);
     return canvas;
@@ -392,8 +379,8 @@ export class SpriteFactory {
       return this.colonistSprites.get(key);
     }
 
-    const canvas = createCanvas(24, 30);
-    const ctx = getContext2D(canvas);
+    const canvas = createSpriteCanvas(24, 30);
+    const ctx = getSpriteContext2D(canvas);
     const color = JOB_COLORS[job] ?? JOB_COLORS.laborer;
     const x = 12;
     const y = 18;
@@ -434,8 +421,8 @@ export class SpriteFactory {
       return this.resourceIcons.get(key);
     }
 
-    const canvas = createCanvas(size, size);
-    const ctx = getContext2D(canvas);
+    const canvas = createSpriteCanvas(size, size);
+    const ctx = getSpriteContext2D(canvas);
     ctx.fillStyle = 'rgba(82, 53, 28, 0.85)';
     ctx.beginPath();
     ctx.roundRect(0, 0, size, size, 6);
