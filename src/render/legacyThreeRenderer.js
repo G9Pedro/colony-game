@@ -9,6 +9,12 @@ import {
   updateRadiusFromPinch,
   updateRadiusFromWheel,
 } from './legacyThreeCameraControls.js';
+import {
+  getTouchDistance,
+  hasPointerMovedBeyondThreshold,
+  toPointerLikeTouch,
+  toRoundedGroundPoint,
+} from './legacyInteractionPrimitives.js';
 import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
 
 const BUILDING_Y_BASE = 0.01;
@@ -218,7 +224,7 @@ export class LegacyThreeRenderer {
     }
     const dx = event.clientX - this.dragState.lastX;
     const dy = event.clientY - this.dragState.lastY;
-    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+    if (hasPointerMovedBeyondThreshold(dx, dy, 1)) {
       this.dragState.moved = true;
     }
     this.dragState.lastX = event.clientX;
@@ -247,10 +253,10 @@ export class LegacyThreeRenderer {
     }
 
     const point = this.screenToGround(event.clientX, event.clientY);
-    if (!point) {
+    const clickPoint = toRoundedGroundPoint(point);
+    if (!clickPoint) {
       return;
     }
-    const clickPoint = { x: Math.round(point.x), z: Math.round(point.z) };
     if (this.onGroundClick) {
       this.onGroundClick(clickPoint);
     }
@@ -266,16 +272,13 @@ export class LegacyThreeRenderer {
     if (event.touches.length === 2) {
       const [first, second] = event.touches;
       this.touchState.isPinching = true;
-      this.touchState.pinchDistance = Math.hypot(
-        second.clientX - first.clientX,
-        second.clientY - first.clientY,
-      );
+      this.touchState.pinchDistance = getTouchDistance(first, second);
       return;
     }
 
     if (event.touches.length === 1) {
       const touch = event.touches[0];
-      this.handlePointerDown(touch);
+      this.handlePointerDown(toPointerLikeTouch(touch));
     }
   }
 
@@ -283,7 +286,7 @@ export class LegacyThreeRenderer {
     event.preventDefault();
     if (event.touches.length === 2 && this.touchState.isPinching) {
       const [first, second] = event.touches;
-      const distance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+      const distance = getTouchDistance(first, second);
       const next = updateRadiusFromPinch(this.cameraPolar.radius, this.touchState.pinchDistance, distance, 0.04);
       this.cameraPolar.radius = next.radius;
       this.touchState.pinchDistance = next.distance;
@@ -293,7 +296,7 @@ export class LegacyThreeRenderer {
 
     if (event.touches.length === 1) {
       const touch = event.touches[0];
-      this.handlePointerMove(touch);
+      this.handlePointerMove(toPointerLikeTouch(touch));
     }
   }
 
