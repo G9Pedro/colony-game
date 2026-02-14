@@ -8,6 +8,7 @@ import {
   getRecentRunHistory,
   getRunOutcomeLabel,
 } from './runStatsView.js';
+import { buildActiveResearchViewModel, buildResearchOptionViewModels } from './researchViewState.js';
 import { formatCost, formatRate, percent } from './uiFormatting.js';
 
 export class GameUI {
@@ -164,13 +165,16 @@ export class GameUI {
 
   renderResearch(state, getAvailableResearch, onStartResearch) {
     this.el.researchCurrent.innerHTML = '';
-    if (state.research.current) {
-      const tech = this.researchDefinitions[state.research.current];
-      const progress = percent(state.research.progress, tech.time);
+    const activeResearch = buildActiveResearchViewModel(
+      state.research,
+      this.researchDefinitions,
+      percent,
+    );
+    if (activeResearch) {
       this.el.researchCurrent.innerHTML = `
         <div class="panel-card">
-          <div class="kv"><strong>${tech.name}</strong><small>${Math.floor(progress)}%</small></div>
-          <div class="progress-track"><span style="width:${progress}%"></span></div>
+          <div class="kv"><strong>${activeResearch.name}</strong><small>${Math.floor(activeResearch.progress)}%</small></div>
+          <div class="progress-track"><span style="width:${activeResearch.progress}%"></span></div>
         </div>
       `;
     } else {
@@ -178,19 +182,19 @@ export class GameUI {
     }
 
     this.el.researchList.innerHTML = '';
-    const options = getAvailableResearch(state, this.researchDefinitions);
+    const options = buildResearchOptionViewModels({
+      state,
+      researchDefinitions: this.researchDefinitions,
+      getAvailableResearch,
+    });
     options.forEach((item) => {
-      if (state.research.current === item.id || state.research.completed.includes(item.id)) {
-        return;
-      }
-
       const card = document.createElement('div');
       card.className = 'panel-card';
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'secondary';
       button.textContent = `Research ${item.name}`;
-      button.disabled = state.resources.knowledge < item.cost || !!state.research.current;
+      button.disabled = item.disabled;
       button.addEventListener('click', () => onStartResearch(item.id));
       const text = document.createElement('small');
       text.textContent = `${item.description} · ${item.cost} knowledge`;
