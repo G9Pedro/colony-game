@@ -3,7 +3,6 @@ import {
   BUILDING_STYLE_OVERRIDES,
   PREWARM_JOB_TYPES,
   PREWARM_RESOURCE_KEYS,
-  RESOURCE_GLYPHS,
 } from './spriteFactoryConstants.js';
 import { createSpriteCanvas, getSpriteContext2D } from './spriteCanvasFactory.js';
 import { shadeColor } from './spriteMath.js';
@@ -11,6 +10,7 @@ import { drawDiamond, drawIsoPrism } from './spritePrimitives.js';
 import { drawScaffoldOverlay, drawTextureNoise } from './spriteEffects.js';
 import { drawBuildingDecoration } from './spriteBuildingDecorations.js';
 import { drawColonistSprite } from './spriteColonistRenderer.js';
+import { drawResourceIconSprite } from './spriteResourceIconRenderer.js';
 import { drawTerrainTileSprite } from './spriteTerrainRenderer.js';
 
 export class SpriteFactory {
@@ -162,16 +162,7 @@ export class SpriteFactory {
 
     const canvas = createSpriteCanvas(size, size);
     const ctx = getSpriteContext2D(canvas);
-    ctx.fillStyle = 'rgba(82, 53, 28, 0.85)';
-    ctx.beginPath();
-    ctx.roundRect(0, 0, size, size, 6);
-    ctx.fill();
-
-    ctx.fillStyle = 'rgba(255, 243, 219, 0.95)';
-    ctx.font = `${Math.floor(size * 0.72)}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(RESOURCE_GLYPHS[resourceKey] ?? '●', size * 0.5, size * 0.54);
+    drawResourceIconSprite(ctx, { resourceKey, size });
     this.resourceIcons.set(key, canvas);
     return canvas;
   }
