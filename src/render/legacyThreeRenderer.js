@@ -28,12 +28,7 @@ import { beginLegacyPointerDrag, updateLegacyPointerDrag } from './legacyPointer
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
-import {
-  createLegacyGrid,
-  createLegacyGroundPlane,
-  createLegacyLighting,
-  createLegacyPreviewMarker,
-} from './legacySceneSetup.js';
+import { bootstrapLegacyScene } from './legacySceneBootstrap.js';
 import { beginLegacyPinch, endLegacyPinch, updateLegacyPinch } from './legacyTouchState.js';
 import {
   applyLegacyPreviewMarker,
@@ -89,17 +84,12 @@ export class LegacyThreeRenderer {
   }
 
   initializeScene() {
-    const { ambientLight, sunlight } = createLegacyLighting(THREE);
-    this.scene.add(ambientLight, sunlight);
-
-    this.groundPlane = createLegacyGroundPlane(THREE);
-    this.scene.add(this.groundPlane);
-
-    const grid = createLegacyGrid(THREE);
-    this.scene.add(grid);
-
-    this.previewMarker = createLegacyPreviewMarker(THREE);
-    this.scene.add(this.previewMarker);
+    const setup = bootstrapLegacyScene({
+      scene: this.scene,
+      three: THREE,
+    });
+    this.groundPlane = setup.groundPlane;
+    this.previewMarker = setup.previewMarker;
   }
 
   bindEvents() {
