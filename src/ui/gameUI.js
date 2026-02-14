@@ -1,7 +1,7 @@
 import { buildResourceBarRows } from './resourceBarViewState.js';
-import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { dispatchGameUIBuildMenu } from './gameUIBuildMenuDispatch.js';
 import { createResourceChipElement } from './gameUICardElements.js';
+import { dispatchGameUIBalanceProfileOptions, dispatchGameUIScenarioOptions } from './gameUIOptionsDispatch.js';
 import {
   dispatchGameUIColonistPanel,
   dispatchGameUIConstructionQueuePanel,
@@ -11,7 +11,6 @@ import {
   dispatchGameUISelectionPanel,
 } from './gameUIPanelDispatch.js';
 import { renderGameUIResourceBar } from './gameUIResourceBarDom.js';
-import { renderGameUISelectDropdown } from './gameUISelectOptions.js';
 import { createGameUIRuntime } from './gameUIRuntime.js';
 import { renderGameUISpeedButtons, renderGameUITopState } from './gameUITopBarDom.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
@@ -28,27 +27,11 @@ export class GameUI {
   }
 
   setScenarioOptions(scenarios, currentScenarioId) {
-    renderGameUISelectDropdown({
-      selectElement: this.el.scenarioSelect,
-      options: scenarios,
-      selectedId: currentScenarioId,
-      getId: (scenario) => scenario.id,
-      getLabel: (scenario) => scenario.name,
-      buildSelectOptionRows,
-      renderSelectOptions,
-    });
+    dispatchGameUIScenarioOptions(this, scenarios, currentScenarioId);
   }
 
   setBalanceProfileOptions(profiles, currentProfileId) {
-    renderGameUISelectDropdown({
-      selectElement: this.el.balanceProfileSelect,
-      options: profiles,
-      selectedId: currentProfileId,
-      getId: (profile) => profile.id,
-      getLabel: (profile) => profile.name,
-      buildSelectOptionRows,
-      renderSelectOptions,
-    });
+    dispatchGameUIBalanceProfileOptions(this, profiles, currentProfileId);
   }
 
   updateResourceRates(state) {
