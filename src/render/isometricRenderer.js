@@ -7,7 +7,6 @@ import { drawIsometricEntityPass } from './isometricEntityDraw.js';
 import { buildIsometricEntityDrawInvocation } from './isometricEntityDrawInvocation.js';
 import { createIsometricInteractionSession } from './isometricInteractionSession.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
-import { createIsometricPreviewState, resolveIsometricPreviewUpdate } from './isometricPreviewState.js';
 import { applyRendererFrameState } from './rendererFrameState.js';
 import {
   applyIsometricSelectedEntity,
@@ -28,6 +27,11 @@ import {
   runIsometricPlacementEffectSync,
   runIsometricResourceGainSampling,
 } from './isometricEffectDispatch.js';
+import {
+  applyIsometricPreviewPosition,
+  clearIsometricPreview,
+  updateIsometricPreviewMarker,
+} from './isometricPreviewHandlers.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight } from './overlayPainter.js';
 
 export class IsometricRenderer {
@@ -92,15 +96,15 @@ export class IsometricRenderer {
   }
 
   setPreviewPosition(position, valid = true) {
-    this.preview = createIsometricPreviewState(position, valid);
+    applyIsometricPreviewPosition(this, position, valid);
   }
 
   clearPreview() {
-    this.preview = null;
+    clearIsometricPreview(this);
   }
 
   updatePlacementMarker(position, valid) {
-    this.preview = resolveIsometricPreviewUpdate(position, valid);
+    updateIsometricPreviewMarker(this, position, valid);
   }
 
   centerOnBuilding(building) {
