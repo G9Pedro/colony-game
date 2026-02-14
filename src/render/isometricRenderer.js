@@ -4,6 +4,7 @@ import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
+import { updateColonistRenderState } from './colonistInterpolation.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
@@ -18,10 +19,6 @@ import { pickBestInteractiveEntityHit } from './interactionHitTest.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
 import { getDaylightFactor, getResourceGains, getSeasonTint } from './stateVisuals.js';
 import { TerrainLayerRenderer } from './terrainLayer.js';
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
 
 export class IsometricRenderer {
   constructor(rootElement, options = {}) {
@@ -236,30 +233,7 @@ export class IsometricRenderer {
   }
 
   updateColonistInterpolation(state, deltaSeconds) {
-    const aliveIds = new Set();
-    for (const colonist of state.colonists) {
-      if (!colonist.alive) {
-        continue;
-      }
-      aliveIds.add(colonist.id);
-      let renderState = this.colonistRenderState.get(colonist.id);
-      if (!renderState) {
-        renderState = {
-          x: colonist.position.x,
-          z: colonist.position.z,
-        };
-        this.colonistRenderState.set(colonist.id, renderState);
-      }
-      const interpolation = clamp(deltaSeconds * 8, 0.12, 1);
-      renderState.x += (colonist.position.x - renderState.x) * interpolation;
-      renderState.z += (colonist.position.z - renderState.z) * interpolation;
-    }
-
-    for (const [id] of this.colonistRenderState.entries()) {
-      if (!aliveIds.has(id)) {
-        this.colonistRenderState.delete(id);
-      }
-    }
+    updateColonistRenderState(state.colonists, this.colonistRenderState, deltaSeconds);
   }
 
   sampleResourceGains(state, deltaSeconds) {
