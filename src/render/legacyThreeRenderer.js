@@ -8,12 +8,8 @@ import {
   dispatchLegacyTouchStart,
   dispatchLegacyWheel,
 } from './legacyInteractionDispatch.js';
-import { disposeLegacyRendererRuntime } from './legacyRendererLifecycle.js';
 import { beginLegacyPointerDrag } from './legacyPointerState.js';
 import { dispatchLegacyFrame } from './legacyFrameDispatch.js';
-import { dispatchLegacyBuildingSync, dispatchLegacyColonistSync } from './legacyMeshSyncDispatch.js';
-import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
-import { buildLegacyDisposeInvocation } from './legacyDisposeInvocation.js';
 import {
   applyRendererEntitySelectHandler,
   applyRendererGroundClickHandler,
@@ -30,6 +26,13 @@ import {
   dispatchLegacyPreviewSet,
   dispatchLegacyViewportResize,
 } from './legacyRendererSurfaceDispatch.js';
+import {
+  buildLegacyRendererCameraSnapshot,
+  buildLegacyRendererDebugSnapshot,
+  dispatchLegacyBuildingSyncWithThree,
+  dispatchLegacyColonistSyncWithThree,
+  dispatchLegacyRendererDispose,
+} from './legacyRendererRuntimeDispatch.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -119,23 +122,19 @@ export class LegacyThreeRenderer {
   }
 
   getCameraState() {
-    return buildLegacyCameraState({
-      rootElement: this.rootElement,
-      cameraTarget: this.cameraTarget,
-      worldRadius: 30,
-    });
+    return buildLegacyRendererCameraSnapshot(this);
   }
 
   getDebugStats() {
-    return buildLegacyDebugStats(this.smoothedFps);
+    return buildLegacyRendererDebugSnapshot(this);
   }
 
   syncBuildings(state) {
-    dispatchLegacyBuildingSync(this, state, { dependencies: { three: THREE } });
+    dispatchLegacyBuildingSyncWithThree(this, state, THREE);
   }
 
   syncColonists(state) {
-    dispatchLegacyColonistSync(this, state, { dependencies: { three: THREE } });
+    dispatchLegacyColonistSyncWithThree(this, state, THREE);
   }
 
   render(state) {
@@ -143,7 +142,7 @@ export class LegacyThreeRenderer {
   }
 
   dispose() {
-    disposeLegacyRendererRuntime(buildLegacyDisposeInvocation(this));
+    dispatchLegacyRendererDispose(this);
   }
 }
 
