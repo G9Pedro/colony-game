@@ -4,16 +4,20 @@ import {
   worldToScreenPoint,
 } from './isometricProjection.js';
 import {
-  computeCameraVelocityFromScreenDelta,
   computeCameraZoomStep,
-  didCameraCenterMove,
-  isDragClick,
 } from './isometricCameraPolicies.js';
 import {
   applyCameraInertia,
-  buildPinchGestureState,
   clampCameraCenter,
 } from './isometricCameraState.js';
+import {
+  dispatchIsometricCameraDragEnd,
+  dispatchIsometricCameraDragMove,
+  dispatchIsometricCameraDragStart,
+  dispatchIsometricCameraPinchBegin,
+  dispatchIsometricCameraPinchEnd,
+  dispatchIsometricCameraPinchMove,
+} from './isometricCameraInteractionDispatch.js';
 import {
   createIsometricCameraRuntimeState,
   DEFAULT_TILE_HEIGHT,
@@ -132,87 +136,35 @@ export class IsometricCamera {
   }
 
   startDrag(screenX, screenY) {
-    this.dragging = true;
-    this.dragLastX = screenX;
-    this.dragLastY = screenY;
-    this.lastDragAt = performance.now();
-    this.dragDistance = 0;
-    this.velocityX = 0;
-    this.velocityZ = 0;
+    dispatchIsometricCameraDragStart(this, {
+      screenX,
+      screenY,
+      now: performance.now(),
+    });
   }
 
   dragTo(screenX, screenY) {
-    if (!this.dragging) {
-      return;
-    }
-    const now = performance.now();
-    const elapsed = Math.max(1, now - this.lastDragAt);
-    const dx = screenX - this.dragLastX;
-    const dy = screenY - this.dragLastY;
-    this.dragDistance += Math.hypot(dx, dy);
-    const beforeCenterX = this.centerX;
-    const beforeCenterZ = this.centerZ;
-    this.panByScreenDelta(dx, dy);
-
-    const velocity = computeCameraVelocityFromScreenDelta({
-      deltaX: dx,
-      deltaY: dy,
-      elapsedMilliseconds: elapsed,
-      zoom: this.zoom,
-      tileWidth: this.tileWidth,
-      tileHeight: this.tileHeight,
+    dispatchIsometricCameraDragMove(this, {
+      screenX,
+      screenY,
+      now: performance.now(),
     });
-    this.velocityX = velocity.velocityX;
-    this.velocityZ = velocity.velocityZ;
-
-    this.dragLastX = screenX;
-    this.dragLastY = screenY;
-    this.lastDragAt = now;
-    if (!didCameraCenterMove({
-      centerX: beforeCenterX,
-      centerZ: beforeCenterZ,
-    }, {
-      centerX: this.centerX,
-      centerZ: this.centerZ,
-    })) {
-      this.velocityX = 0;
-      this.velocityZ = 0;
-    }
   }
 
   endDrag() {
-    const wasClick = isDragClick(this.dragDistance);
-    this.dragging = false;
-    return { wasClick };
+    return dispatchIsometricCameraDragEnd(this);
   }
 
   beginPinch(firstTouch, secondTouch) {
-    const pinchGesture = buildPinchGestureState(firstTouch, secondTouch);
-    this.pinchState.active = true;
-    this.pinchState.distance = pinchGesture.distance;
-    this.pinchState.midpointX = pinchGesture.midpointX;
-    this.pinchState.midpointY = pinchGesture.midpointY;
-    this.velocityX = 0;
-    this.velocityZ = 0;
+    dispatchIsometricCameraPinchBegin(this, firstTouch, secondTouch);
   }
 
   updatePinch(firstTouch, secondTouch) {
-    if (!this.pinchState.active) {
-      return;
-    }
-    const pinchGesture = buildPinchGestureState(firstTouch, secondTouch);
-    if (pinchGesture.distance <= 0) {
-      return;
-    }
-    const delta = (this.pinchState.distance - pinchGesture.distance) * 0.0022;
-    this.zoomAt(delta, pinchGesture.midpointX, pinchGesture.midpointY);
-    this.pinchState.distance = pinchGesture.distance;
-    this.pinchState.midpointX = pinchGesture.midpointX;
-    this.pinchState.midpointY = pinchGesture.midpointY;
+    dispatchIsometricCameraPinchMove(this, firstTouch, secondTouch);
   }
 
   endPinch() {
-    this.pinchState.active = false;
+    dispatchIsometricCameraPinchEnd(this);
   }
 
   update(deltaSeconds) {
