@@ -44,6 +44,7 @@ import {
   createLegacyInteractionState,
   createLegacyWebGLRenderer,
 } from './legacyRendererBootstrap.js';
+import { centerLegacyCameraOnBuilding, resizeLegacyRendererViewport } from './legacyRendererViewport.js';
 import { pickLegacyEntityAtClient, pickLegacyGroundAtClient } from './legacyScreenPickers.js';
 
 export class LegacyThreeRenderer {
@@ -129,11 +130,7 @@ export class LegacyThreeRenderer {
   }
 
   resize() {
-    const width = this.rootElement.clientWidth;
-    const height = this.rootElement.clientHeight;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height, false);
+    resizeLegacyRendererViewport(this.rootElement, this.camera, this.renderer);
   }
 
   setGroundClickHandler(handler) {
@@ -258,11 +255,7 @@ export class LegacyThreeRenderer {
   }
 
   centerOnBuilding(building) {
-    if (!building) {
-      return;
-    }
-    this.cameraTarget.set(building.x, 0, building.z);
-    this.updateCamera();
+    centerLegacyCameraOnBuilding(building, this.cameraTarget, () => this.updateCamera());
   }
 
   getCameraState() {
