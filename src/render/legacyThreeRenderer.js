@@ -20,6 +20,7 @@ import { beginLegacyPointerDrag, endLegacyPointerDrag, updateLegacyPointerDrag }
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
 import { pickEntitySelectionFromClient, pickGroundPointFromClient } from './legacyRaycastSession.js';
+import { beginLegacyPinch, endLegacyPinch, updateLegacyPinch } from './legacyTouchState.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -244,8 +245,7 @@ export class LegacyThreeRenderer {
   handleTouchStart(event) {
     if (event.touches.length === 2) {
       const [first, second] = event.touches;
-      this.touchState.isPinching = true;
-      this.touchState.pinchDistance = getTouchDistance(first, second);
+      beginLegacyPinch(this.touchState, first, second, getTouchDistance);
       return;
     }
 
@@ -259,10 +259,16 @@ export class LegacyThreeRenderer {
     event.preventDefault();
     if (event.touches.length === 2 && this.touchState.isPinching) {
       const [first, second] = event.touches;
-      const distance = getTouchDistance(first, second);
-      const next = updateRadiusFromPinch(this.cameraPolar.radius, this.touchState.pinchDistance, distance, 0.04);
-      this.cameraPolar.radius = next.radius;
-      this.touchState.pinchDistance = next.distance;
+      const pinchUpdate = updateLegacyPinch(
+        this.touchState,
+        first,
+        second,
+        getTouchDistance,
+        updateRadiusFromPinch,
+        this.cameraPolar.radius,
+        0.04,
+      );
+      this.cameraPolar.radius = pinchUpdate.radius;
       this.updateCamera();
       return;
     }
@@ -274,7 +280,7 @@ export class LegacyThreeRenderer {
   }
 
   handleTouchEnd() {
-    this.touchState.isPinching = false;
+    endLegacyPinch(this.touchState);
     this.handlePointerUp({
       clientX: this.dragState.lastX,
       clientY: this.dragState.lastY,
