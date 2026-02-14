@@ -12,6 +12,7 @@ import { buildEntityRenderPass } from './entityRenderPass.js';
 import { normalizeCameraState } from './cameraState.js';
 import { resolveClickSelectionOutcome } from './clickSelection.js';
 import { createDebugStats } from './debugStats.js';
+import { buildIsometricFrameContext } from './isometricFrameContext.js';
 import { InteractionController } from './interactionController.js';
 import { ResourceGainTracker } from './resourceGainTracker.js';
 import { pickBestInteractiveEntityHit } from './interactionHitTest.js';
@@ -293,40 +294,47 @@ export class IsometricRenderer {
 
   render(state) {
     this.lastState = state;
-    const now = performance.now();
-    const deltaSeconds = computeFrameDeltaSeconds(now, this.lastFrameAt, 0.12);
-    this.lastFrameAt = now;
-    this.smoothedFps = updateSmoothedFps(this.smoothedFps, deltaSeconds, 0.9);
-    this.qualityController.recordFrame(deltaSeconds);
+    const frame = buildIsometricFrameContext({
+      now: performance.now(),
+      lastFrameAt: this.lastFrameAt,
+      smoothedFps: this.smoothedFps,
+      state,
+      camera: this.camera,
+      computeFrameDeltaSeconds,
+      updateSmoothedFps,
+      getDaylightFactor,
+      maxDeltaSeconds: 0.12,
+      fpsSmoothing: 0.9,
+    });
+    this.lastFrameAt = frame.nextLastFrameAt;
+    this.smoothedFps = frame.nextSmoothedFps;
+    this.qualityController.recordFrame(frame.deltaSeconds);
     this.camera.setWorldRadius(state.maxWorldRadius);
-    this.camera.update(deltaSeconds);
+    this.camera.update(frame.deltaSeconds);
     this.particles.setQuality(this.qualityController.getParticleMultiplier());
-    this.particles.update(deltaSeconds);
-    this.sampleResourceGains(state, deltaSeconds);
-    this.syncBuildingAnimations(state, now);
-    this.updateColonistInterpolation(state, deltaSeconds);
-    this.maybeEmitBuildingEffects(state, deltaSeconds);
+    this.particles.update(frame.deltaSeconds);
+    this.sampleResourceGains(state, frame.deltaSeconds);
+    this.syncBuildingAnimations(state, frame.now);
+    this.updateColonistInterpolation(state, frame.deltaSeconds);
+    this.maybeEmitBuildingEffects(state, frame.deltaSeconds);
 
-    const width = this.camera.viewportWidth;
-    const height = this.camera.viewportHeight;
-    const daylight = getDaylightFactor(state.timeSeconds);
-    this.drawBackground(state, width, height, daylight);
+    this.drawBackground(state, frame.width, frame.height, frame.daylight);
     this.drawTerrain(state);
-    this.drawEntities(state, now, daylight);
+    this.drawEntities(state, frame.now, frame.daylight);
     this.drawPreview();
 
     if (this.hoveredEntity) {
-      this.drawSelectionOverlay(this.hoveredEntity, this.animations.getSelectionPulse(now) * 0.75);
+      this.drawSelectionOverlay(this.hoveredEntity, this.animations.getSelectionPulse(frame.now) * 0.75);
     }
     if (this.selectedEntity) {
-      this.drawSelectionOverlay(this.selectedEntity, this.animations.getSelectionPulse(now));
+      this.drawSelectionOverlay(this.selectedEntity, this.animations.getSelectionPulse(frame.now));
     }
 
     drawTimeAndSeasonOverlays(
       this.ctx,
-      width,
-      height,
-      1 - daylight,
+      frame.width,
+      frame.height,
+      1 - frame.daylight,
       getSeasonTint(state.day),
     );
   }
