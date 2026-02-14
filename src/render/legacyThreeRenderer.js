@@ -1,6 +1,5 @@
 import * as THREE from '../../node_modules/three/build/three.module.js';
 import { applyLegacyCameraPose, computeLegacyCameraPosition } from './legacyCameraPose.js';
-import { runLegacyFrame } from './legacyFrameRender.js';
 import {
   dispatchLegacyPointerMove,
   dispatchLegacyPointerUp,
@@ -14,12 +13,12 @@ import { beginLegacyPointerDrag } from './legacyPointerState.js';
 import { createLegacyRendererBaseState } from './legacyRendererBaseState.js';
 import { buildLegacyEventSessionInvocation } from './legacyEventSessionInvocation.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
+import { dispatchLegacyFrame } from './legacyFrameDispatch.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
 import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
 import { buildLegacyBuildingSyncInvocation, buildLegacyColonistSyncInvocation } from './legacyMeshSyncInvocation.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
 import { applyLegacyPreviewMarker } from './legacyRendererViewState.js';
-import { buildLegacyFrameInvocation } from './legacyFrameInvocation.js';
 import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import { buildLegacyDisposeInvocation } from './legacyDisposeInvocation.js';
@@ -30,7 +29,6 @@ import {
   applyRendererPlacementPreviewHandler,
 } from './rendererCallbackState.js';
 import { centerLegacyCameraOnBuilding, resizeLegacyRendererViewport } from './legacyRendererViewport.js';
-import { applyRendererFrameState } from './rendererFrameState.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -156,12 +154,7 @@ export class LegacyThreeRenderer {
   }
 
   render(state) {
-    const frame = runLegacyFrame(buildLegacyFrameInvocation({
-      renderer: this,
-      state,
-      now: performance.now(),
-    }));
-    applyRendererFrameState(this, frame);
+    dispatchLegacyFrame(this, state);
   }
 
   dispose() {
