@@ -1,9 +1,7 @@
-import { getBuildingCardState } from './buildingAvailability.js';
-import { buildBuildCardRows, buildCategoryPillRows } from './buildMenuViewState.js';
 import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
-import { renderGameUIBuildCards, renderGameUIBuildCategories } from './gameUIBuildMenuDom.js';
-import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
+import { dispatchGameUIBuildMenu } from './gameUIBuildMenuDispatch.js';
+import { createResourceChipElement } from './gameUICardElements.js';
 import {
   dispatchGameUIColonistPanel,
   dispatchGameUIConstructionQueuePanel,
@@ -17,7 +15,7 @@ import { renderGameUISelectDropdown } from './gameUISelectOptions.js';
 import { createGameUIRuntime } from './gameUIRuntime.js';
 import { renderGameUISpeedButtons, renderGameUITopState } from './gameUITopBarDom.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
-import { formatCost, formatRate } from './uiFormatting.js';
+import { formatRate } from './uiFormatting.js';
 
 export class GameUI {
   constructor({ elements, buildingDefinitions, researchDefinitions, resourceDefinitions, spriteFactory }) {
@@ -92,17 +90,6 @@ export class GameUI {
     });
   }
 
-  renderBuildCategories(state, categories, onSelectCategory) {
-    renderGameUIBuildCategories({
-      elements: this.el,
-      categories,
-      selectedCategory: state.selectedCategory,
-      buildCategoryPillRows,
-      createBuildCategoryButton,
-      onSelectCategory,
-    });
-  }
-
   renderBuildList({
     state,
     selectedBuildType,
@@ -111,19 +98,13 @@ export class GameUI {
     categories,
     isBuildingUnlocked,
   }) {
-    this.renderBuildCategories(state, categories, onSelectCategory);
-    renderGameUIBuildCards({
-      elements: this.el,
+    dispatchGameUIBuildMenu(this, {
       state,
       selectedBuildType,
-      isBuildingUnlocked,
-      buildingDefinitions: this.buildingDefinitions,
-      formatCost,
-      getBuildingCardState,
-      buildBuildCardRows,
-      spriteFactory: this.spriteFactory,
-      createBuildCardElement,
       onToggleBuildType,
+      onSelectCategory,
+      categories,
+      isBuildingUnlocked,
     });
   }
 
