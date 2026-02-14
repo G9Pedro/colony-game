@@ -7,6 +7,7 @@ import {
 import { createSpriteCanvas, getSpriteContext2D } from './spriteCanvasFactory.js';
 import { drawBuildingSpriteCanvas } from './spriteBuildingRenderer.js';
 import { drawColonistSprite } from './spriteColonistRenderer.js';
+import { prewarmSpriteFactoryAssets } from './spritePrewarm.js';
 import { drawResourceIconSprite } from './spriteResourceIconRenderer.js';
 import { drawTerrainTileSprite } from './spriteTerrainRenderer.js';
 import { drawBuildingThumbnail } from './spriteThumbnailRenderer.js';
@@ -23,26 +24,11 @@ export class SpriteFactory {
   }
 
   prewarm(buildingDefinitions = BUILDING_DEFINITIONS) {
-    for (const building of Object.values(buildingDefinitions)) {
-      this.getBuildingSprite(building.id);
-      this.getBuildingSprite(building.id, { construction: true });
-    }
-
-    for (let variant = 0; variant < 4; variant += 1) {
-      this.getTerrainTile('grass', variant);
-    }
-    this.getTerrainTile('dirt', 0);
-    this.getTerrainTile('path', 0);
-
-    PREWARM_JOB_TYPES.forEach((job) => {
-      for (let frame = 0; frame < 3; frame += 1) {
-        this.getColonistSprite(job, frame, { idle: false });
-        this.getColonistSprite(job, frame, { idle: true });
-      }
-    });
-
-    PREWARM_RESOURCE_KEYS.forEach((resource) => {
-      this.getResourceIcon(resource, 20);
+    prewarmSpriteFactoryAssets({
+      spriteFactory: this,
+      buildingDefinitions,
+      prewarmJobTypes: PREWARM_JOB_TYPES,
+      prewarmResourceKeys: PREWARM_RESOURCE_KEYS,
     });
   }
 
