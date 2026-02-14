@@ -4,7 +4,6 @@ import { SCENARIO_DEFINITIONS } from './content/scenarios.js';
 import { RESOURCE_DEFINITIONS } from './content/resources.js';
 import { RESEARCH_DEFINITIONS } from './content/research.js';
 import { GameEngine } from './game/gameEngine.js';
-import { isBuildingUnlocked } from './game/selectors.js';
 import { saveGameState } from './persistence/saveLoad.js';
 import {
   createMainNotifier,
@@ -12,9 +11,9 @@ import {
   registerEngineNotifications,
 } from './mainNotifications.js';
 import { createMainPersistenceCallbacks } from './mainPersistenceCallbacks.js';
+import { bindMainRendererInteractions } from './mainRendererBindings.js';
 import { FallbackRenderer } from './render/fallbackRenderer.js';
 import { SceneRenderer } from './render/sceneRenderer.js';
-import { isPlacementValid } from './systems/constructionSystem.js';
 import { UIController } from './ui/uiController.js';
 
 const sceneRoot = document.getElementById('scene-root');
@@ -53,42 +52,12 @@ ui.setPersistenceCallbacks(createMainPersistenceCallbacks({
   renderer,
   notify,
 }));
-
-renderer.setGroundClickHandler((point) => {
-  const buildingType = engine.state.selectedBuildingType;
-  if (!buildingType) {
-    notify({ kind: 'warn', message: 'Select a building first.' });
-    return;
-  }
-
-  const result = engine.queueBuilding(buildingType, point.x, point.z);
-  if (!result.ok) {
-    notify({ kind: 'error', message: result.message });
-    return;
-  }
-
-  engine.setSelectedBuildingType(null);
-  ui.setSelectedBuildType(null);
-  renderer.updatePlacementMarker(null, true);
-});
-
-renderer.setPlacementPreviewHandler((point) => {
-  const buildingType = engine.state.selectedBuildingType;
-  if (!buildingType) {
-    renderer.updatePlacementMarker(null, false);
-    return;
-  }
-
-  const definition = BUILDING_DEFINITIONS[buildingType];
-  if (!isBuildingUnlocked(engine.state, definition)) {
-    renderer.updatePlacementMarker(point, false);
-    return;
-  }
-  const placement = isPlacementValid(engine.state, buildingType, point.x, point.z);
-  renderer.updatePlacementMarker(point, placement.valid);
-});
-renderer.setEntitySelectHandler((entity) => {
-  ui.setSelectedEntity(entity);
+bindMainRendererInteractions({
+  renderer,
+  engine,
+  ui,
+  notify,
+  buildingDefinitions: BUILDING_DEFINITIONS,
 });
 
 let lastFrame = performance.now();
