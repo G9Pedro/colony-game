@@ -1,3 +1,9 @@
+import {
+  screenDeltaToWorldDelta,
+  screenToWorldPoint,
+  worldToScreenPoint,
+} from './isometricProjection.js';
+
 const DEFAULT_TILE_WIDTH = 64;
 const DEFAULT_TILE_HEIGHT = 32;
 
@@ -5,53 +11,7 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-export function worldToScreenPoint({
-  x,
-  z,
-  centerX,
-  centerZ,
-  width,
-  height,
-  zoom,
-  tileWidth = DEFAULT_TILE_WIDTH,
-  tileHeight = DEFAULT_TILE_HEIGHT,
-}) {
-  const halfW = (tileWidth * zoom) * 0.5;
-  const halfH = (tileHeight * zoom) * 0.5;
-  const isoX = (x - centerX) - (z - centerZ);
-  const isoY = (x - centerX) + (z - centerZ);
-  return {
-    x: width * 0.5 + isoX * halfW,
-    y: height * 0.5 + isoY * halfH,
-  };
-}
-
-export function screenToWorldPoint({
-  screenX,
-  screenY,
-  centerX,
-  centerZ,
-  width,
-  height,
-  zoom,
-  tileWidth = DEFAULT_TILE_WIDTH,
-  tileHeight = DEFAULT_TILE_HEIGHT,
-}) {
-  const halfW = (tileWidth * zoom) * 0.5;
-  const halfH = (tileHeight * zoom) * 0.5;
-  if (halfW <= 0 || halfH <= 0) {
-    return { x: centerX, z: centerZ };
-  }
-
-  const isoX = (screenX - width * 0.5) / halfW;
-  const isoY = (screenY - height * 0.5) / halfH;
-  const worldDeltaX = (isoY + isoX) * 0.5;
-  const worldDeltaZ = (isoY - isoX) * 0.5;
-  return {
-    x: centerX + worldDeltaX,
-    z: centerZ + worldDeltaZ,
-  };
-}
+export { screenToWorldPoint, worldToScreenPoint };
 
 export class IsometricCamera {
   constructor({
@@ -146,17 +106,18 @@ export class IsometricCamera {
   }
 
   panByScreenDelta(deltaX, deltaY) {
-    const halfW = (this.tileWidth * this.zoom) * 0.5;
-    const halfH = (this.tileHeight * this.zoom) * 0.5;
-    if (halfW <= 0 || halfH <= 0) {
+    const worldDelta = screenDeltaToWorldDelta({
+      deltaX,
+      deltaY,
+      zoom: this.zoom,
+      tileWidth: this.tileWidth,
+      tileHeight: this.tileHeight,
+    });
+    if (!worldDelta) {
       return;
     }
-    const isoDeltaX = deltaX / halfW;
-    const isoDeltaY = deltaY / halfH;
-    const worldDeltaX = (isoDeltaY + isoDeltaX) * 0.5;
-    const worldDeltaZ = (isoDeltaY - isoDeltaX) * 0.5;
-    this.centerX -= worldDeltaX;
-    this.centerZ -= worldDeltaZ;
+    this.centerX -= worldDelta.worldDeltaX;
+    this.centerZ -= worldDelta.worldDeltaZ;
     this.clampCenter();
   }
 
@@ -193,18 +154,19 @@ export class IsometricCamera {
     const beforeCenterZ = this.centerZ;
     this.panByScreenDelta(dx, dy);
 
-    const halfW = (this.tileWidth * this.zoom) * 0.5;
-    const halfH = (this.tileHeight * this.zoom) * 0.5;
-    if (halfW > 0 && halfH > 0) {
-      const isoDeltaX = dx / halfW;
-      const isoDeltaY = dy / halfH;
-      const worldDeltaX = (isoDeltaY + isoDeltaX) * 0.5;
-      const worldDeltaZ = (isoDeltaY - isoDeltaX) * 0.5;
-      this.velocityX = -worldDeltaX / (elapsed / 1000);
-      this.velocityZ = -worldDeltaZ / (elapsed / 1000);
-    } else {
+    const worldDelta = screenDeltaToWorldDelta({
+      deltaX: dx,
+      deltaY: dy,
+      zoom: this.zoom,
+      tileWidth: this.tileWidth,
+      tileHeight: this.tileHeight,
+    });
+    if (!worldDelta) {
       this.velocityX = 0;
       this.velocityZ = 0;
+    } else {
+      this.velocityX = -worldDelta.worldDeltaX / (elapsed / 1000);
+      this.velocityZ = -worldDelta.worldDeltaZ / (elapsed / 1000);
     }
 
     this.dragLastX = screenX;
