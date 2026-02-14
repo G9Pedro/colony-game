@@ -14,6 +14,7 @@ import { createLegacyRendererBaseState } from './legacyRendererBaseState.js';
 import { buildLegacyEventSessionInvocation } from './legacyEventSessionInvocation.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { dispatchLegacyFrame } from './legacyFrameDispatch.js';
+import { dispatchLegacyBuildingSync, dispatchLegacyColonistSync } from './legacyMeshSyncDispatch.js';
 import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
 import {
   clearLegacyPreviewPosition,
@@ -21,8 +22,6 @@ import {
   updateLegacyPlacementPreview,
 } from './legacyPreviewHandlers.js';
 import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
-import { buildLegacyBuildingSyncInvocation, buildLegacyColonistSyncInvocation } from './legacyMeshSyncInvocation.js';
-import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
 import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import { buildLegacyDisposeInvocation } from './legacyDisposeInvocation.js';
@@ -149,11 +148,11 @@ export class LegacyThreeRenderer {
   }
 
   syncBuildings(state) {
-    syncLegacyBuildingMeshes(buildLegacyBuildingSyncInvocation(this, state, { three: THREE }));
+    dispatchLegacyBuildingSync(this, state, { dependencies: { three: THREE } });
   }
 
   syncColonists(state) {
-    syncLegacyColonistMeshes(buildLegacyColonistSyncInvocation(this, state, { three: THREE }));
+    dispatchLegacyColonistSync(this, state, { dependencies: { three: THREE } });
   }
 
   render(state) {
