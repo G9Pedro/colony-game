@@ -1,14 +1,5 @@
 import * as THREE from '../../node_modules/three/build/three.module.js';
 import { dispatchLegacyCameraUpdate } from './legacyCameraDispatch.js';
-import {
-  dispatchLegacyPointerMove,
-  dispatchLegacyPointerUp,
-  dispatchLegacyTouchEnd,
-  dispatchLegacyTouchMove,
-  dispatchLegacyTouchStart,
-  dispatchLegacyWheel,
-} from './legacyInteractionDispatch.js';
-import { beginLegacyPointerDrag } from './legacyPointerState.js';
 import { dispatchLegacyFrame } from './legacyFrameDispatch.js';
 import {
   applyRendererEntitySelectHandler,
@@ -26,6 +17,15 @@ import {
   dispatchLegacyPreviewSet,
   dispatchLegacyViewportResize,
 } from './legacyRendererSurfaceDispatch.js';
+import {
+  dispatchLegacyPointerDownInteraction,
+  dispatchLegacyPointerMoveInteraction,
+  dispatchLegacyPointerUpInteraction,
+  dispatchLegacyTouchEndInteraction,
+  dispatchLegacyTouchMoveInteraction,
+  dispatchLegacyTouchStartInteraction,
+  dispatchLegacyWheelInteraction,
+} from './legacyRendererInteractionDispatch.js';
 import {
   buildLegacyRendererCameraSnapshot,
   buildLegacyRendererDebugSnapshot,
@@ -78,31 +78,31 @@ export class LegacyThreeRenderer {
   }
 
   handlePointerDown(event) {
-    beginLegacyPointerDrag(this.dragState, event.clientX, event.clientY);
+    dispatchLegacyPointerDownInteraction(this, event);
   }
 
   handlePointerMove(event) {
-    dispatchLegacyPointerMove(this, event);
+    dispatchLegacyPointerMoveInteraction(this, event);
   }
 
   handlePointerUp(event) {
-    dispatchLegacyPointerUp(this, event);
+    dispatchLegacyPointerUpInteraction(this, event);
   }
 
   handleWheel(event) {
-    dispatchLegacyWheel(this, event);
+    dispatchLegacyWheelInteraction(this, event);
   }
 
   handleTouchStart(event) {
-    dispatchLegacyTouchStart(this, event);
+    dispatchLegacyTouchStartInteraction(this, event);
   }
 
   handleTouchMove(event) {
-    dispatchLegacyTouchMove(this, event);
+    dispatchLegacyTouchMoveInteraction(this, event);
   }
 
   handleTouchEnd() {
-    dispatchLegacyTouchEnd(this);
+    dispatchLegacyTouchEndInteraction(this);
   }
 
   setPreviewPosition(position, valid = true) {
