@@ -9,6 +9,7 @@ import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { InteractionController } from './interactionController.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
+import { getDaylightFactor, getResourceGains, getSeasonTint } from './stateVisuals.js';
 import { TerrainLayerRenderer } from './terrainLayer.js';
 
 function clamp(value, min, max) {
@@ -282,12 +283,10 @@ export class IsometricRenderer {
       return;
     }
 
-    const gains = Object.entries(state.resources)
-      .map(([key, amount]) => [key, amount - (this.previousResources[key] ?? amount)])
-      .filter(([, delta]) => delta >= 3);
+    const gains = getResourceGains(state.resources, this.previousResources, 3);
 
     if (gains.length > 0 && this.options.effectsEnabled && this.qualityController.shouldRunOptionalEffects()) {
-      const [resource, delta] = gains[0];
+      const { resource, delta } = gains[0];
       const origin = state.buildings[Math.floor(Math.random() * Math.max(1, state.buildings.length))];
       this.particles.emitFloatingText({
         x: origin?.x ?? this.camera.centerX,
@@ -297,22 +296,6 @@ export class IsometricRenderer {
       });
     }
     this.previousResources = { ...state.resources };
-  }
-
-  getDaylightFactor(state) {
-    const dayCycle = (state.timeSeconds % 24) / 24;
-    return clamp(0.5 + Math.sin(dayCycle * Math.PI * 2 - Math.PI * 0.5) * 0.5, 0, 1);
-  }
-
-  getSeasonTint(state) {
-    const cycle = (state.day % 120) / 120;
-    if (cycle < 0.25) {
-      return 'rgba(82, 156, 94, 0.08)';
-    }
-    if (cycle > 0.6 && cycle < 0.85) {
-      return 'rgba(178, 134, 66, 0.1)';
-    }
-    return 'rgba(0, 0, 0, 0)';
   }
 
   drawBackground(state, width, height, daylight) {
@@ -399,7 +382,7 @@ export class IsometricRenderer {
 
     const width = this.camera.viewportWidth;
     const height = this.camera.viewportHeight;
-    const daylight = this.getDaylightFactor(state);
+    const daylight = getDaylightFactor(state.timeSeconds);
     this.drawBackground(state, width, height, daylight);
     this.drawTerrain(state);
     this.drawEntities(state, now, daylight);
@@ -417,7 +400,7 @@ export class IsometricRenderer {
       width,
       height,
       1 - daylight,
-      this.getSeasonTint(state),
+      getSeasonTint(state.day),
     );
   }
 }
