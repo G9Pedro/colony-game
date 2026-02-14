@@ -1,13 +1,13 @@
 import * as THREE from '../../node_modules/three/build/three.module.js';
 import { dispatchLegacyCameraUpdate } from './legacyCameraDispatch.js';
 import { dispatchLegacyFrame } from './legacyFrameDispatch.js';
-import {
-  applyRendererEntitySelectHandler,
-  applyRendererGroundClickHandler,
-  applyRendererPlacementPreviewHandler,
-} from './rendererCallbackState.js';
 import { initializeLegacyThreeRenderer } from './legacyRendererInitialization.js';
 import { dispatchLegacyEventSessionBind } from './legacyEventSessionDispatch.js';
+import {
+  dispatchLegacyEntitySelectHandler,
+  dispatchLegacyGroundClickHandler,
+  dispatchLegacyPlacementPreviewHandler,
+} from './legacyRendererCallbacksDispatch.js';
 import {
   dispatchLegacyCameraCenter,
   dispatchLegacyEntityPickAtScreen,
@@ -58,15 +58,15 @@ export class LegacyThreeRenderer {
   }
 
   setGroundClickHandler(handler) {
-    applyRendererGroundClickHandler(this, handler);
+    dispatchLegacyGroundClickHandler(this, handler);
   }
 
   setPlacementPreviewHandler(handler) {
-    applyRendererPlacementPreviewHandler(this, handler);
+    dispatchLegacyPlacementPreviewHandler(this, handler);
   }
 
   setEntitySelectHandler(handler) {
-    applyRendererEntitySelectHandler(this, handler);
+    dispatchLegacyEntitySelectHandler(this, handler);
   }
 
   screenToGround(clientX, clientY) {
