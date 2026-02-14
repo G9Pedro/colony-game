@@ -1,6 +1,7 @@
 import { AnimationManager } from '../render/animations.js';
 import { getBuildingCardState } from './buildingAvailability.js';
 import { buildColonistRows, buildConstructionQueueRows } from './colonyPanelsViewState.js';
+import { buildObjectiveHint, buildObjectiveRows } from './objectivesViewState.js';
 import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
@@ -239,22 +240,27 @@ export class GameUI {
 
   renderObjectives(state, objectives, rewardMultiplier, formatObjectiveReward, getCurrentObjectiveIds) {
     this.el.objectivesList.innerHTML = '';
-    objectives.forEach((objective) => {
-      const completed = state.objectives.completed.includes(objective.id);
+    const rows = buildObjectiveRows({
+      objectives,
+      completedObjectiveIds: state.objectives.completed,
+      rewardMultiplier,
+      formatObjectiveReward,
+    });
+    rows.forEach((row) => {
       const card = document.createElement('div');
-      card.className = `panel-card ${completed ? 'completed' : ''}`;
+      card.className = `panel-card ${row.completed ? 'completed' : ''}`;
       card.innerHTML = `
-        <div class="kv"><strong>${objective.title}</strong><small>${completed ? 'Done' : 'Active'}</small></div>
-        <small>${objective.description}</small>
-        <small class="reward-label">Reward: ${formatObjectiveReward(objective, rewardMultiplier)}</small>
+        <div class="kv"><strong>${row.title}</strong><small>${row.completed ? 'Done' : 'Active'}</small></div>
+        <small>${row.description}</small>
+        <small class="reward-label">Reward: ${row.rewardLabel}</small>
       `;
       this.el.objectivesList.appendChild(card);
     });
-    const remaining = getCurrentObjectiveIds(state);
-    const current = objectives.find((objective) => objective.id === remaining[0]);
-    this.el.hintBadge.textContent = current
-      ? `Current objective: ${current.title}`
-      : 'All objectives complete. Charter victory is within reach.';
+    this.el.hintBadge.textContent = buildObjectiveHint({
+      state,
+      objectives,
+      getCurrentObjectiveIds,
+    });
   }
 
   renderRunStats(state) {
