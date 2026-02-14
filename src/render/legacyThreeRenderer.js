@@ -2,6 +2,7 @@ import * as THREE from '../../node_modules/three/build/three.module.js';
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
+import { createLegacyBuildingMesh, createLegacyColonistMesh } from './legacyMeshFactory.js';
 import { reconcileMeshMap, updateColonistMeshPose } from './legacyEntitySync.js';
 import { computeFrameDeltaSeconds, updateSmoothedFps } from './frameTiming.js';
 import {
@@ -16,31 +17,6 @@ import {
   toRoundedGroundPoint,
 } from './legacyInteractionPrimitives.js';
 import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
-
-const BUILDING_Y_BASE = 0.01;
-
-function createBuildingMesh(building) {
-  const definition = BUILDING_DEFINITIONS[building.type];
-  const [sx, sy, sz] = definition.size;
-  const geometry = new THREE.BoxGeometry(sx, sy, sz);
-  const material = new THREE.MeshLambertMaterial({ color: definition.color });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(building.x, BUILDING_Y_BASE + sy / 2, building.z);
-  mesh.userData.entityId = building.id;
-  mesh.userData.entityType = 'building';
-  return mesh;
-}
-
-function createColonistMesh(colonist) {
-  const geometry = new THREE.SphereGeometry(0.28, 12, 12);
-  const color = colonist.job === 'builder' ? 0xf59e0b : 0xf97316;
-  const material = new THREE.MeshLambertMaterial({ color });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(colonist.position.x, 0.32, colonist.position.z);
-  mesh.userData.entityId = colonist.id;
-  mesh.userData.entityType = 'colonist';
-  return mesh;
-}
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -367,7 +343,7 @@ export class LegacyThreeRenderer {
       meshMap: this.buildingMeshes,
       scene: this.scene,
       getId: (building) => building.id,
-      createMesh: (building) => createBuildingMesh(building),
+      createMesh: (building) => createLegacyBuildingMesh(building, BUILDING_DEFINITIONS, THREE),
     });
   }
 
@@ -378,7 +354,7 @@ export class LegacyThreeRenderer {
       meshMap: this.colonistMeshes,
       scene: this.scene,
       getId: (colonist) => colonist.id,
-      createMesh: (colonist) => createColonistMesh(colonist),
+      createMesh: (colonist) => createLegacyColonistMesh(colonist, THREE),
     });
 
     for (const colonist of liveColonists) {
