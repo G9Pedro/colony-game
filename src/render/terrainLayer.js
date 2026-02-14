@@ -1,19 +1,6 @@
 import { buildPathTileSet, buildStructureTileSet, buildTerrainSignature, getTerrainBoundsFromCorners } from './terrainUtils.js';
-
-function hash2d(x, z, salt = 0) {
-  const value = Math.sin((x + 3.31 + salt) * 127.1 + (z + 7.17 - salt) * 311.7) * 43758.5453123;
-  return value - Math.floor(value);
-}
-
-export function resolveTerrainKind({ onPath, nearBuilding }) {
-  if (onPath) {
-    return 'path';
-  }
-  if (nearBuilding) {
-    return 'dirt';
-  }
-  return 'grass';
-}
+import { paintTerrainTiles } from './terrainTilePainter.js';
+export { resolveTerrainKind } from './terrainTilePolicies.js';
 
 export function shouldRefreshTerrainCache(cache, {
   centerX,
@@ -91,28 +78,21 @@ export class TerrainLayerRenderer {
   }
 
   rebuild(state, camera, dpr, bounds, signature) {
-    const { minX, maxX, minZ, maxZ } = bounds;
     this.ctx.clearRect(0, 0, camera.viewportWidth, camera.viewportHeight);
 
     const structureTileSet = buildStructureTileSet(state);
     const pathTileSet = buildPathTileSet(state);
+    paintTerrainTiles({
+      ctx: this.ctx,
+      state,
+      camera,
+      spriteFactory: this.spriteFactory,
+      bounds,
+      structureTileSet,
+      pathTileSet,
+    });
 
-    for (let z = minZ; z <= maxZ; z += 1) {
-      for (let x = minX; x <= maxX; x += 1) {
-        if (Math.hypot(x, z) > state.maxWorldRadius + 3) {
-          continue;
-        }
-        const key = `${x}:${z}`;
-        const kind = resolveTerrainKind({
-          onPath: pathTileSet.has(key),
-          nearBuilding: structureTileSet.has(key),
-        });
-        const variant = Math.floor(hash2d(x, z) * 4);
-        const tile = this.spriteFactory.getTerrainTile(kind, variant);
-        const screen = camera.worldToScreen(x, z);
-        this.ctx.drawImage(tile, screen.x - tile.width * 0.5, screen.y - tile.height * 0.5);
-      }
-    }
+    const { minX, maxX, minZ, maxZ } = bounds;
 
     this.cache = {
       valid: true,
