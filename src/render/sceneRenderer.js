@@ -15,6 +15,7 @@ import {
   renderSceneRendererFrame,
   resizeSceneRenderer,
 } from './sceneRendererRuntimeDispatch.js';
+import { buildSceneRendererModeInitializationInvocation } from './sceneRendererModeInvocation.js';
 import {
   normalizeRendererMode,
   persistRendererModePreference,
@@ -38,21 +39,13 @@ export class SceneRenderer {
   }
 
   initializeRenderer(mode) {
-    const result = initializeSceneRendererMode({
-      activeRenderer: this.activeRenderer,
+    const result = initializeSceneRendererMode(buildSceneRendererModeInitializationInvocation({
+      renderer: this,
       mode,
-      rootElement: this.rootElement,
       createIsometricRenderer: (rootElement, options) => new IsometricRenderer(rootElement, options),
       createThreeRenderer: (rootElement) => new LegacyThreeRenderer(rootElement),
       persistRendererMode: persistRendererModePreference,
-      sessionPayload: {
-        onGroundClick: this._onGroundClick,
-        onPlacementPreview: this._onPlacementPreview,
-        onEntitySelect: this._onEntitySelect,
-        preview: this.preview,
-        lastState: this.lastState,
-      },
-    });
+    }));
     this.activeRenderer = result.renderer;
     this.mode = result.mode;
   }
