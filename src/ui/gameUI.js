@@ -5,6 +5,14 @@ import { renderObjectivesPanel, renderRunStatsPanel, renderSelectionPanel } from
 import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
+import {
+  buildGameUIColonistPanelInvocation,
+  buildGameUIConstructionQueueInvocation,
+  buildGameUIObjectivesPanelInvocation,
+  buildGameUIResearchPanelInvocation,
+  buildGameUIRunStatsPanelInvocation,
+  buildGameUISelectionPanelInvocation,
+} from './gameUIPanelInvocations.js';
 import { createGameUIRuntime } from './gameUIRuntime.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
 import { formatCost, formatRate } from './uiFormatting.js';
@@ -122,61 +130,34 @@ export class GameUI {
   }
 
   renderResearch(state, getAvailableResearch, onStartResearch) {
-    renderResearchPanels({
-      currentElement: this.el.researchCurrent,
-      listElement: this.el.researchList,
-      state,
-      researchDefinitions: this.researchDefinitions,
-      getAvailableResearch,
-      onStartResearch,
-    });
+    renderResearchPanels(buildGameUIResearchPanelInvocation(this, state, getAvailableResearch, onStartResearch));
   }
 
   renderConstructionQueue(state) {
-    renderConstructionQueuePanel({
-      listElement: this.el.constructionList,
-      state,
-      buildingDefinitions: this.buildingDefinitions,
-    });
+    renderConstructionQueuePanel(buildGameUIConstructionQueueInvocation(this, state));
   }
 
   renderColonists(state) {
-    renderColonistPanel({
-      listElement: this.el.colonistList,
-      state,
-      limit: 18,
-    });
+    renderColonistPanel(buildGameUIColonistPanelInvocation(this, state));
   }
 
   renderObjectives(state, objectives, rewardMultiplier, formatObjectiveReward, getCurrentObjectiveIds) {
-    renderObjectivesPanel({
-      listElement: this.el.objectivesList,
-      hintElement: this.el.hintBadge,
+    renderObjectivesPanel(buildGameUIObjectivesPanelInvocation(
+      this,
       state,
       objectives,
       rewardMultiplier,
       formatObjectiveReward,
       getCurrentObjectiveIds,
-    });
+    ));
   }
 
   renderRunStats(state) {
-    renderRunStatsPanel({
-      metricsElement: this.el.metricsSummary,
-      historyElement: this.el.runHistory,
-      state,
-      historyLimit: 3,
-    });
+    renderRunStatsPanel(buildGameUIRunStatsPanelInvocation(this, state));
   }
 
   renderSelection(selection, state) {
-    renderSelectionPanel({
-      titleElement: this.el.infoPanelTitle,
-      bodyElement: this.el.infoPanelBody,
-      selection,
-      state,
-      buildingDefinitions: this.buildingDefinitions,
-    });
+    renderSelectionPanel(buildGameUISelectionPanelInvocation(this, selection, state));
   }
 }
 
