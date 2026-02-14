@@ -31,6 +31,10 @@ import { applyLegacyPreviewMarker } from './legacyRendererViewState.js';
 import { buildLegacyFrameInvocation } from './legacyFrameInvocation.js';
 import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
+import {
+  buildLegacyEntityPickerInvocation,
+  buildLegacyGroundPickerInvocation,
+} from './legacyScreenPickerInvocation.js';
 import { centerLegacyCameraOnBuilding, resizeLegacyRendererViewport } from './legacyRendererViewport.js';
 import { pickLegacyEntityAtClient, pickLegacyGroundAtClient } from './legacyScreenPickers.js';
 import { applyRendererFrameState } from './rendererFrameState.js';
@@ -100,28 +104,11 @@ export class LegacyThreeRenderer {
   }
 
   screenToGround(clientX, clientY) {
-    return pickLegacyGroundAtClient({
-      clientX,
-      clientY,
-      domElement: this.renderer.domElement,
-      mouse: this.mouse,
-      raycaster: this.raycaster,
-      camera: this.camera,
-      groundPlane: this.groundPlane,
-    });
+    return pickLegacyGroundAtClient(buildLegacyGroundPickerInvocation(this, clientX, clientY));
   }
 
   screenToEntity(clientX, clientY) {
-    return pickLegacyEntityAtClient({
-      clientX,
-      clientY,
-      domElement: this.renderer.domElement,
-      mouse: this.mouse,
-      raycaster: this.raycaster,
-      camera: this.camera,
-      buildingMeshes: this.buildingMeshes,
-      colonistMeshes: this.colonistMeshes,
-    });
+    return pickLegacyEntityAtClient(buildLegacyEntityPickerInvocation(this, clientX, clientY));
   }
 
   handlePointerDown(event) {
