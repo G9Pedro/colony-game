@@ -1,7 +1,6 @@
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import {
   BUILDING_STYLE_OVERRIDES,
-  JOB_COLORS,
   PREWARM_JOB_TYPES,
   PREWARM_RESOURCE_KEYS,
   RESOURCE_GLYPHS,
@@ -11,6 +10,7 @@ import { shadeColor } from './spriteMath.js';
 import { drawDiamond, drawIsoPrism } from './spritePrimitives.js';
 import { drawScaffoldOverlay, drawTextureNoise } from './spriteEffects.js';
 import { drawBuildingDecoration } from './spriteBuildingDecorations.js';
+import { drawColonistSprite } from './spriteColonistRenderer.js';
 import { drawTerrainTileSprite } from './spriteTerrainRenderer.js';
 
 export class SpriteFactory {
@@ -148,35 +148,7 @@ export class SpriteFactory {
 
     const canvas = createSpriteCanvas(24, 30);
     const ctx = getSpriteContext2D(canvas);
-    const color = JOB_COLORS[job] ?? JOB_COLORS.laborer;
-    const x = 12;
-    const y = 18;
-    const legSwing = idle ? 0 : (frame % 3 === 1 ? -1.5 : frame % 3 === 2 ? 1.5 : 0);
-    const bodyLift = idle ? Math.sin(frame * 0.8) * 0.6 : 0;
-
-    ctx.fillStyle = 'rgba(20, 18, 14, 0.22)';
-    ctx.beginPath();
-    ctx.ellipse(x, y + 9.5, 5.5, 2.8, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = shadeColor(color, 0.7);
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.moveTo(x - 2, y + 4);
-    ctx.lineTo(x - 3.5 + legSwing, y + 10.5);
-    ctx.moveTo(x + 2, y + 4);
-    ctx.lineTo(x + 3.5 - legSwing, y + 10.5);
-    ctx.stroke();
-
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.roundRect(x - 3.8, y - 3.5 + bodyLift, 7.6, 9.3, 3.3);
-    ctx.fill();
-
-    ctx.fillStyle = '#f1cfb3';
-    ctx.beginPath();
-    ctx.arc(x, y - 6 + bodyLift, 3.3, 0, Math.PI * 2);
-    ctx.fill();
+    drawColonistSprite(ctx, { job, frame, idle });
 
     this.colonistSprites.set(key, canvas);
     return canvas;
