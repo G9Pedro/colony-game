@@ -9,6 +9,7 @@ import { drawBuildingSpriteCanvas } from './spriteBuildingRenderer.js';
 import { drawColonistSprite } from './spriteColonistRenderer.js';
 import { drawResourceIconSprite } from './spriteResourceIconRenderer.js';
 import { drawTerrainTileSprite } from './spriteTerrainRenderer.js';
+import { drawBuildingThumbnail } from './spriteThumbnailRenderer.js';
 
 export class SpriteFactory {
   constructor({ quality = 'balanced' } = {}) {
@@ -104,7 +105,7 @@ export class SpriteFactory {
     const source = this.getBuildingSprite(type).canvas;
     const canvas = createSpriteCanvas(size, size);
     const ctx = getSpriteContext2D(canvas);
-    ctx.drawImage(source, 22, 26, source.width - 44, source.height - 34, 0, 0, size, size);
+    drawBuildingThumbnail(ctx, source, size);
     this.buildingSprites.set(key, canvas);
     return canvas;
   }
