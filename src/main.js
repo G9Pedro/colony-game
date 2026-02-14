@@ -12,6 +12,7 @@ import {
   registerEngineNotifications,
 } from './mainNotifications.js';
 import { createMainPersistenceCallbacks } from './mainPersistenceCallbacks.js';
+import { createMainRenderer } from './mainRendererBootstrap.js';
 import { bindMainRendererInteractions } from './mainRendererBindings.js';
 import { bootstrapMainUI } from './mainUIBootstrap.js';
 import { FallbackRenderer } from './render/fallbackRenderer.js';
@@ -27,14 +28,13 @@ const engine = new GameEngine({
   ...(requestedScenario ? { scenarioId: requestedScenario } : {}),
   ...(requestedBalanceProfile ? { balanceProfileId: requestedBalanceProfile } : {}),
 });
-let usingFallbackRenderer = false;
-let renderer;
-try {
-  renderer = new SceneRenderer(sceneRoot);
-} catch (error) {
-  renderer = new FallbackRenderer(sceneRoot);
-  usingFallbackRenderer = true;
-}
+const {
+  renderer,
+  usingFallbackRenderer,
+} = createMainRenderer(sceneRoot, {
+  createSceneRenderer: (target) => new SceneRenderer(target),
+  createFallbackRenderer: (target) => new FallbackRenderer(target),
+});
 const ui = new UIController({
   engine,
   buildingDefinitions: BUILDING_DEFINITIONS,
