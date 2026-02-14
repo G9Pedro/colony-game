@@ -2,28 +2,11 @@ import { IsometricRenderer } from './isometricRenderer.js';
 import { LegacyThreeRenderer } from './legacyThreeRenderer.js';
 import { normalizeCameraState } from './cameraState.js';
 import { normalizeDebugStats } from './debugStats.js';
-
-const RENDERER_MODE_STORAGE_KEY = 'colony-frontier-renderer-mode';
-
-function normalizeMode(mode) {
-  return mode === 'three' ? 'three' : 'isometric';
-}
-
-function readRendererModePreference() {
-  try {
-    return window.localStorage.getItem(RENDERER_MODE_STORAGE_KEY);
-  } catch (error) {
-    return null;
-  }
-}
-
-function persistRendererModePreference(mode) {
-  try {
-    window.localStorage.setItem(RENDERER_MODE_STORAGE_KEY, mode);
-  } catch (error) {
-    // no-op when storage is unavailable
-  }
-}
+import {
+  normalizeRendererMode,
+  persistRendererModePreference,
+  readRendererModePreference,
+} from './rendererModePreference.js';
 
 export class SceneRenderer {
   constructor(rootElement) {
@@ -32,7 +15,7 @@ export class SceneRenderer {
     this._onPlacementPreview = null;
     this._onEntitySelect = null;
     this.preview = null;
-    this.mode = normalizeMode(readRendererModePreference() ?? 'isometric');
+    this.mode = normalizeRendererMode(readRendererModePreference() ?? 'isometric');
     this.activeRenderer = null;
     this.lastState = null;
     Object.defineProperty(this, 'onGroundClick', {
@@ -62,7 +45,7 @@ export class SceneRenderer {
       this.activeRenderer.dispose();
     }
 
-    const normalizedMode = normalizeMode(mode);
+    const normalizedMode = normalizeRendererMode(mode);
     try {
       this.activeRenderer = normalizedMode === 'three'
         ? new LegacyThreeRenderer(this.rootElement)
@@ -91,7 +74,7 @@ export class SceneRenderer {
   }
 
   setRendererMode(mode) {
-    const normalizedMode = normalizeMode(mode);
+    const normalizedMode = normalizeRendererMode(mode);
     if (normalizedMode === this.mode) {
       return true;
     }
