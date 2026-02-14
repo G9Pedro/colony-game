@@ -3,6 +3,7 @@ import { GameUI } from './gameUI.js';
 import { Minimap } from './minimap.js';
 import { NotificationCenter } from './notifications.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
+import { createUIControllerDefaultCallbacks, createUIControllerElements } from './uiControllerElements.js';
 import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
 import { runUiControllerRender } from './uiControllerRenderFlow.js';
 import { getRendererModeLabel } from './uiViewState.js';
@@ -22,58 +23,9 @@ export class UIController {
     this.selectedEntity = null;
     this.renderer = null;
 
-    this.el = {
-      scenarioSelect: document.getElementById('scenario-select'),
-      balanceProfileSelect: document.getElementById('balance-profile-select'),
-      rendererModeSelect: document.getElementById('renderer-mode-select'),
-      renderStatsLabel: document.getElementById('render-stats'),
-      pauseBtn: document.getElementById('pause-btn'),
-      speedButtons: [
-        document.getElementById('speed-1-btn'),
-        document.getElementById('speed-2-btn'),
-        document.getElementById('speed-4-btn'),
-      ],
-      saveBtn: document.getElementById('save-btn'),
-      loadBtn: document.getElementById('load-btn'),
-      exportBtn: document.getElementById('export-btn'),
-      importBtn: document.getElementById('import-btn'),
-      importFileInput: document.getElementById('import-file-input'),
-      resetBtn: document.getElementById('reset-btn'),
-      hireBtn: document.getElementById('hire-btn'),
-      statusLabel: document.getElementById('status-label'),
-      dayLabel: document.getElementById('day-label'),
-      clockLabel: document.getElementById('clock-label'),
-      populationLabel: document.getElementById('population-label'),
-      moraleLabel: document.getElementById('morale-label'),
-      storageLabel: document.getElementById('storage-label'),
-      resourceList: document.getElementById('resource-list'),
-      buildCategories: document.getElementById('build-categories'),
-      buildList: document.getElementById('build-list'),
-      researchCurrent: document.getElementById('research-current'),
-      researchList: document.getElementById('research-list'),
-      objectivesList: document.getElementById('objectives-list'),
-      constructionList: document.getElementById('construction-list'),
-      colonistList: document.getElementById('colonist-list'),
-      metricsSummary: document.getElementById('metrics-summary'),
-      runHistory: document.getElementById('run-history'),
-      notifications: document.getElementById('notifications'),
-      messageBanner: document.getElementById('message-banner'),
-      hintBadge: document.getElementById('hint-badge'),
-      minimapCanvas: document.getElementById('minimap-canvas'),
-      infoPanelTitle: document.getElementById('info-panel-title'),
-      infoPanelBody: document.getElementById('info-panel-body'),
-    };
+    this.el = createUIControllerElements(document);
 
-    this.callbacks = {
-      onSave: () => {},
-      onLoad: () => {},
-      onExport: () => {},
-      onImport: async () => {},
-      onReset: () => {},
-      onScenarioChange: () => {},
-      onBalanceProfileChange: () => {},
-      onRendererModeChange: () => true,
-    };
+    this.callbacks = createUIControllerDefaultCallbacks();
 
     this.spriteFactory = new SpriteFactory({ quality: 'balanced' });
     this.gameUI = new GameUI({
