@@ -14,6 +14,7 @@ import {
   buildGameUISelectionPanelInvocation,
 } from './gameUIPanelInvocations.js';
 import { createGameUIRuntime } from './gameUIRuntime.js';
+import { renderGameUISpeedButtons, renderGameUITopState } from './gameUITopBarDom.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
 import { formatCost, formatRate } from './uiFormatting.js';
 
@@ -50,19 +51,22 @@ export class GameUI {
   }
 
   renderTopState(state, { populationText, morale, storageText }) {
-    this.el.clockLabel.textContent = buildClockLabel(state);
-    this.el.statusLabel.textContent = state.status;
-    this.el.dayLabel.textContent = String(state.day);
-    this.el.populationLabel.textContent = populationText;
-    this.el.moraleLabel.textContent = morale;
-    this.el.storageLabel.textContent = storageText;
-    this.el.pauseBtn.textContent = buildPauseButtonLabel(state.paused);
+    renderGameUITopState({
+      elements: this.el,
+      state,
+      populationText,
+      morale,
+      storageText,
+      buildClockLabel,
+      buildPauseButtonLabel,
+    });
   }
 
   renderSpeedButtons(state) {
-    const speedStates = buildSpeedButtonStates(state.speed);
-    this.el.speedButtons.forEach((button, index) => {
-      button.classList.toggle('active', !!speedStates[index]?.active);
+    renderGameUISpeedButtons({
+      elements: this.el,
+      speed: state.speed,
+      buildSpeedButtonStates,
     });
   }
 
