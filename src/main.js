@@ -4,6 +4,7 @@ import { SCENARIO_DEFINITIONS } from './content/scenarios.js';
 import { RESOURCE_DEFINITIONS } from './content/resources.js';
 import { RESEARCH_DEFINITIONS } from './content/research.js';
 import { GameEngine } from './game/gameEngine.js';
+import { createMainLoopRuntimeState, runMainLoopFrame } from './mainLoop.js';
 import { saveGameState } from './persistence/saveLoad.js';
 import {
   createMainNotifier,
@@ -60,29 +61,19 @@ bindMainRendererInteractions({
   buildingDefinitions: BUILDING_DEFINITIONS,
 });
 
-let lastFrame = performance.now();
-let uiTimer = 0;
-let autoSaveTimer = 0;
+const loopRuntime = createMainLoopRuntimeState({
+  now: performance.now(),
+});
 
 function gameLoop(timestamp) {
-  const deltaSeconds = Math.min(0.1, (timestamp - lastFrame) / 1000);
-  lastFrame = timestamp;
-
-  engine.update(deltaSeconds);
-  renderer.render(engine.state);
-
-  uiTimer += deltaSeconds;
-  autoSaveTimer += deltaSeconds;
-
-  if (uiTimer >= 0.2) {
-    ui.render(engine.state);
-    uiTimer = 0;
-  }
-
-  if (autoSaveTimer >= 45) {
-    saveGameState(engine.snapshot());
-    autoSaveTimer = 0;
-  }
+  runMainLoopFrame({
+    timestamp,
+    runtime: loopRuntime,
+    engine,
+    renderer,
+    ui,
+    saveSnapshot: saveGameState,
+  });
 
   requestAnimationFrame(gameLoop);
 }
