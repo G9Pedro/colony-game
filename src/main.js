@@ -5,6 +5,7 @@ import { RESOURCE_DEFINITIONS } from './content/resources.js';
 import { RESEARCH_DEFINITIONS } from './content/research.js';
 import { GameEngine } from './game/gameEngine.js';
 import { createMainGameLoop } from './mainGameLoop.js';
+import { buildMainEngineOptions, parseMainLaunchParams } from './mainLaunchOptions.js';
 import { saveGameState } from './persistence/saveLoad.js';
 import {
   createMainNotifier,
@@ -20,14 +21,8 @@ import { SceneRenderer } from './render/sceneRenderer.js';
 import { UIController } from './ui/uiController.js';
 
 const sceneRoot = document.getElementById('scene-root');
-const requestedSeed = new URLSearchParams(window.location.search).get('seed');
-const requestedScenario = new URLSearchParams(window.location.search).get('scenario');
-const requestedBalanceProfile = new URLSearchParams(window.location.search).get('balance');
-const engine = new GameEngine({
-  ...(requestedSeed ? { seed: requestedSeed } : {}),
-  ...(requestedScenario ? { scenarioId: requestedScenario } : {}),
-  ...(requestedBalanceProfile ? { balanceProfileId: requestedBalanceProfile } : {}),
-});
+const launchParams = parseMainLaunchParams(window.location.search);
+const engine = new GameEngine(buildMainEngineOptions(launchParams));
 const {
   renderer,
   usingFallbackRenderer,
