@@ -10,7 +10,6 @@ import {
 } from './legacyInteractionDispatch.js';
 import { bindLegacyRendererEvents, disposeLegacyRendererRuntime } from './legacyRendererLifecycle.js';
 import { beginLegacyPointerDrag } from './legacyPointerState.js';
-import { createLegacyRendererBaseState } from './legacyRendererBaseState.js';
 import { buildLegacyEventSessionInvocation } from './legacyEventSessionInvocation.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { dispatchLegacyFrame } from './legacyFrameDispatch.js';
@@ -21,8 +20,6 @@ import {
   setLegacyPreviewPosition,
   updateLegacyPlacementPreview,
 } from './legacyPreviewHandlers.js';
-import { applyLegacyRendererRuntimeState } from './legacyRendererRuntimeState.js';
-import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import { buildLegacyDisposeInvocation } from './legacyDisposeInvocation.js';
 import { dispatchLegacyEntityPick, dispatchLegacyGroundPick } from './legacyPickerDispatch.js';
@@ -32,27 +29,17 @@ import {
   applyRendererPlacementPreviewHandler,
 } from './rendererCallbackState.js';
 import { resizeLegacyRendererViewport } from './legacyRendererViewport.js';
+import { initializeLegacyThreeRenderer } from './legacyRendererInitialization.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
-    Object.assign(this, createLegacyRendererBaseState({
+    initializeLegacyThreeRenderer(this, {
       rootElement,
       three: THREE,
       performanceObject: performance,
-    }));
-
-    const runtime = createLegacyRendererRuntime({
-      rootElement,
-      scene: this.scene,
-      three: THREE,
       windowObject: window,
       maxPixelRatio: 2,
     });
-    applyLegacyRendererRuntimeState(this, runtime);
-
-    this.updateCamera();
-    this.resize();
-    this.bindEvents();
   }
 
   bindEvents() {
