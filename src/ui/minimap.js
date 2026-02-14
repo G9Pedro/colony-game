@@ -1,5 +1,9 @@
-import { screenToWorldPoint } from '../render/isometricCamera.js';
 import { minimapPointToWorld, worldToMinimapPoint } from './minimapGeometry.js';
+import {
+  buildMinimapViewportCorners,
+  drawMinimapCameraCenterMarker,
+  drawMinimapViewportOutline,
+} from './minimapOverlays.js';
 import {
   drawMinimapColonistDots,
   drawMinimapSelectionRing,
@@ -26,116 +30,32 @@ export class Minimap {
     });
   }
 
-  toMinimapX(x) {
-    return worldToMinimapPoint({
-      x,
-      z: 0,
-      worldRadius: this.worldRadius,
-      width: this.canvas.width,
-      height: this.canvas.height,
-    }).x;
-  }
-
-  toMinimapY(z) {
-    return worldToMinimapPoint({
-      x: 0,
-      z,
-      worldRadius: this.worldRadius,
-      width: this.canvas.width,
-      height: this.canvas.height,
-    }).y;
-  }
-
   drawViewport(cameraState) {
     if (!cameraState || cameraState.projection !== 'isometric') {
       return;
     }
-    const corners = [
-      screenToWorldPoint({
-        screenX: 0,
-        screenY: 0,
-        centerX: cameraState.centerX,
-        centerZ: cameraState.centerZ,
-        width: cameraState.width,
-        height: cameraState.height,
-        zoom: cameraState.zoom,
-        tileWidth: cameraState.tileWidth,
-        tileHeight: cameraState.tileHeight,
+    const corners = buildMinimapViewportCorners(cameraState);
+    drawMinimapViewportOutline(this.ctx, corners, {
+      projectPoint: (point) => worldToMinimapPoint({
+        x: point.x,
+        z: point.z,
+        worldRadius: this.worldRadius,
+        width: this.canvas.width,
+        height: this.canvas.height,
       }),
-      screenToWorldPoint({
-        screenX: cameraState.width,
-        screenY: 0,
-        centerX: cameraState.centerX,
-        centerZ: cameraState.centerZ,
-        width: cameraState.width,
-        height: cameraState.height,
-        zoom: cameraState.zoom,
-        tileWidth: cameraState.tileWidth,
-        tileHeight: cameraState.tileHeight,
-      }),
-      screenToWorldPoint({
-        screenX: cameraState.width,
-        screenY: cameraState.height,
-        centerX: cameraState.centerX,
-        centerZ: cameraState.centerZ,
-        width: cameraState.width,
-        height: cameraState.height,
-        zoom: cameraState.zoom,
-        tileWidth: cameraState.tileWidth,
-        tileHeight: cameraState.tileHeight,
-      }),
-      screenToWorldPoint({
-        screenX: 0,
-        screenY: cameraState.height,
-        centerX: cameraState.centerX,
-        centerZ: cameraState.centerZ,
-        width: cameraState.width,
-        height: cameraState.height,
-        zoom: cameraState.zoom,
-        tileWidth: cameraState.tileWidth,
-        tileHeight: cameraState.tileHeight,
-      }),
-    ];
-
-    this.ctx.save();
-    this.ctx.strokeStyle = 'rgba(244, 223, 173, 0.85)';
-    this.ctx.lineWidth = 1.5;
-    this.ctx.beginPath();
-    this.ctx.moveTo(this.toMinimapX(corners[0].x), this.toMinimapY(corners[0].z));
-    corners.slice(1).forEach((point) => {
-      this.ctx.lineTo(this.toMinimapX(point.x), this.toMinimapY(point.z));
     });
-    this.ctx.closePath();
-    this.ctx.stroke();
-    this.ctx.restore();
   }
 
   drawCameraCenter(cameraState) {
-    if (!cameraState) {
-      return;
-    }
-    const point = worldToMinimapPoint({
-      x: cameraState.centerX ?? 0,
-      z: cameraState.centerZ ?? 0,
-      worldRadius: this.worldRadius,
-      width: this.canvas.width,
-      height: this.canvas.height,
+    drawMinimapCameraCenterMarker(this.ctx, cameraState, {
+      projectPoint: (point) => worldToMinimapPoint({
+        x: point.x,
+        z: point.z,
+        worldRadius: this.worldRadius,
+        width: this.canvas.width,
+        height: this.canvas.height,
+      }),
     });
-    const x = point.x;
-    const y = point.y;
-    this.ctx.save();
-    this.ctx.strokeStyle = 'rgba(244, 223, 173, 0.85)';
-    this.ctx.lineWidth = 1.2;
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, 4.4, 0, Math.PI * 2);
-    this.ctx.stroke();
-    this.ctx.beginPath();
-    this.ctx.moveTo(x - 2.2, y);
-    this.ctx.lineTo(x + 2.2, y);
-    this.ctx.moveTo(x, y - 2.2);
-    this.ctx.lineTo(x, y + 2.2);
-    this.ctx.stroke();
-    this.ctx.restore();
   }
 
   render(state, cameraState, selectedEntity = null) {
