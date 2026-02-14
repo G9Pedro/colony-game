@@ -4,6 +4,7 @@ import { renderColonistPanel, renderConstructionQueuePanel, renderResearchPanels
 import { renderObjectivesPanel, renderRunStatsPanel, renderSelectionPanel } from './infoPanelsDom.js';
 import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
+import { renderGameUIBuildCards, renderGameUIBuildCategories } from './gameUIBuildMenuDom.js';
 import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
 import {
   buildGameUIColonistPanelInvocation,
@@ -92,14 +93,13 @@ export class GameUI {
   }
 
   renderBuildCategories(state, categories, onSelectCategory) {
-    this.el.buildCategories.innerHTML = '';
-    const rows = buildCategoryPillRows(categories, state.selectedCategory);
-    rows.forEach((row) => {
-      const button = createBuildCategoryButton({
-        row,
-        onSelectCategory,
-      });
-      this.el.buildCategories.appendChild(button);
+    renderGameUIBuildCategories({
+      elements: this.el,
+      categories,
+      selectedCategory: state.selectedCategory,
+      buildCategoryPillRows,
+      createBuildCategoryButton,
+      onSelectCategory,
     });
   }
 
@@ -112,24 +112,18 @@ export class GameUI {
     isBuildingUnlocked,
   }) {
     this.renderBuildCategories(state, categories, onSelectCategory);
-    this.el.buildList.innerHTML = '';
-    const rows = buildBuildCardRows({
+    renderGameUIBuildCards({
+      elements: this.el,
       state,
       selectedBuildType,
-      buildingDefinitions: this.buildingDefinitions,
       isBuildingUnlocked,
+      buildingDefinitions: this.buildingDefinitions,
       formatCost,
       getBuildingCardState,
-    });
-
-    rows.forEach((row) => {
-      const thumb = this.spriteFactory.getBuildingThumbnail(row.id, 58);
-      const card = createBuildCardElement({
-        row,
-        thumbnail: thumb,
-        onToggleBuildType,
-      });
-      this.el.buildList.appendChild(card);
+      buildBuildCardRows,
+      spriteFactory: this.spriteFactory,
+      createBuildCardElement,
+      onToggleBuildType,
     });
   }
 
