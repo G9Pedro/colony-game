@@ -1,12 +1,7 @@
-import { BUILDING_DEFINITIONS } from '../content/buildings.js';
-import { AnimationManager } from './animations.js';
 import { buildIsometricFrameInvocation } from './isometricFrameInvocation.js';
 import { runIsometricFrame } from './isometricFramePipeline.js';
-import { IsometricCamera } from './isometricCamera.js';
-import { ParticleSystem } from './particles.js';
-import { FrameQualityController } from './qualityController.js';
+import { createIsometricRendererRuntime } from './isometricRendererRuntime.js';
 import { disposeIsometricRenderer, resizeIsometricViewport } from './isometricRendererLifecycle.js';
-import { SpriteFactory } from './spriteFactory.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
 import { drawIsometricEntityPass } from './isometricEntityDraw.js';
 import { normalizeCameraState } from './cameraState.js';
@@ -20,61 +15,20 @@ import {
   maybeEmitResourceGainFloatingText,
   syncPlacementAnimationEffects,
 } from './isometricRuntimeEffects.js';
-import { ResourceGainTracker } from './resourceGainTracker.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight } from './overlayPainter.js';
-import { TerrainLayerRenderer } from './terrainLayer.js';
 
 export class IsometricRenderer {
   constructor(rootElement, options = {}) {
     this.rootElement = rootElement;
-    this.options = {
-      quality: options.quality ?? 'balanced',
-      effectsEnabled: options.effectsEnabled ?? true,
-      autoQuality: options.autoQuality ?? true,
-      cameraTileWidth: options.cameraTileWidth ?? 64,
-      cameraTileHeight: options.cameraTileHeight ?? 32,
-    };
     this.onGroundClick = null;
     this.onPlacementPreview = null;
     this.onEntitySelect = null;
-
-    this.canvas = document.createElement('canvas');
-    this.canvas.style.width = '100%';
-    this.canvas.style.height = '100%';
-    this.canvas.style.display = 'block';
-    this.rootElement.appendChild(this.canvas);
-    this.ctx = this.canvas.getContext('2d', { alpha: true });
-
-    this.camera = new IsometricCamera({
-      tileWidth: this.options.cameraTileWidth,
-      tileHeight: this.options.cameraTileHeight,
-      zoom: 1.05,
-      minZoom: 0.55,
-      maxZoom: 2.8,
-      worldRadius: 30,
-    });
-    this.animations = new AnimationManager();
-    this.spriteFactory = new SpriteFactory({ quality: this.options.quality });
-    this.spriteFactory.prewarm(BUILDING_DEFINITIONS);
-    this.particles = new ParticleSystem({
-      maxParticles: this.options.quality === 'high' ? 900 : 520,
-    });
-    this.qualityController = new FrameQualityController({
-      enabled: this.options.autoQuality,
-    });
-
-    this.preview = null;
-    this.lastFrameAt = performance.now();
-    this.smoothedFps = 60;
-    this.devicePixelRatio = 1;
-    this.resourceGainTracker = new ResourceGainTracker({ cooldownSeconds: 1.1, minDelta: 3 });
-    this.lastState = null;
-    this.selectedEntity = null;
-    this.hoveredEntity = null;
-    this.colonistRenderState = new Map();
-    this.knownBuildingIds = new Set();
-    this.interactiveEntities = [];
-    this.terrainLayer = new TerrainLayerRenderer(this.spriteFactory);
+    Object.assign(this, createIsometricRendererRuntime({
+      rootElement,
+      options,
+      documentObject: document,
+      performanceObject: performance,
+    }));
     this.interactionController = new InteractionController({
       canvas: this.canvas,
       camera: this.camera,
