@@ -13,6 +13,7 @@ import { normalizeCameraState } from './cameraState.js';
 import { resolveClickSelectionOutcome } from './clickSelection.js';
 import { createDebugStats } from './debugStats.js';
 import { buildIsometricFrameContext } from './isometricFrameContext.js';
+import { runIsometricFrameDraw } from './isometricFrameDraw.js';
 import { runIsometricFrameDynamics } from './isometricFrameDynamics.js';
 import { InteractionController } from './interactionController.js';
 import { ResourceGainTracker } from './resourceGainTracker.js';
@@ -323,25 +324,22 @@ export class IsometricRenderer {
         this.maybeEmitBuildingEffects(nextState, deltaSeconds),
     });
 
-    this.drawBackground(state, frame.width, frame.height, frame.daylight);
-    this.drawTerrain(state);
-    this.drawEntities(state, frame.now, frame.daylight);
-    this.drawPreview();
-
-    if (this.hoveredEntity) {
-      this.drawSelectionOverlay(this.hoveredEntity, this.animations.getSelectionPulse(frame.now) * 0.75);
-    }
-    if (this.selectedEntity) {
-      this.drawSelectionOverlay(this.selectedEntity, this.animations.getSelectionPulse(frame.now));
-    }
-
-    drawTimeAndSeasonOverlays(
-      this.ctx,
-      frame.width,
-      frame.height,
-      1 - frame.daylight,
-      getSeasonTint(state.day),
-    );
+    runIsometricFrameDraw({
+      state,
+      frame,
+      drawBackground: (nextState, width, height, daylight) =>
+        this.drawBackground(nextState, width, height, daylight),
+      drawTerrain: (nextState) => this.drawTerrain(nextState),
+      drawEntities: (nextState, now, daylight) => this.drawEntities(nextState, now, daylight),
+      drawPreview: () => this.drawPreview(),
+      hoveredEntity: this.hoveredEntity,
+      selectedEntity: this.selectedEntity,
+      drawSelectionOverlay: (entity, alpha) => this.drawSelectionOverlay(entity, alpha),
+      getSelectionPulse: (now) => this.animations.getSelectionPulse(now),
+      drawTimeAndSeasonOverlays,
+      ctx: this.ctx,
+      getSeasonTint,
+    });
   }
 }
 
