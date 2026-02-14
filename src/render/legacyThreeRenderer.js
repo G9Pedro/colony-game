@@ -5,6 +5,7 @@ import { createDebugStats } from './debugStats.js';
 import { createLegacyBuildingMesh, createLegacyColonistMesh } from './legacyMeshFactory.js';
 import { reconcileMeshMap, updateColonistMeshPose } from './legacyEntitySync.js';
 import { computeFrameDeltaSeconds, updateSmoothedFps } from './frameTiming.js';
+import { buildLegacyFrameContext } from './legacyFrameContext.js';
 import {
   updateOrbitYawAndPitch,
   updateRadiusFromPinch,
@@ -370,10 +371,17 @@ export class LegacyThreeRenderer {
   }
 
   render(state) {
-    const now = performance.now();
-    const deltaSeconds = computeFrameDeltaSeconds(now, this.lastFrameAt, 0.2);
-    this.lastFrameAt = now;
-    this.smoothedFps = updateSmoothedFps(this.smoothedFps, deltaSeconds, 0.9);
+    const frame = buildLegacyFrameContext({
+      now: performance.now(),
+      lastFrameAt: this.lastFrameAt,
+      smoothedFps: this.smoothedFps,
+      computeFrameDeltaSeconds,
+      updateSmoothedFps,
+      maxDeltaSeconds: 0.2,
+      fpsSmoothing: 0.9,
+    });
+    this.lastFrameAt = frame.nextLastFrameAt;
+    this.smoothedFps = frame.nextSmoothedFps;
     this.syncBuildings(state);
     this.syncColonists(state);
     this.renderer.render(this.scene, this.camera);
