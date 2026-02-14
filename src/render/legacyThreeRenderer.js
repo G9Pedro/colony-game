@@ -21,6 +21,12 @@ import { beginLegacyPointerDrag, endLegacyPointerDrag, updateLegacyPointerDrag }
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
 import { pickEntitySelectionFromClient, pickGroundPointFromClient } from './legacyRaycastSession.js';
+import {
+  createLegacyGrid,
+  createLegacyGroundPlane,
+  createLegacyLighting,
+  createLegacyPreviewMarker,
+} from './legacySceneSetup.js';
 import { beginLegacyPinch, endLegacyPinch, updateLegacyPinch } from './legacyTouchState.js';
 
 export class LegacyThreeRenderer {
@@ -75,28 +81,16 @@ export class LegacyThreeRenderer {
   }
 
   initializeScene() {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.72);
-    const sunlight = new THREE.DirectionalLight(0xffffff, 1.15);
-    sunlight.position.set(22, 40, 12);
+    const { ambientLight, sunlight } = createLegacyLighting(THREE);
     this.scene.add(ambientLight, sunlight);
 
-    const groundGeometry = new THREE.PlaneGeometry(64, 64, 1, 1);
-    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x4d7c0f });
-    this.groundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
-    this.groundPlane.rotation.x = -Math.PI / 2;
-    this.groundPlane.position.y = 0;
-    this.groundPlane.userData.isGround = true;
+    this.groundPlane = createLegacyGroundPlane(THREE);
     this.scene.add(this.groundPlane);
 
-    const grid = new THREE.GridHelper(64, 32, 0x334155, 0x64748b);
-    grid.position.y = 0.01;
+    const grid = createLegacyGrid(THREE);
     this.scene.add(grid);
 
-    const markerGeometry = new THREE.CylinderGeometry(0.6, 0.6, 0.14, 16);
-    const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.65 });
-    this.previewMarker = new THREE.Mesh(markerGeometry, markerMaterial);
-    this.previewMarker.position.y = 0.08;
-    this.previewMarker.visible = false;
+    this.previewMarker = createLegacyPreviewMarker(THREE);
     this.scene.add(this.previewMarker);
   }
 
