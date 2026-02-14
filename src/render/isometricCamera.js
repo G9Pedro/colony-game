@@ -4,6 +4,12 @@ import {
   worldToScreenPoint,
 } from './isometricProjection.js';
 import {
+  computeCameraVelocityFromScreenDelta,
+  computeCameraZoomStep,
+  didCameraCenterMove,
+  isDragClick,
+} from './isometricCameraPolicies.js';
+import {
   applyCameraInertia,
   buildPinchGestureState,
   clampCameraCenter,
@@ -126,7 +132,12 @@ export class IsometricCamera {
 
   zoomAt(delta, screenX, screenY) {
     const before = this.screenToWorld(screenX, screenY);
-    const nextZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoom * (1 - delta)));
+    const nextZoom = computeCameraZoomStep({
+      zoom: this.zoom,
+      delta,
+      minZoom: this.minZoom,
+      maxZoom: this.maxZoom,
+    });
     this.zoom = nextZoom;
     const after = this.screenToWorld(screenX, screenY);
     this.centerX += before.x - after.x;
@@ -157,32 +168,34 @@ export class IsometricCamera {
     const beforeCenterZ = this.centerZ;
     this.panByScreenDelta(dx, dy);
 
-    const worldDelta = screenDeltaToWorldDelta({
+    const velocity = computeCameraVelocityFromScreenDelta({
       deltaX: dx,
       deltaY: dy,
+      elapsedMilliseconds: elapsed,
       zoom: this.zoom,
       tileWidth: this.tileWidth,
       tileHeight: this.tileHeight,
     });
-    if (!worldDelta) {
-      this.velocityX = 0;
-      this.velocityZ = 0;
-    } else {
-      this.velocityX = -worldDelta.worldDeltaX / (elapsed / 1000);
-      this.velocityZ = -worldDelta.worldDeltaZ / (elapsed / 1000);
-    }
+    this.velocityX = velocity.velocityX;
+    this.velocityZ = velocity.velocityZ;
 
     this.dragLastX = screenX;
     this.dragLastY = screenY;
     this.lastDragAt = now;
-    if (Math.abs(this.centerX - beforeCenterX) < 0.0001 && Math.abs(this.centerZ - beforeCenterZ) < 0.0001) {
+    if (!didCameraCenterMove({
+      centerX: beforeCenterX,
+      centerZ: beforeCenterZ,
+    }, {
+      centerX: this.centerX,
+      centerZ: this.centerZ,
+    })) {
       this.velocityX = 0;
       this.velocityZ = 0;
     }
   }
 
   endDrag() {
-    const wasClick = this.dragDistance < 5;
+    const wasClick = isDragClick(this.dragDistance);
     this.dragging = false;
     return { wasClick };
   }
