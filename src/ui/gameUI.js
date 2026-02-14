@@ -1,7 +1,11 @@
-import { buildResourceBarRows } from './resourceBarViewState.js';
 import { dispatchGameUIBuildMenu } from './gameUIBuildMenuDispatch.js';
-import { createResourceChipElement } from './gameUICardElements.js';
 import { dispatchGameUIBalanceProfileOptions, dispatchGameUIScenarioOptions } from './gameUIOptionsDispatch.js';
+import {
+  dispatchGameUIResourceBar,
+  dispatchGameUIResourceRateSampling,
+  dispatchGameUISpeedButtons,
+  dispatchGameUITopState,
+} from './gameUIHudDispatch.js';
 import {
   dispatchGameUIColonistPanel,
   dispatchGameUIConstructionQueuePanel,
@@ -10,11 +14,7 @@ import {
   dispatchGameUIRunStatsPanel,
   dispatchGameUISelectionPanel,
 } from './gameUIPanelDispatch.js';
-import { renderGameUIResourceBar } from './gameUIResourceBarDom.js';
 import { createGameUIRuntime } from './gameUIRuntime.js';
-import { renderGameUISpeedButtons, renderGameUITopState } from './gameUITopBarDom.js';
-import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
-import { formatRate } from './uiFormatting.js';
 
 export class GameUI {
   constructor({ elements, buildingDefinitions, researchDefinitions, resourceDefinitions, spriteFactory }) {
@@ -35,42 +35,23 @@ export class GameUI {
   }
 
   updateResourceRates(state) {
-    this.resourceRates = this.resourceFlowTracker.sample(state.resources, state.timeSeconds);
+    dispatchGameUIResourceRateSampling(this, state);
   }
 
   renderTopState(state, { populationText, morale, storageText }) {
-    renderGameUITopState({
-      elements: this.el,
-      state,
+    dispatchGameUITopState(this, state, {
       populationText,
       morale,
       storageText,
-      buildClockLabel,
-      buildPauseButtonLabel,
     });
   }
 
   renderSpeedButtons(state) {
-    renderGameUISpeedButtons({
-      elements: this.el,
-      speed: state.speed,
-      buildSpeedButtonStates,
-    });
+    dispatchGameUISpeedButtons(this, state);
   }
 
   renderResourceBar(state) {
-    this.updateResourceRates(state);
-    renderGameUIResourceBar({
-      elements: this.el,
-      resourceDefinitions: this.resourceDefinitions,
-      resources: state.resources,
-      resourceRates: this.resourceRates,
-      valueAnimator: this.valueAnimator,
-      spriteFactory: this.spriteFactory,
-      buildResourceBarRows,
-      createResourceChipElement,
-      formatRate,
-    });
+    dispatchGameUIResourceBar(this, state);
   }
 
   renderBuildList({
