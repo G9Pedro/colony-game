@@ -9,6 +9,11 @@ import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
 import { createIsometricPreviewState, resolveIsometricPreviewUpdate } from './isometricPreviewState.js';
+import {
+  applyIsometricSelectedEntity,
+  buildIsometricClickSelectionInvocation,
+  buildIsometricHoverSelectionInvocation,
+} from './isometricSelectionState.js';
 import { buildIsometricCameraStatePayload, buildIsometricDebugStatsPayload } from './isometricRendererViewState.js';
 import {
   emitAmbientBuildingEffects,
@@ -111,33 +116,15 @@ export class IsometricRenderer {
   }
 
   updateHoverSelection(localX, localY) {
-    updateIsometricHoverSelection({
-      interactiveEntities: this.interactiveEntities,
-      localX,
-      localY,
-      setHoveredEntity: (entity) => {
-        this.hoveredEntity = entity;
-      },
-    });
+    updateIsometricHoverSelection(buildIsometricHoverSelectionInvocation(this, localX, localY));
   }
 
   setSelectedEntity(entity) {
-    this.selectedEntity = entity ?? null;
-    if (this.onEntitySelect) {
-      this.onEntitySelect(this.selectedEntity);
-    }
+    applyIsometricSelectedEntity(this, entity);
   }
 
   handleClick(localX, localY, tile) {
-    handleIsometricClickSelection({
-      interactiveEntities: this.interactiveEntities,
-      localX,
-      localY,
-      tile,
-      selectedBuildingType: this.lastState?.selectedBuildingType,
-      setSelectedEntity: (entity) => this.setSelectedEntity(entity),
-      onGroundClick: this.onGroundClick,
-    });
+    handleIsometricClickSelection(buildIsometricClickSelectionInvocation(this, localX, localY, tile));
   }
 
   syncBuildingAnimations(state, now) {
