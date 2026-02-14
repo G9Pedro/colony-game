@@ -4,7 +4,7 @@ import { SCENARIO_DEFINITIONS } from './content/scenarios.js';
 import { RESOURCE_DEFINITIONS } from './content/resources.js';
 import { RESEARCH_DEFINITIONS } from './content/research.js';
 import { GameEngine } from './game/gameEngine.js';
-import { createMainLoopRuntimeState, runMainLoopFrame } from './mainLoop.js';
+import { createMainGameLoop } from './mainGameLoop.js';
 import { saveGameState } from './persistence/saveLoad.js';
 import {
   createMainNotifier,
@@ -65,22 +65,13 @@ bindMainRendererInteractions({
   buildingDefinitions: BUILDING_DEFINITIONS,
 });
 
-const loopRuntime = createMainLoopRuntimeState({
-  now: performance.now(),
+const mainLoop = createMainGameLoop({
+  engine,
+  renderer,
+  ui,
+  saveSnapshot: saveGameState,
+  requestFrame: requestAnimationFrame,
 });
-
-function gameLoop(timestamp) {
-  runMainLoopFrame({
-    timestamp,
-    runtime: loopRuntime,
-    engine,
-    renderer,
-    ui,
-    saveSnapshot: saveGameState,
-  });
-
-  requestAnimationFrame(gameLoop);
-}
 
 ui.render(engine.state);
 emitMainStartupNotifications({
@@ -88,4 +79,4 @@ emitMainStartupNotifications({
   rngSeed: engine.state.rngSeed,
   usingFallbackRenderer,
 });
-requestAnimationFrame(gameLoop);
+mainLoop.start();
