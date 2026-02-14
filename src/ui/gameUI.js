@@ -6,12 +6,7 @@ import { ResourceFlowTracker } from './resourceFlowTracker.js';
 import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildSelectionPanelViewModel } from './selectionPanelViewState.js';
 import { buildBuildingSelectionDetails, buildColonistSelectionDetails } from './selectionDetails.js';
-import {
-  buildMetricsSummaryRows,
-  getLatestInvariantWarning,
-  getRecentRunHistory,
-  getRunOutcomeLabel,
-} from './runStatsView.js';
+import { buildRunStatsPanelViewModel } from './runStatsPanelViewState.js';
 import { buildActiveResearchViewModel, buildResearchOptionViewModels } from './researchViewState.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
 import { formatCost, formatRate, percent } from './uiFormatting.js';
@@ -266,9 +261,8 @@ export class GameUI {
   }
 
   renderRunStats(state) {
-    const latestViolation = getLatestInvariantWarning(state.debug);
-    const metricRows = buildMetricsSummaryRows(state.metrics);
-    const metricsMarkup = metricRows
+    const panel = buildRunStatsPanelViewModel(state, 3);
+    const metricsMarkup = panel.metricsRows
       .map((row) => `<div class="kv"><span>${row.label}</span><strong>${row.value}</strong></div>`)
       .join('');
     this.el.metricsSummary.innerHTML = `
@@ -276,25 +270,24 @@ export class GameUI {
         ${metricsMarkup}
       </div>
     `;
-    if (latestViolation) {
+    if (panel.warningMessage) {
       const warning = document.createElement('div');
       warning.className = 'panel-card warning';
-      warning.textContent = `Invariant warning: ${latestViolation.message}`;
+      warning.textContent = panel.warningMessage;
       this.el.metricsSummary.appendChild(warning);
     }
 
-    const history = getRecentRunHistory(state.runSummaryHistory, 3);
     this.el.runHistory.innerHTML = '';
-    if (history.length === 0) {
+    if (panel.historyRows.length === 0) {
       this.el.runHistory.innerHTML = '<div class="panel-card"><small>No previous runs yet.</small></div>';
       return;
     }
-    history.forEach((run) => {
+    panel.historyRows.forEach((run) => {
       const card = document.createElement('div');
       card.className = 'panel-card';
       card.innerHTML = `
-        <div class="kv"><strong>${getRunOutcomeLabel(run.outcome)}</strong><small>Day ${run.day}</small></div>
-        <small>${run.scenarioId}/${run.balanceProfileId ?? 'standard'} · peak ${run.peakPopulation} · ${run.buildingsConstructed} builds</small>
+        <div class="kv"><strong>${run.outcomeLabel}</strong><small>${run.dayLabel}</small></div>
+        <small>${run.summary}</small>
       `;
       this.el.runHistory.appendChild(card);
     });
