@@ -8,19 +8,18 @@ import { SpriteFactory } from './spriteFactory.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
 import { normalizeCameraState } from './cameraState.js';
-import { resolveClickSelectionOutcome } from './clickSelection.js';
 import { createDebugStats } from './debugStats.js';
 import { buildIsometricFrameContext } from './isometricFrameContext.js';
 import { runIsometricFrameDraw } from './isometricFrameDraw.js';
 import { runIsometricFrameDynamics } from './isometricFrameDynamics.js';
 import { InteractionController } from './interactionController.js';
+import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
 import {
   emitAmbientBuildingEffects,
   maybeEmitResourceGainFloatingText,
   syncPlacementAnimationEffects,
 } from './isometricRuntimeEffects.js';
 import { ResourceGainTracker } from './resourceGainTracker.js';
-import { pickBestInteractiveEntityHit } from './interactionHitTest.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
 import { getDaylightFactor, getSeasonTint } from './stateVisuals.js';
 import { TerrainLayerRenderer } from './terrainLayer.js';
@@ -181,8 +180,14 @@ export class IsometricRenderer {
   }
 
   updateHoverSelection(localX, localY) {
-    const hit = this.hitTestEntity(localX, localY);
-    this.hoveredEntity = hit?.entity ?? null;
+    updateIsometricHoverSelection({
+      interactiveEntities: this.interactiveEntities,
+      localX,
+      localY,
+      setHoveredEntity: (entity) => {
+        this.hoveredEntity = entity;
+      },
+    });
   }
 
   setSelectedEntity(entity) {
@@ -193,25 +198,15 @@ export class IsometricRenderer {
   }
 
   handleClick(localX, localY, tile) {
-    const hit = this.hitTestEntity(localX, localY);
-    const selectedBuildingType = this.lastState?.selectedBuildingType;
-    const outcome = resolveClickSelectionOutcome({
-      selectedBuildingType,
-      hitEntity: hit?.entity ?? null,
+    handleIsometricClickSelection({
+      interactiveEntities: this.interactiveEntities,
+      localX,
+      localY,
+      tile,
+      selectedBuildingType: this.lastState?.selectedBuildingType,
+      setSelectedEntity: (entity) => this.setSelectedEntity(entity),
+      onGroundClick: this.onGroundClick,
     });
-    if (outcome.selectionAction === 'set') {
-      this.setSelectedEntity(outcome.selectedEntity);
-    } else if (outcome.selectionAction === 'clear') {
-      this.setSelectedEntity(null);
-    }
-
-    if (outcome.shouldGroundClick && this.onGroundClick) {
-      this.onGroundClick({ x: tile.x, z: tile.z });
-    }
-  }
-
-  hitTestEntity(localX, localY) {
-    return pickBestInteractiveEntityHit(this.interactiveEntities, localX, localY);
   }
 
   syncBuildingAnimations(state, now) {
