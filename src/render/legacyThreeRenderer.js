@@ -17,6 +17,7 @@ import {
   toRoundedGroundPoint,
 } from './legacyInteractionPrimitives.js';
 import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
+import { pickEntitySelectionFromClient, pickGroundPointFromClient } from './legacyRaycastSession.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -153,33 +154,34 @@ export class LegacyThreeRenderer {
   }
 
   screenToGround(clientX, clientY) {
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    const ndc = clientToNdc(clientX, clientY, rect);
-    this.mouse.x = ndc.x;
-    this.mouse.y = ndc.y;
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObject(this.groundPlane);
-    if (intersects.length === 0) {
-      return null;
-    }
-    return intersects[0].point;
+    return pickGroundPointFromClient({
+      clientX,
+      clientY,
+      domElement: this.renderer.domElement,
+      mouse: this.mouse,
+      raycaster: this.raycaster,
+      camera: this.camera,
+      groundPlane: this.groundPlane,
+      toNdc: clientToNdc,
+    });
   }
 
   screenToEntity(clientX, clientY) {
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    const ndc = clientToNdc(clientX, clientY, rect);
-    this.mouse.x = ndc.x;
-    this.mouse.y = ndc.y;
-    this.raycaster.setFromCamera(this.mouse, this.camera);
     const targets = [
       ...this.buildingMeshes.values(),
       ...this.colonistMeshes.values(),
     ];
-    const intersects = this.raycaster.intersectObjects(targets, false);
-    if (intersects.length === 0) {
-      return null;
-    }
-    return buildEntitySelectionFromObject(intersects[0].object);
+    return pickEntitySelectionFromClient({
+      clientX,
+      clientY,
+      domElement: this.renderer.domElement,
+      mouse: this.mouse,
+      raycaster: this.raycaster,
+      camera: this.camera,
+      targets,
+      toNdc: clientToNdc,
+      mapSelectionFromObject: buildEntitySelectionFromObject,
+    });
   }
 
   handlePointerDown(event) {
