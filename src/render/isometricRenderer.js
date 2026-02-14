@@ -1,10 +1,8 @@
-import { buildIsometricFrameInvocation } from './isometricFrameInvocation.js';
-import { runIsometricFrame } from './isometricFramePipeline.js';
 import { createIsometricRendererRuntime } from './isometricRendererRuntime.js';
+import { dispatchIsometricFrame } from './isometricFrameDispatch.js';
 import { disposeIsometricRenderer, resizeIsometricViewport } from './isometricRendererLifecycle.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
 import { createIsometricInteractionSession } from './isometricInteractionSession.js';
-import { applyRendererFrameState } from './rendererFrameState.js';
 import {
   dispatchIsometricClickSelection,
   dispatchIsometricEntitySelection,
@@ -175,12 +173,7 @@ export class IsometricRenderer {
 
   render(state) {
     this.lastState = state;
-    const frame = runIsometricFrame(buildIsometricFrameInvocation({
-      renderer: this,
-      state,
-      now: performance.now(),
-    }));
-    applyRendererFrameState(this, frame);
+    dispatchIsometricFrame(this, state);
   }
 }
 
