@@ -1,3 +1,5 @@
+import { disposeLegacyMesh } from './legacyMeshDisposal.js';
+
 export function bindLegacyRendererEvents({
   windowObject,
   domElement,
@@ -33,12 +35,7 @@ export function bindLegacyRendererEvents({
 
 export function disposeMeshMap(meshMap) {
   for (const mesh of meshMap.values()) {
-    mesh?.geometry?.dispose?.();
-    if (Array.isArray(mesh?.material)) {
-      mesh.material.forEach((material) => material?.dispose?.());
-    } else {
-      mesh?.material?.dispose?.();
-    }
+    disposeLegacyMesh(mesh);
   }
   meshMap.clear();
 }

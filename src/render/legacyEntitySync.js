@@ -1,3 +1,5 @@
+import { disposeLegacyMesh } from './legacyMeshDisposal.js';
+
 export function reconcileMeshMap({
   entities,
   meshMap,
@@ -12,8 +14,7 @@ export function reconcileMeshMap({
       continue;
     }
     scene.remove(mesh);
-    mesh.geometry.dispose();
-    mesh.material.dispose();
+    disposeLegacyMesh(mesh);
     meshMap.delete(id);
   }
 
