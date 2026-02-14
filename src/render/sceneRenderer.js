@@ -8,6 +8,7 @@ import {
 import { defineSceneRendererCallbackProperties } from './sceneRendererProperties.js';
 import { applySceneRendererPreviewPosition, clearSceneRendererPreview } from './sceneRendererPreviewHandlers.js';
 import { buildSceneRendererCameraState, buildSceneRendererDebugStats } from './sceneRendererSnapshots.js';
+import { dispatchSceneRendererModeChange, getSceneRendererMode } from './sceneRendererModeDispatch.js';
 import {
   centerSceneRendererOnBuilding,
   disposeSceneRenderer,
@@ -51,16 +52,13 @@ export class SceneRenderer {
   }
 
   setRendererMode(mode) {
-    const normalizedMode = normalizeRendererMode(mode);
-    if (normalizedMode === this.mode) {
-      return true;
-    }
-    this.initializeRenderer(normalizedMode);
-    return this.mode === normalizedMode;
+    return dispatchSceneRendererModeChange(this, mode, {
+      normalizeMode: normalizeRendererMode,
+    });
   }
 
   getRendererMode() {
-    return this.mode;
+    return getSceneRendererMode(this);
   }
 
   getAvailableModes() {
