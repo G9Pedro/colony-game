@@ -1,11 +1,8 @@
-import { SpriteFactory } from '../render/spriteFactory.js';
-import { GameUI } from './gameUI.js';
-import { Minimap } from './minimap.js';
-import { NotificationCenter } from './notifications.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { createUIControllerDefaultCallbacks, createUIControllerElements } from './uiControllerElements.js';
 import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
 import { runUiControllerRender } from './uiControllerRenderFlow.js';
+import { createUIControllerRuntime } from './uiControllerRuntime.js';
 import { getRendererModeLabel } from './uiViewState.js';
 
 export class UIController {
@@ -27,20 +24,15 @@ export class UIController {
 
     this.callbacks = createUIControllerDefaultCallbacks();
 
-    this.spriteFactory = new SpriteFactory({ quality: 'balanced' });
-    this.gameUI = new GameUI({
+    Object.assign(this, createUIControllerRuntime({
       elements: this.el,
       buildingDefinitions: this.buildingDefinitions,
       researchDefinitions: this.researchDefinitions,
       resourceDefinitions: this.resourceDefinitions,
-      spriteFactory: this.spriteFactory,
-    });
-    this.notifications = new NotificationCenter(this.el.notifications);
-    this.minimap = new Minimap(this.el.minimapCanvas, {
       onCenterRequest: (point) => {
         this.renderer?.centerOnBuilding(point);
       },
-    });
+    }));
 
     this.bindGlobalActions();
   }
