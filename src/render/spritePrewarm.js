@@ -1,3 +1,9 @@
+import {
+  DEFAULT_RESOURCE_ICON_SIZE,
+  PREWARM_COLONIST_FRAME_COUNT,
+  PREWARM_TERRAIN_GRASS_VARIANTS,
+} from './spriteFactoryLayout.js';
+
 export function prewarmSpriteFactoryAssets({
   spriteFactory,
   buildingDefinitions,
@@ -9,21 +15,21 @@ export function prewarmSpriteFactoryAssets({
     spriteFactory.getBuildingSprite(building.id, { construction: true });
   }
 
-  for (let variant = 0; variant < 4; variant += 1) {
+  for (let variant = 0; variant < PREWARM_TERRAIN_GRASS_VARIANTS; variant += 1) {
     spriteFactory.getTerrainTile('grass', variant);
   }
   spriteFactory.getTerrainTile('dirt', 0);
   spriteFactory.getTerrainTile('path', 0);
 
   prewarmJobTypes.forEach((job) => {
-    for (let frame = 0; frame < 3; frame += 1) {
+    for (let frame = 0; frame < PREWARM_COLONIST_FRAME_COUNT; frame += 1) {
       spriteFactory.getColonistSprite(job, frame, { idle: false });
       spriteFactory.getColonistSprite(job, frame, { idle: true });
     }
   });
 
   prewarmResourceKeys.forEach((resource) => {
-    spriteFactory.getResourceIcon(resource, 20);
+    spriteFactory.getResourceIcon(resource, DEFAULT_RESOURCE_ICON_SIZE);
   });
 }
 
