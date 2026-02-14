@@ -11,6 +11,7 @@ import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { InteractionController } from './interactionController.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
+import { createIsometricPreviewState, resolveIsometricPreviewUpdate } from './isometricPreviewState.js';
 import { buildIsometricCameraStatePayload, buildIsometricDebugStatsPayload } from './isometricRendererViewState.js';
 import {
   emitAmbientBuildingEffects,
@@ -129,15 +130,7 @@ export class IsometricRenderer {
   }
 
   setPreviewPosition(position, valid = true) {
-    if (!position) {
-      this.preview = null;
-      return;
-    }
-    this.preview = {
-      x: position.x,
-      z: position.z,
-      valid,
-    };
+    this.preview = createIsometricPreviewState(position, valid);
   }
 
   clearPreview() {
@@ -145,11 +138,7 @@ export class IsometricRenderer {
   }
 
   updatePlacementMarker(position, valid) {
-    if (!position) {
-      this.clearPreview();
-      return;
-    }
-    this.setPreviewPosition(position, valid);
+    this.preview = resolveIsometricPreviewUpdate(position, valid);
   }
 
   centerOnBuilding(building) {
