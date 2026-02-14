@@ -12,6 +12,7 @@ import {
   getRunOutcomeLabel,
 } from './runStatsView.js';
 import { buildActiveResearchViewModel, buildResearchOptionViewModels } from './researchViewState.js';
+import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
 import { formatCost, formatRate, percent } from './uiFormatting.js';
 
 export class GameUI {
@@ -53,19 +54,19 @@ export class GameUI {
   }
 
   renderTopState(state, { populationText, morale, storageText }) {
-    this.el.clockLabel.textContent = `Day ${state.day} · ${state.paused ? 'Paused' : `${state.speed}x`}`;
+    this.el.clockLabel.textContent = buildClockLabel(state);
     this.el.statusLabel.textContent = state.status;
     this.el.dayLabel.textContent = String(state.day);
     this.el.populationLabel.textContent = populationText;
     this.el.moraleLabel.textContent = morale;
     this.el.storageLabel.textContent = storageText;
-    this.el.pauseBtn.textContent = state.paused ? '▶ Resume' : '⏸ Pause';
+    this.el.pauseBtn.textContent = buildPauseButtonLabel(state.paused);
   }
 
   renderSpeedButtons(state) {
+    const speedStates = buildSpeedButtonStates(state.speed);
     this.el.speedButtons.forEach((button, index) => {
-      const speed = index === 0 ? 1 : index === 1 ? 2 : 4;
-      button.classList.toggle('active', state.speed === speed);
+      button.classList.toggle('active', !!speedStates[index]?.active);
     });
   }
 
