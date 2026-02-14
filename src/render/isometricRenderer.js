@@ -5,6 +5,7 @@ import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
+import { diffNewBuildingPlacements } from './buildingPlacementTracker.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
@@ -70,7 +71,6 @@ export class IsometricRenderer {
     this.hoveredEntity = null;
     this.colonistRenderState = new Map();
     this.knownBuildingIds = new Set();
-    this.knownConstructionIds = new Set();
     this.interactiveEntities = [];
     this.terrainLayer = new TerrainLayerRenderer(this.spriteFactory);
     this.interactionController = new InteractionController({
@@ -212,24 +212,20 @@ export class IsometricRenderer {
   }
 
   syncBuildingAnimations(state, now) {
-    const nextIds = new Set(state.buildings.map((building) => building.id));
-    state.buildings.forEach((building) => {
-      if (!this.knownBuildingIds.has(building.id)) {
-        this.animations.registerPlacement(building.id, now, 320);
-        if (this.options.effectsEnabled) {
-          this.particles.emitBurst({
-            x: building.x,
-            z: building.z,
-            kind: 'dust',
-            count: 10,
-            color: 'rgba(193, 153, 104, 0.72)',
-          });
-        }
+    const { nextIds, newBuildings } = diffNewBuildingPlacements(state.buildings, this.knownBuildingIds);
+    newBuildings.forEach((building) => {
+      this.animations.registerPlacement(building.id, now, 320);
+      if (this.options.effectsEnabled) {
+        this.particles.emitBurst({
+          x: building.x,
+          z: building.z,
+          kind: 'dust',
+          count: 10,
+          color: 'rgba(193, 153, 104, 0.72)',
+        });
       }
     });
     this.knownBuildingIds = nextIds;
-
-    this.knownConstructionIds = new Set(state.constructionQueue.map((item) => item.id));
   }
 
   updateColonistInterpolation(state, deltaSeconds) {
