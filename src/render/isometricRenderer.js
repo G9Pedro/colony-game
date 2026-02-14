@@ -1,6 +1,5 @@
 import { dispatchIsometricFrame } from './isometricFrameDispatch.js';
 import { dispatchIsometricDispose, dispatchIsometricResize } from './isometricLifecycleDispatch.js';
-import { updateColonistRenderState } from './colonistInterpolation.js';
 import {
   dispatchIsometricClickSelection,
   dispatchIsometricEntitySelection,
@@ -16,10 +15,11 @@ import {
   buildIsometricRendererDebugStats,
 } from './isometricRendererSnapshots.js';
 import {
-  runIsometricAmbientEffects,
-  runIsometricPlacementEffectSync,
-  runIsometricResourceGainSampling,
-} from './isometricEffectDispatch.js';
+  dispatchIsometricAmbientEffects,
+  dispatchIsometricColonistInterpolation,
+  dispatchIsometricPlacementAnimationSync,
+  dispatchIsometricResourceGainSampling,
+} from './isometricRuntimeDispatch.js';
 import {
   applyIsometricPreviewPosition,
   clearIsometricPreview,
@@ -105,15 +105,15 @@ export class IsometricRenderer {
   }
 
   syncBuildingAnimations(state, now) {
-    this.knownBuildingIds = runIsometricPlacementEffectSync(this, state, now);
+    dispatchIsometricPlacementAnimationSync(this, state, now);
   }
 
   updateColonistInterpolation(state, deltaSeconds) {
-    updateColonistRenderState(state.colonists, this.colonistRenderState, deltaSeconds);
+    dispatchIsometricColonistInterpolation(this, state, deltaSeconds);
   }
 
   sampleResourceGains(state, deltaSeconds) {
-    runIsometricResourceGainSampling(this, state, deltaSeconds);
+    dispatchIsometricResourceGainSampling(this, state, deltaSeconds);
   }
 
   drawBackground(state, width, height, daylight) {
@@ -133,7 +133,7 @@ export class IsometricRenderer {
   }
 
   maybeEmitBuildingEffects(state, deltaSeconds) {
-    runIsometricAmbientEffects(this, state, deltaSeconds);
+    dispatchIsometricAmbientEffects(this, state, deltaSeconds);
   }
 
   drawEntities(state, now, daylight) {
