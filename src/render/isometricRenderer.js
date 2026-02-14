@@ -172,7 +172,6 @@ export class IsometricRenderer {
   }
 
   render(state) {
-    this.lastState = state;
     dispatchIsometricFrame(this, state);
   }
 }

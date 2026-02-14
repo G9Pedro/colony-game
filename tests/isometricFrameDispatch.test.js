@@ -35,5 +35,6 @@ test('dispatchIsometricFrame builds invocation, runs frame, and applies frame st
     { method: 'runFrame', invocation: { id: 'invocation' } },
     { method: 'applyFrameState', nextRenderer: renderer, frame: frameResult },
   ]);
+  assert.equal(renderer.lastState, state);
 });
 
