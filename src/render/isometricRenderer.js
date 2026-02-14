@@ -14,6 +14,7 @@ import { runIsometricFrameDraw } from './isometricFrameDraw.js';
 import { runIsometricFrameDynamics } from './isometricFrameDynamics.js';
 import { InteractionController } from './interactionController.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
+import { buildIsometricCameraStatePayload, buildIsometricDebugStatsPayload } from './isometricRendererViewState.js';
 import {
   emitAmbientBuildingEffects,
   maybeEmitResourceGainFloatingText,
@@ -163,20 +164,16 @@ export class IsometricRenderer {
   }
 
   getCameraState() {
-    return normalizeCameraState(this.camera.getState(), {
-      mode: 'isometric',
-      projection: 'isometric',
-    });
+    return normalizeCameraState(buildIsometricCameraStatePayload(this.camera.getState()));
   }
 
   getDebugStats() {
-    return createDebugStats({
-      mode: 'isometric',
-      fps: this.smoothedFps,
+    return createDebugStats(buildIsometricDebugStatsPayload({
+      smoothedFps: this.smoothedFps,
       quality: this.qualityController.getQuality(),
-      particles: this.particles.particles.length,
+      particleCount: this.particles.particles.length,
       particleCap: this.particles.maxParticles,
-    });
+    }));
   }
 
   updateHoverSelection(localX, localY) {
