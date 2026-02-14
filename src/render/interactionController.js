@@ -1,4 +1,10 @@
 import { mapClientToLocalPoint, resolveInteractionPoint } from './interactionPointResolver.js';
+import {
+  applyInteractionControllerEventBindings,
+  bindInteractionControllerEvents,
+  createInteractionControllerEventBindings,
+  unbindInteractionControllerEvents,
+} from './interactionControllerLifecycle.js';
 
 export { mapClientToLocalPoint };
 
@@ -26,36 +32,12 @@ export class InteractionController {
       lastY: 0,
     };
 
-    this.boundPointerDown = (event) => this.handlePointerDown(event);
-    this.boundPointerMove = (event) => this.handlePointerMove(event);
-    this.boundPointerUp = (event) => this.handlePointerUp(event);
-    this.boundPointerCancel = () => this.handlePointerCancel();
-    this.boundWheel = (event) => this.handleWheel(event);
-    this.boundTouchStart = (event) => this.handleTouchStart(event);
-    this.boundTouchMove = (event) => this.handleTouchMove(event);
-    this.boundTouchEnd = () => this.handleTouchEnd();
-
-    this.canvas.addEventListener('pointerdown', this.boundPointerDown);
-    this.canvas.addEventListener('pointermove', this.boundPointerMove);
-    this.canvas.addEventListener('pointerup', this.boundPointerUp);
-    this.canvas.addEventListener('pointercancel', this.boundPointerCancel);
-    this.canvas.addEventListener('pointerleave', this.boundPointerCancel);
-    this.canvas.addEventListener('wheel', this.boundWheel, { passive: false });
-    this.canvas.addEventListener('touchstart', this.boundTouchStart, { passive: false });
-    this.canvas.addEventListener('touchmove', this.boundTouchMove, { passive: false });
-    this.canvas.addEventListener('touchend', this.boundTouchEnd, { passive: false });
+    applyInteractionControllerEventBindings(this, createInteractionControllerEventBindings(this));
+    bindInteractionControllerEvents(this.canvas, this);
   }
 
   dispose() {
-    this.canvas.removeEventListener('pointerdown', this.boundPointerDown);
-    this.canvas.removeEventListener('pointermove', this.boundPointerMove);
-    this.canvas.removeEventListener('pointerup', this.boundPointerUp);
-    this.canvas.removeEventListener('pointercancel', this.boundPointerCancel);
-    this.canvas.removeEventListener('pointerleave', this.boundPointerCancel);
-    this.canvas.removeEventListener('wheel', this.boundWheel);
-    this.canvas.removeEventListener('touchstart', this.boundTouchStart);
-    this.canvas.removeEventListener('touchmove', this.boundTouchMove);
-    this.canvas.removeEventListener('touchend', this.boundTouchEnd);
+    unbindInteractionControllerEvents(this.canvas, this);
   }
 
   handlePointerDown(event) {
