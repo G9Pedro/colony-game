@@ -7,6 +7,7 @@ import { Minimap } from './minimap.js';
 import { NotificationCenter } from './notifications.js';
 import { formatRenderStatsLabel } from './renderStatsLabel.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
+import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
 import { buildUiControllerHudState, toggleBuildSelection } from './uiControllerViewState.js';
 import { buildTopSummary, getRendererModeLabel, getStatusBannerMessage } from './uiViewState.js';
 
@@ -97,44 +98,13 @@ export class UIController {
   }
 
   bindGlobalActions() {
-    this.el.pauseBtn.addEventListener('click', () => this.engine.togglePause());
-    this.el.speedButtons[0].addEventListener('click', () => this.engine.setSpeed(1));
-    this.el.speedButtons[1].addEventListener('click', () => this.engine.setSpeed(2));
-    this.el.speedButtons[2].addEventListener('click', () => this.engine.setSpeed(4));
-    this.el.hireBtn.addEventListener('click', () => {
-      const result = this.engine.hireColonist();
-      if (!result.ok) {
-        this.pushNotification({ kind: 'error', message: result.message });
-      }
-    });
-
-    this.el.saveBtn.addEventListener('click', () => this.callbacks.onSave());
-    this.el.loadBtn.addEventListener('click', () => this.callbacks.onLoad());
-    this.el.exportBtn.addEventListener('click', () => this.callbacks.onExport());
-    this.el.importBtn.addEventListener('click', () => this.el.importFileInput.click());
-    this.el.importFileInput.addEventListener('change', async (event) => {
-      const [file] = event.target.files;
-      if (!file) {
-        return;
-      }
-      await this.callbacks.onImport(file);
-      event.target.value = '';
-    });
-    this.el.resetBtn.addEventListener('click', () => this.callbacks.onReset());
-    this.el.scenarioSelect.addEventListener('change', (event) =>
-      this.callbacks.onScenarioChange(event.target.value),
-    );
-    this.el.balanceProfileSelect.addEventListener('change', (event) =>
-      this.callbacks.onBalanceProfileChange(event.target.value),
-    );
-    this.el.rendererModeSelect.addEventListener('change', (event) => {
-      const success = this.callbacks.onRendererModeChange(event.target.value);
-      if (!success) {
-        this.pushNotification({
-          kind: 'warn',
-          message: 'Requested renderer mode is unavailable. Falling back to isometric.',
-        });
-      }
+    bindUIGlobalActions({
+      elements: this.el,
+      engine: this.engine,
+      getCallbacks: () => this.callbacks,
+      pushNotification: (payload) => {
+        this.pushNotification(payload);
+      },
     });
   }
 
