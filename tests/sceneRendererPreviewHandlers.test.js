@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applySceneRendererPreviewPosition, clearSceneRendererPreview } from '../src/render/sceneRendererPreviewHandlers.js';
+import {
+  applySceneRendererPreviewPosition,
+  clearSceneRendererPreview,
+  updateSceneRendererPlacementMarker,
+} from '../src/render/sceneRendererPreviewHandlers.js';
 
 function createSceneRendererStub() {
   const calls = [];
@@ -51,5 +55,15 @@ test('scene renderer preview helpers tolerate missing active renderer', () => {
 
   assert.doesNotThrow(() => clearSceneRendererPreview(renderer));
   assert.equal(renderer.preview, null);
+});
+
+test('updateSceneRendererPlacementMarker delegates to preview position application', () => {
+  const renderer = createSceneRendererStub();
+  const position = { x: 8, z: 3 };
+
+  updateSceneRendererPlacementMarker(renderer, position, true);
+
+  assert.deepEqual(renderer.preview, { position, valid: true });
+  assert.deepEqual(renderer.calls, [{ method: 'setPreviewPosition', position, valid: true }]);
 });
 

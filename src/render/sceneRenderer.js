@@ -6,7 +6,11 @@ import {
   applySceneRendererPlacementPreviewHandler,
 } from './sceneRendererHandlers.js';
 import { defineSceneRendererCallbackProperties } from './sceneRendererProperties.js';
-import { applySceneRendererPreviewPosition, clearSceneRendererPreview } from './sceneRendererPreviewHandlers.js';
+import {
+  applySceneRendererPreviewPosition,
+  clearSceneRendererPreview,
+  updateSceneRendererPlacementMarker,
+} from './sceneRendererPreviewHandlers.js';
 import { buildSceneRendererCameraState, buildSceneRendererDebugStats } from './sceneRendererSnapshots.js';
 import { dispatchSceneRendererModeChange, getSceneRendererMode } from './sceneRendererModeDispatch.js';
 import {
@@ -86,7 +90,7 @@ export class SceneRenderer {
   }
 
   updatePlacementMarker(position, valid = true) {
-    this.setPreviewPosition(position, valid);
+    updateSceneRendererPlacementMarker(this, position, valid);
   }
 
   centerOnBuilding(building) {

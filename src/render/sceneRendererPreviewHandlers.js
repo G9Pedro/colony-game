@@ -15,3 +15,7 @@ export function clearSceneRendererPreview(renderer) {
   renderer.activeRenderer?.clearPreview();
 }
 
+export function updateSceneRendererPlacementMarker(renderer, position, valid = true) {
+  applySceneRendererPreviewPosition(renderer, position, valid);
+}
+
