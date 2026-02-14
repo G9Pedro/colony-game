@@ -1,12 +1,11 @@
 import { IsometricRenderer } from './isometricRenderer.js';
+import { createFallbackRendererDelegate } from './fallbackRendererRuntime.js';
 
 export class FallbackRenderer {
   constructor(rootElement) {
-    this.delegate = new IsometricRenderer(rootElement, {
-      quality: 'low',
-      effectsEnabled: false,
-      cameraTileWidth: 58,
-      cameraTileHeight: 29,
+    this.delegate = createFallbackRendererDelegate({
+      rootElement,
+      createIsometricRenderer: (target, options) => new IsometricRenderer(target, options),
     });
   }
 
