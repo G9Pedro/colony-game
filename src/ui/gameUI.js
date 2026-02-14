@@ -7,6 +7,7 @@ import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.
 import { renderGameUIBuildCards, renderGameUIBuildCategories } from './gameUIBuildMenuDom.js';
 import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
 import { renderGameUIResourceBar } from './gameUIResourceBarDom.js';
+import { renderGameUISelectDropdown } from './gameUISelectOptions.js';
 import {
   buildGameUIColonistPanelInvocation,
   buildGameUIConstructionQueueInvocation,
@@ -31,21 +32,27 @@ export class GameUI {
   }
 
   setScenarioOptions(scenarios, currentScenarioId) {
-    const rows = buildSelectOptionRows(scenarios, {
+    renderGameUISelectDropdown({
+      selectElement: this.el.scenarioSelect,
+      options: scenarios,
       selectedId: currentScenarioId,
       getId: (scenario) => scenario.id,
       getLabel: (scenario) => scenario.name,
+      buildSelectOptionRows,
+      renderSelectOptions,
     });
-    renderSelectOptions(this.el.scenarioSelect, rows);
   }
 
   setBalanceProfileOptions(profiles, currentProfileId) {
-    const rows = buildSelectOptionRows(profiles, {
+    renderGameUISelectDropdown({
+      selectElement: this.el.balanceProfileSelect,
+      options: profiles,
       selectedId: currentProfileId,
       getId: (profile) => profile.id,
       getLabel: (profile) => profile.name,
+      buildSelectOptionRows,
+      renderSelectOptions,
     });
-    renderSelectOptions(this.el.balanceProfileSelect, rows);
   }
 
   updateResourceRates(state) {
