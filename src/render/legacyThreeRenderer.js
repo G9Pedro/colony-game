@@ -16,6 +16,7 @@ import {
   toPointerLikeTouch,
   toRoundedGroundPoint,
 } from './legacyInteractionPrimitives.js';
+import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { buildEntitySelectionFromObject, clientToNdc } from './legacyRaycastUtils.js';
 import { pickEntitySelectionFromClient, pickGroundPointFromClient } from './legacyRaycastSession.js';
 
@@ -98,28 +99,24 @@ export class LegacyThreeRenderer {
 
   bindEvents() {
     this.boundResize = () => this.resize();
-    window.addEventListener('resize', this.boundResize);
-
     this.boundPointerDown = (event) => this.handlePointerDown(event);
     this.boundPointerMove = (event) => this.handlePointerMove(event);
     this.boundPointerUp = (event) => this.handlePointerUp(event);
     this.boundWheel = (event) => this.handleWheel(event);
-    this.renderer.domElement.addEventListener('pointerdown', this.boundPointerDown);
-    this.renderer.domElement.addEventListener('pointermove', this.boundPointerMove);
-    this.renderer.domElement.addEventListener('pointerup', this.boundPointerUp);
-    this.renderer.domElement.addEventListener('wheel', this.boundWheel, { passive: false });
-
     this.boundTouchStart = (event) => this.handleTouchStart(event);
     this.boundTouchMove = (event) => this.handleTouchMove(event);
     this.boundTouchEnd = () => this.handleTouchEnd();
-    this.renderer.domElement.addEventListener('touchstart', this.boundTouchStart, {
-      passive: false,
-    });
-    this.renderer.domElement.addEventListener('touchmove', this.boundTouchMove, {
-      passive: false,
-    });
-    this.renderer.domElement.addEventListener('touchend', this.boundTouchEnd, {
-      passive: false,
+    this.unbindEvents = bindLegacyRendererEvents({
+      windowObject: window,
+      domElement: this.renderer.domElement,
+      onResize: this.boundResize,
+      onPointerDown: this.boundPointerDown,
+      onPointerMove: this.boundPointerMove,
+      onPointerUp: this.boundPointerUp,
+      onWheel: this.boundWheel,
+      onTouchStart: this.boundTouchStart,
+      onTouchMove: this.boundTouchMove,
+      onTouchEnd: this.boundTouchEnd,
     });
   }
 
@@ -379,25 +376,11 @@ export class LegacyThreeRenderer {
   }
 
   dispose() {
-    window.removeEventListener('resize', this.boundResize);
-    this.renderer.domElement.removeEventListener('pointerdown', this.boundPointerDown);
-    this.renderer.domElement.removeEventListener('pointermove', this.boundPointerMove);
-    this.renderer.domElement.removeEventListener('pointerup', this.boundPointerUp);
-    this.renderer.domElement.removeEventListener('wheel', this.boundWheel);
-    this.renderer.domElement.removeEventListener('touchstart', this.boundTouchStart);
-    this.renderer.domElement.removeEventListener('touchmove', this.boundTouchMove);
-    this.renderer.domElement.removeEventListener('touchend', this.boundTouchEnd);
+    this.unbindEvents?.();
+    this.unbindEvents = null;
 
-    for (const mesh of this.buildingMeshes.values()) {
-      mesh.geometry.dispose();
-      mesh.material.dispose();
-    }
-    for (const mesh of this.colonistMeshes.values()) {
-      mesh.geometry.dispose();
-      mesh.material.dispose();
-    }
-    this.buildingMeshes.clear();
-    this.colonistMeshes.clear();
+    disposeMeshMap(this.buildingMeshes);
+    disposeMeshMap(this.colonistMeshes);
 
     this.renderer.dispose();
     this.renderer.domElement.remove();
