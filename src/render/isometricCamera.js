@@ -14,6 +14,11 @@ import {
   zoomIsometricCameraAtScreenPoint,
 } from './isometricCameraTransforms.js';
 import {
+  clampIsometricCameraCenter,
+  setIsometricCameraViewport,
+  setIsometricCameraWorldRadius,
+} from './isometricCameraLifecycle.js';
+import {
   dispatchIsometricCameraDragEnd,
   dispatchIsometricCameraDragMove,
   dispatchIsometricCameraDragStart,
@@ -50,21 +55,19 @@ export class IsometricCamera {
   }
 
   setViewport(width, height) {
-    this.viewportWidth = Math.max(1, width);
-    this.viewportHeight = Math.max(1, height);
+    setIsometricCameraViewport(this, width, height);
   }
 
   setWorldRadius(radius) {
-    this.worldRadius = Math.max(4, radius);
-    this.clampCenter();
+    setIsometricCameraWorldRadius(this, radius, {
+      clampCenter: clampCameraCenter,
+    });
   }
 
   clampCenter() {
-    const clamped = clampCameraCenter(this.centerX, this.centerZ, {
-      worldRadius: this.worldRadius,
+    clampIsometricCameraCenter(this, {
+      clampCenter: clampCameraCenter,
     });
-    this.centerX = clamped.centerX;
-    this.centerZ = clamped.centerZ;
   }
 
   worldToScreen(x, z) {
