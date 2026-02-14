@@ -20,26 +20,19 @@ import {
   COLONIST_SPRITE_WIDTH,
   DEFAULT_BUILDING_THUMBNAIL_SIZE,
   DEFAULT_RESOURCE_ICON_SIZE,
-  DEFAULT_TILE_HEIGHT,
-  DEFAULT_TILE_WIDTH,
   TERRAIN_TILE_PADDING,
 } from './spriteFactoryLayout.js';
 import { drawBuildingSpriteCanvas } from './spriteBuildingRenderer.js';
 import { drawColonistSprite } from './spriteColonistRenderer.js';
 import { prewarmSpriteFactoryAssets } from './spritePrewarm.js';
 import { drawResourceIconSprite } from './spriteResourceIconRenderer.js';
+import { createSpriteFactoryRuntimeState } from './spriteFactoryRuntimeState.js';
 import { drawTerrainTileSprite } from './spriteTerrainRenderer.js';
 import { drawBuildingThumbnail } from './spriteThumbnailRenderer.js';
 
 export class SpriteFactory {
   constructor({ quality = 'balanced' } = {}) {
-    this.quality = quality;
-    this.tileWidth = DEFAULT_TILE_WIDTH;
-    this.tileHeight = DEFAULT_TILE_HEIGHT;
-    this.buildingSprites = new Map();
-    this.colonistSprites = new Map();
-    this.terrainTiles = new Map();
-    this.resourceIcons = new Map();
+    Object.assign(this, createSpriteFactoryRuntimeState({ quality }));
   }
 
   prewarm(buildingDefinitions = BUILDING_DEFINITIONS) {
