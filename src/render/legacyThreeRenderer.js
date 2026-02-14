@@ -1,7 +1,5 @@
 import * as THREE from '../../node_modules/three/build/three.module.js';
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
-import { normalizeCameraState } from './cameraState.js';
-import { createDebugStats } from './debugStats.js';
 import { applyLegacyCameraPose, computeLegacyCameraPosition } from './legacyCameraPose.js';
 import { createLegacyBuildingMesh, createLegacyColonistMesh } from './legacyMeshFactory.js';
 import { reconcileMeshMap, updateColonistMeshPose } from './legacyEntitySync.js';
@@ -30,16 +28,13 @@ import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
 import { bootstrapLegacyScene } from './legacySceneBootstrap.js';
 import { beginLegacyPinch, endLegacyPinch, updateLegacyPinch } from './legacyTouchState.js';
-import {
-  applyLegacyPreviewMarker,
-  buildLegacyCameraStatePayload,
-  buildLegacyDebugStatsPayload,
-} from './legacyRendererViewState.js';
+import { applyLegacyPreviewMarker } from './legacyRendererViewState.js';
 import {
   createLegacyCameraRig,
   createLegacyInteractionState,
   createLegacyWebGLRenderer,
 } from './legacyRendererBootstrap.js';
+import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import { centerLegacyCameraOnBuilding, resizeLegacyRendererViewport } from './legacyRendererViewport.js';
 import { pickLegacyEntityAtClient, pickLegacyGroundAtClient } from './legacyScreenPickers.js';
 
@@ -252,15 +247,15 @@ export class LegacyThreeRenderer {
   }
 
   getCameraState() {
-    const payload = buildLegacyCameraStatePayload(this.rootElement, this.cameraTarget, 30);
-    return normalizeCameraState(payload, {
-      mode: 'three',
-      projection: 'perspective',
+    return buildLegacyCameraState({
+      rootElement: this.rootElement,
+      cameraTarget: this.cameraTarget,
+      worldRadius: 30,
     });
   }
 
   getDebugStats() {
-    return createDebugStats(buildLegacyDebugStatsPayload(this.smoothedFps));
+    return buildLegacyDebugStats(this.smoothedFps);
   }
 
   syncBuildings(state) {
