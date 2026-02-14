@@ -7,6 +7,11 @@ import { GameEngine } from './game/gameEngine.js';
 import { isBuildingUnlocked } from './game/selectors.js';
 import { loadGameState, saveGameState, validateSaveState, clearSavedGame } from './persistence/saveLoad.js';
 import { downloadStateSnapshot, readStateFromFile } from './persistence/fileTransfer.js';
+import {
+  createMainNotifier,
+  emitMainStartupNotifications,
+  registerEngineNotifications,
+} from './mainNotifications.js';
 import { FallbackRenderer } from './render/fallbackRenderer.js';
 import { SceneRenderer } from './render/sceneRenderer.js';
 import { isPlacementValid } from './systems/constructionSystem.js';
@@ -40,33 +45,8 @@ ui.setRendererModeOptions(renderer.getAvailableModes?.() ?? ['isometric'], rende
 ui.setScenarioOptions(Object.values(SCENARIO_DEFINITIONS), engine.state.scenarioId);
 ui.setBalanceProfileOptions(Object.values(BALANCE_PROFILE_DEFINITIONS), engine.state.balanceProfileId);
 
-const recentMessages = new Map();
-
-function notify(payload) {
-  const key = payload.message;
-  const now = Date.now();
-  const lastShown = recentMessages.get(key) ?? 0;
-  if (now - lastShown < 1800) {
-    return;
-  }
-  recentMessages.set(key, now);
-  ui.pushNotification(payload);
-}
-
-engine.on('construction-complete', notify);
-engine.on('construction-queued', notify);
-engine.on('colonist-hired', notify);
-engine.on('colonist-death', notify);
-engine.on('research-started', notify);
-engine.on('research-complete', notify);
-engine.on('objective-complete', notify);
-engine.on('storage-overflow', notify);
-engine.on('game-over', notify);
-engine.on('game-reset', notify);
-engine.on('state-loaded', notify);
-engine.on('scenario-change', notify);
-engine.on('balance-profile-change', notify);
-engine.on('state-invalid', notify);
+const notify = createMainNotifier({ ui });
+registerEngineNotifications(engine, notify);
 
 ui.setPersistenceCallbacks({
   onSave: () => {
@@ -205,15 +185,9 @@ function gameLoop(timestamp) {
 }
 
 ui.render(engine.state);
-notify({ kind: 'success', message: 'Colony simulation initialized.' });
-notify({
-  kind: 'warn',
-  message: `Simulation seed: ${engine.state.rngSeed}`,
+emitMainStartupNotifications({
+  notify,
+  rngSeed: engine.state.rngSeed,
+  usingFallbackRenderer,
 });
-if (usingFallbackRenderer) {
-  notify({
-    kind: 'warn',
-    message: 'WebGL unavailable. Running in fallback 2D renderer mode.',
-  });
-}
 requestAnimationFrame(gameLoop);
