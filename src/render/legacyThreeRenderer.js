@@ -22,6 +22,7 @@ import { applyLegacyPreviewMarker } from './legacyRendererViewState.js';
 import { buildLegacyFrameInvocation } from './legacyFrameInvocation.js';
 import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
+import { buildLegacyDisposeInvocation } from './legacyDisposeInvocation.js';
 import { dispatchLegacyEntityPick, dispatchLegacyGroundPick } from './legacyPickerDispatch.js';
 import {
   applyRendererEntitySelectHandler,
@@ -164,15 +165,7 @@ export class LegacyThreeRenderer {
   }
 
   dispose() {
-    disposeLegacyRendererRuntime({
-      unbindEvents: this.unbindEvents,
-      setUnbindEvents: (value) => {
-        this.unbindEvents = value;
-      },
-      buildingMeshes: this.buildingMeshes,
-      colonistMeshes: this.colonistMeshes,
-      renderer: this.renderer,
-    });
+    disposeLegacyRendererRuntime(buildLegacyDisposeInvocation(this));
   }
 }
 
