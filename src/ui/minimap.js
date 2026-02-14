@@ -1,8 +1,5 @@
 import { screenToWorldPoint } from '../render/isometricCamera.js';
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+import { minimapPointToWorld, worldToMinimapPoint } from './minimapGeometry.js';
 
 export class Minimap {
   constructor(canvas, { onCenterRequest } = {}) {
@@ -13,20 +10,34 @@ export class Minimap {
 
     this.canvas.addEventListener('click', (event) => {
       const rect = this.canvas.getBoundingClientRect();
-      const nx = (event.clientX - rect.left) / rect.width;
-      const nz = (event.clientY - rect.top) / rect.height;
-      const x = (nx * 2 - 1) * this.worldRadius;
-      const z = (nz * 2 - 1) * this.worldRadius;
-      this.onCenterRequest({ x, z });
+      this.onCenterRequest(minimapPointToWorld({
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+        worldRadius: this.worldRadius,
+        width: rect.width,
+        height: rect.height,
+      }));
     });
   }
 
   toMinimapX(x) {
-    return ((x / this.worldRadius) * 0.5 + 0.5) * this.canvas.width;
+    return worldToMinimapPoint({
+      x,
+      z: 0,
+      worldRadius: this.worldRadius,
+      width: this.canvas.width,
+      height: this.canvas.height,
+    }).x;
   }
 
   toMinimapY(z) {
-    return ((z / this.worldRadius) * 0.5 + 0.5) * this.canvas.height;
+    return worldToMinimapPoint({
+      x: 0,
+      z,
+      worldRadius: this.worldRadius,
+      width: this.canvas.width,
+      height: this.canvas.height,
+    }).y;
   }
 
   drawViewport(cameraState) {
@@ -97,8 +108,15 @@ export class Minimap {
     if (!cameraState) {
       return;
     }
-    const x = this.toMinimapX(clamp(cameraState.centerX ?? 0, -this.worldRadius, this.worldRadius));
-    const y = this.toMinimapY(clamp(cameraState.centerZ ?? 0, -this.worldRadius, this.worldRadius));
+    const point = worldToMinimapPoint({
+      x: cameraState.centerX ?? 0,
+      z: cameraState.centerZ ?? 0,
+      worldRadius: this.worldRadius,
+      width: this.canvas.width,
+      height: this.canvas.height,
+    });
+    const x = point.x;
+    const y = point.y;
     this.ctx.save();
     this.ctx.strokeStyle = 'rgba(244, 223, 173, 0.85)';
     this.ctx.lineWidth = 1.2;
@@ -129,14 +147,28 @@ export class Minimap {
     this.ctx.strokeRect(0.5, 0.5, this.canvas.width - 1, this.canvas.height - 1);
 
     state.buildings.forEach((building) => {
-      const x = this.toMinimapX(clamp(building.x, -this.worldRadius, this.worldRadius));
-      const y = this.toMinimapY(clamp(building.z, -this.worldRadius, this.worldRadius));
+      const point = worldToMinimapPoint({
+        x: building.x,
+        z: building.z,
+        worldRadius: this.worldRadius,
+        width: this.canvas.width,
+        height: this.canvas.height,
+      });
+      const x = point.x;
+      const y = point.y;
       this.ctx.fillStyle = '#e6ccb2';
       this.ctx.fillRect(x - 1.8, y - 1.8, 3.6, 3.6);
     });
     state.constructionQueue.forEach((item) => {
-      const x = this.toMinimapX(clamp(item.x, -this.worldRadius, this.worldRadius));
-      const y = this.toMinimapY(clamp(item.z, -this.worldRadius, this.worldRadius));
+      const point = worldToMinimapPoint({
+        x: item.x,
+        z: item.z,
+        worldRadius: this.worldRadius,
+        width: this.canvas.width,
+        height: this.canvas.height,
+      });
+      const x = point.x;
+      const y = point.y;
       this.ctx.fillStyle = '#d8a65f';
       this.ctx.fillRect(x - 1.8, y - 1.8, 3.6, 3.6);
     });
@@ -145,8 +177,15 @@ export class Minimap {
       if (!colonist.alive) {
         return;
       }
-      const x = this.toMinimapX(clamp(colonist.position.x, -this.worldRadius, this.worldRadius));
-      const y = this.toMinimapY(clamp(colonist.position.z, -this.worldRadius, this.worldRadius));
+      const point = worldToMinimapPoint({
+        x: colonist.position.x,
+        z: colonist.position.z,
+        worldRadius: this.worldRadius,
+        width: this.canvas.width,
+        height: this.canvas.height,
+      });
+      const x = point.x;
+      const y = point.y;
       this.ctx.fillStyle = '#9dd4f9';
       this.ctx.beginPath();
       this.ctx.arc(x, y, 1.2, 0, Math.PI * 2);
@@ -154,8 +193,15 @@ export class Minimap {
     });
 
     if (selectedEntity) {
-      const x = this.toMinimapX(clamp(selectedEntity.x ?? 0, -this.worldRadius, this.worldRadius));
-      const y = this.toMinimapY(clamp(selectedEntity.z ?? 0, -this.worldRadius, this.worldRadius));
+      const point = worldToMinimapPoint({
+        x: selectedEntity.x ?? 0,
+        z: selectedEntity.z ?? 0,
+        worldRadius: this.worldRadius,
+        width: this.canvas.width,
+        height: this.canvas.height,
+      });
+      const x = point.x;
+      const y = point.y;
       this.ctx.strokeStyle = 'rgba(255, 243, 188, 0.92)';
       this.ctx.lineWidth = 1.3;
       this.ctx.beginPath();
