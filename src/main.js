@@ -5,13 +5,13 @@ import { RESOURCE_DEFINITIONS } from './content/resources.js';
 import { RESEARCH_DEFINITIONS } from './content/research.js';
 import { GameEngine } from './game/gameEngine.js';
 import { isBuildingUnlocked } from './game/selectors.js';
-import { loadGameState, saveGameState, validateSaveState, clearSavedGame } from './persistence/saveLoad.js';
-import { downloadStateSnapshot, readStateFromFile } from './persistence/fileTransfer.js';
+import { saveGameState } from './persistence/saveLoad.js';
 import {
   createMainNotifier,
   emitMainStartupNotifications,
   registerEngineNotifications,
 } from './mainNotifications.js';
+import { createMainPersistenceCallbacks } from './mainPersistenceCallbacks.js';
 import { FallbackRenderer } from './render/fallbackRenderer.js';
 import { SceneRenderer } from './render/sceneRenderer.js';
 import { isPlacementValid } from './systems/constructionSystem.js';
@@ -47,78 +47,12 @@ ui.setBalanceProfileOptions(Object.values(BALANCE_PROFILE_DEFINITIONS), engine.s
 
 const notify = createMainNotifier({ ui });
 registerEngineNotifications(engine, notify);
-
-ui.setPersistenceCallbacks({
-  onSave: () => {
-    saveGameState(engine.snapshot());
-    notify({ kind: 'success', message: 'Game saved.' });
-  },
-  onLoad: () => {
-    const loaded = loadGameState();
-    if (!loaded) {
-      notify({ kind: 'error', message: 'No save found.' });
-      return;
-    }
-    const validation = validateSaveState(loaded);
-    if (!validation.ok) {
-      notify({ kind: 'error', message: `Save invalid: ${validation.errors[0]}` });
-      return;
-    }
-    const result = engine.loadState(loaded);
-    if (!result.ok) {
-      notify({ kind: 'error', message: `Failed to load save: ${result.message}` });
-      return;
-    }
-    ui.setSelectedBuildType(null);
-  },
-  onExport: () => {
-    downloadStateSnapshot(engine.snapshot());
-    notify({ kind: 'success', message: 'Save exported to file.' });
-  },
-  onImport: async (file) => {
-    try {
-      const loaded = await readStateFromFile(file);
-      const validation = validateSaveState(loaded);
-      if (!validation.ok) {
-        notify({ kind: 'error', message: `Imported save invalid: ${validation.errors[0]}` });
-        return;
-      }
-      const result = engine.loadState(loaded);
-      if (!result.ok) {
-        notify({ kind: 'error', message: `Failed to load imported save: ${result.message}` });
-        return;
-      }
-      ui.setSelectedBuildType(null);
-      notify({ kind: 'success', message: 'Save imported successfully.' });
-    } catch (error) {
-      notify({ kind: 'error', message: error?.message ?? 'Failed to import save file.' });
-    }
-  },
-  onReset: () => {
-    clearSavedGame();
-    engine.reset();
-    ui.setSelectedBuildType(null);
-  },
-  onScenarioChange: (scenarioId) => {
-    engine.setScenario(scenarioId);
-    ui.setSelectedBuildType(null);
-  },
-  onBalanceProfileChange: (balanceProfileId) => {
-    engine.setBalanceProfile(balanceProfileId);
-    ui.setSelectedBuildType(null);
-  },
-  onRendererModeChange: (mode) => {
-    const switched = renderer.setRendererMode?.(mode) ?? false;
-    ui.attachRenderer(renderer);
-    if (switched) {
-      notify({
-        kind: 'success',
-        message: `Renderer switched to ${renderer.getRendererMode?.() ?? mode}.`,
-      });
-    }
-    return switched;
-  },
-});
+ui.setPersistenceCallbacks(createMainPersistenceCallbacks({
+  engine,
+  ui,
+  renderer,
+  notify,
+}));
 
 renderer.setGroundClickHandler((point) => {
   const buildingType = engine.state.selectedBuildingType;
