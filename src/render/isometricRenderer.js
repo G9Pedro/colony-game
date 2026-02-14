@@ -8,6 +8,13 @@ import { buildEntityRenderPass } from './entityRenderPass.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { InteractionController } from './interactionController.js';
+import {
+  createIndustrialSmokeBurst,
+  createMysticSparkleBurst,
+  shouldEmitIndustrialSmoke,
+  shouldEmitMysticSparkle,
+} from './effectPolicies.js';
+import { pickBestInteractiveEntityHit } from './interactionHitTest.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
 import { getDaylightFactor, getResourceGains, getSeasonTint } from './stateVisuals.js';
 import { TerrainLayerRenderer } from './terrainLayer.js';
@@ -204,23 +211,7 @@ export class IsometricRenderer {
   }
 
   hitTestEntity(localX, localY) {
-    let best = null;
-    for (const item of this.interactiveEntities) {
-      const dx = localX - item.centerX;
-      const dy = localY - item.centerY;
-      if (Math.abs(dx) > item.halfWidth || Math.abs(dy) > item.halfHeight) {
-        continue;
-      }
-      const distance = Math.hypot(dx, dy);
-      if (!best || item.depth > best.depth || (item.depth === best.depth && distance < best.distance)) {
-        best = {
-          entity: item.entity,
-          depth: item.depth,
-          distance,
-        };
-      }
-    }
-    return best;
+    return pickBestInteractiveEntityHit(this.interactiveEntities, localX, localY);
   }
 
   syncBuildingAnimations(state, now) {
@@ -324,23 +315,11 @@ export class IsometricRenderer {
     const qualityMultiplier = this.qualityController.getParticleMultiplier();
     const smokeRate = deltaSeconds * 0.75 * qualityMultiplier;
     state.buildings.forEach((building) => {
-      if ((building.type === 'workshop' || building.type === 'ironMine') && Math.random() < smokeRate) {
-        this.particles.emitBurst({
-          x: building.x + 0.3,
-          z: building.z - 0.2,
-          kind: 'smoke',
-          count: Math.max(1, Math.round(2 * qualityMultiplier)),
-          color: 'rgba(185, 188, 196, 0.45)',
-        });
+      if (shouldEmitIndustrialSmoke(building.type, Math.random(), smokeRate)) {
+        this.particles.emitBurst(createIndustrialSmokeBurst(building, qualityMultiplier));
       }
-      if ((building.type === 'shrine' || building.type === 'library') && Math.random() < smokeRate * 0.5) {
-        this.particles.emitBurst({
-          x: building.x,
-          z: building.z,
-          kind: 'sparkle',
-          count: 1,
-          color: 'rgba(253, 235, 177, 0.65)',
-        });
+      if (shouldEmitMysticSparkle(building.type, Math.random(), smokeRate)) {
+        this.particles.emitBurst(createMysticSparkleBurst(building));
       }
     });
   }
