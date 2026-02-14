@@ -1,6 +1,6 @@
-import { createSpriteCanvas, getSpriteContext2D } from './spriteCanvasFactory.js';
 import { drawBuildingSpriteCanvas } from './spriteBuildingRenderer.js';
 import { drawColonistSprite } from './spriteColonistRenderer.js';
+import { createSpriteEntrySurface } from './spriteEntrySurface.js';
 import { drawResourceIconSprite } from './spriteResourceIconRenderer.js';
 import { drawTerrainTileSprite } from './spriteTerrainRenderer.js';
 import { drawBuildingThumbnail } from './spriteThumbnailRenderer.js';
@@ -12,11 +12,11 @@ export function createTerrainTileEntry({
   kind,
   variant,
 }, deps = {}) {
-  const createCanvas = deps.createCanvas ?? createSpriteCanvas;
-  const getContext = deps.getContext ?? getSpriteContext2D;
   const drawTile = deps.drawTile ?? drawTerrainTileSprite;
-  const canvas = createCanvas(tileWidth + tilePadding, tileHeight + tilePadding);
-  const ctx = getContext(canvas);
+  const { canvas, ctx } = createSpriteEntrySurface({
+    width: tileWidth + tilePadding,
+    height: tileHeight + tilePadding,
+  }, deps);
   drawTile({
     ctx,
     canvasWidth: canvas.width,
@@ -38,11 +38,11 @@ export function createBuildingSpriteEntry({
   buildingDefinitions,
   buildingStyleOverrides,
 }, deps = {}) {
-  const createCanvas = deps.createCanvas ?? createSpriteCanvas;
-  const getContext = deps.getContext ?? getSpriteContext2D;
   const drawBuilding = deps.drawBuilding ?? drawBuildingSpriteCanvas;
-  const canvas = createCanvas(spriteWidth, spriteHeight);
-  const ctx = getContext(canvas);
+  const { canvas, ctx } = createSpriteEntrySurface({
+    width: spriteWidth,
+    height: spriteHeight,
+  }, deps);
   const definition = buildingDefinitions[type];
   const override = buildingStyleOverrides[type] ?? {};
   const spriteMetrics = drawBuilding({
@@ -66,11 +66,11 @@ export function createBuildingThumbnailEntry({
   source,
   size,
 }, deps = {}) {
-  const createCanvas = deps.createCanvas ?? createSpriteCanvas;
-  const getContext = deps.getContext ?? getSpriteContext2D;
   const drawThumbnail = deps.drawThumbnail ?? drawBuildingThumbnail;
-  const canvas = createCanvas(size, size);
-  const ctx = getContext(canvas);
+  const { canvas, ctx } = createSpriteEntrySurface({
+    width: size,
+    height: size,
+  }, deps);
   drawThumbnail(ctx, source, size);
   return canvas;
 }
@@ -82,11 +82,8 @@ export function createColonistSpriteEntry({
   width,
   height,
 }, deps = {}) {
-  const createCanvas = deps.createCanvas ?? createSpriteCanvas;
-  const getContext = deps.getContext ?? getSpriteContext2D;
   const drawColonist = deps.drawColonist ?? drawColonistSprite;
-  const canvas = createCanvas(width, height);
-  const ctx = getContext(canvas);
+  const { canvas, ctx } = createSpriteEntrySurface({ width, height }, deps);
   drawColonist(ctx, { job, frame, idle });
   return canvas;
 }
@@ -95,11 +92,11 @@ export function createResourceIconEntry({
   resourceKey,
   size,
 }, deps = {}) {
-  const createCanvas = deps.createCanvas ?? createSpriteCanvas;
-  const getContext = deps.getContext ?? getSpriteContext2D;
   const drawResourceIcon = deps.drawResourceIcon ?? drawResourceIconSprite;
-  const canvas = createCanvas(size, size);
-  const ctx = getContext(canvas);
+  const { canvas, ctx } = createSpriteEntrySurface({
+    width: size,
+    height: size,
+  }, deps);
   drawResourceIcon(ctx, { resourceKey, size });
   return canvas;
 }
