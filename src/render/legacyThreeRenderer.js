@@ -25,9 +25,11 @@ import { handleLegacyPointerUpEvent } from './legacyPointerUpHandler.js';
 import { beginLegacyPointerDrag, updateLegacyPointerDrag } from './legacyPointerState.js';
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
+import { applyLegacyRendererEventSession } from './legacyRendererEventState.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
 import { beginLegacyPinch, endLegacyPinch, updateLegacyPinch } from './legacyTouchState.js';
 import { applyLegacyPreviewMarker } from './legacyRendererViewState.js';
+import { buildLegacyFrameInvocation } from './legacyFrameInvocation.js';
 import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import { centerLegacyCameraOnBuilding, resizeLegacyRendererViewport } from './legacyRendererViewport.js';
@@ -84,15 +86,7 @@ export class LegacyThreeRenderer {
       onTouchEnd: () => this.handleTouchEnd(),
       bindEvents: bindLegacyRendererEvents,
     });
-    this.boundResize = session.handlers.onResize;
-    this.boundPointerDown = session.handlers.onPointerDown;
-    this.boundPointerMove = session.handlers.onPointerMove;
-    this.boundPointerUp = session.handlers.onPointerUp;
-    this.boundWheel = session.handlers.onWheel;
-    this.boundTouchStart = session.handlers.onTouchStart;
-    this.boundTouchMove = session.handlers.onTouchMove;
-    this.boundTouchEnd = session.handlers.onTouchEnd;
-    this.unbindEvents = session.unbindEvents;
+    applyLegacyRendererEventSession(this, session);
   }
 
   updateCamera() {
@@ -266,15 +260,11 @@ export class LegacyThreeRenderer {
   }
 
   render(state) {
-    const frame = runLegacyFrame({
+    const frame = runLegacyFrame(buildLegacyFrameInvocation({
+      renderer: this,
       state,
       now: performance.now(),
-      lastFrameAt: this.lastFrameAt,
-      smoothedFps: this.smoothedFps,
-      syncBuildings: (nextState) => this.syncBuildings(nextState),
-      syncColonists: (nextState) => this.syncColonists(nextState),
-      renderScene: () => this.renderer.render(this.scene, this.camera),
-    });
+    }));
     this.lastFrameAt = frame.nextLastFrameAt;
     this.smoothedFps = frame.nextSmoothedFps;
   }
