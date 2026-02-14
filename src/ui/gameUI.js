@@ -1,21 +1,19 @@
 import { getBuildingCardState } from './buildingAvailability.js';
 import { buildBuildCardRows, buildCategoryPillRows } from './buildMenuViewState.js';
-import { renderColonistPanel, renderConstructionQueuePanel, renderResearchPanels } from './colonyPanelsDom.js';
-import { renderObjectivesPanel, renderRunStatsPanel, renderSelectionPanel } from './infoPanelsDom.js';
 import { buildResourceBarRows } from './resourceBarViewState.js';
 import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { renderGameUIBuildCards, renderGameUIBuildCategories } from './gameUIBuildMenuDom.js';
 import { createBuildCardElement, createBuildCategoryButton, createResourceChipElement } from './gameUICardElements.js';
+import {
+  dispatchGameUIColonistPanel,
+  dispatchGameUIConstructionQueuePanel,
+  dispatchGameUIObjectivesPanel,
+  dispatchGameUIResearchPanel,
+  dispatchGameUIRunStatsPanel,
+  dispatchGameUISelectionPanel,
+} from './gameUIPanelDispatch.js';
 import { renderGameUIResourceBar } from './gameUIResourceBarDom.js';
 import { renderGameUISelectDropdown } from './gameUISelectOptions.js';
-import {
-  buildGameUIColonistPanelInvocation,
-  buildGameUIConstructionQueueInvocation,
-  buildGameUIObjectivesPanelInvocation,
-  buildGameUIResearchPanelInvocation,
-  buildGameUIRunStatsPanelInvocation,
-  buildGameUISelectionPanelInvocation,
-} from './gameUIPanelInvocations.js';
 import { createGameUIRuntime } from './gameUIRuntime.js';
 import { renderGameUISpeedButtons, renderGameUITopState } from './gameUITopBarDom.js';
 import { buildClockLabel, buildPauseButtonLabel, buildSpeedButtonStates } from './topBarViewState.js';
@@ -130,34 +128,34 @@ export class GameUI {
   }
 
   renderResearch(state, getAvailableResearch, onStartResearch) {
-    renderResearchPanels(buildGameUIResearchPanelInvocation(this, state, getAvailableResearch, onStartResearch));
+    dispatchGameUIResearchPanel(this, state, getAvailableResearch, onStartResearch);
   }
 
   renderConstructionQueue(state) {
-    renderConstructionQueuePanel(buildGameUIConstructionQueueInvocation(this, state));
+    dispatchGameUIConstructionQueuePanel(this, state);
   }
 
   renderColonists(state) {
-    renderColonistPanel(buildGameUIColonistPanelInvocation(this, state));
+    dispatchGameUIColonistPanel(this, state);
   }
 
   renderObjectives(state, objectives, rewardMultiplier, formatObjectiveReward, getCurrentObjectiveIds) {
-    renderObjectivesPanel(buildGameUIObjectivesPanelInvocation(
+    dispatchGameUIObjectivesPanel(
       this,
       state,
       objectives,
       rewardMultiplier,
       formatObjectiveReward,
       getCurrentObjectiveIds,
-    ));
+    );
   }
 
   renderRunStats(state) {
-    renderRunStatsPanel(buildGameUIRunStatsPanelInvocation(this, state));
+    dispatchGameUIRunStatsPanel(this, state);
   }
 
   renderSelection(selection, state) {
-    renderSelectionPanel(buildGameUISelectionPanelInvocation(this, selection, state));
+    dispatchGameUISelectionPanel(this, selection, state);
   }
 }
 
