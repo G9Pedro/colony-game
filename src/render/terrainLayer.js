@@ -5,44 +5,10 @@ import {
   createTerrainLayerRefreshPayload,
 } from './terrainLayerCache.js';
 import { resolveTerrainLayerBounds } from './terrainLayerBounds.js';
+import { shouldRefreshTerrainCache } from './terrainLayerRefreshPolicy.js';
 import { paintTerrainTiles } from './terrainTilePainter.js';
 export { resolveTerrainKind } from './terrainTilePolicies.js';
-
-export function shouldRefreshTerrainCache(cache, {
-  centerX,
-  centerZ,
-  zoom,
-  minX,
-  maxX,
-  minZ,
-  maxZ,
-  width,
-  height,
-  dpr,
-  signature,
-}) {
-  if (!cache.valid) {
-    return true;
-  }
-  if (cache.width !== width || cache.height !== height) {
-    return true;
-  }
-  if (cache.dpr !== dpr) {
-    return true;
-  }
-
-  const centerDelta = Math.hypot(cache.centerX - centerX, cache.centerZ - centerZ);
-  const zoomDelta = Math.abs(cache.zoom - zoom);
-  const boundsChanged = cache.minX !== minX
-    || cache.maxX !== maxX
-    || cache.minZ !== minZ
-    || cache.maxZ !== maxZ;
-  if (centerDelta > 0.45 || zoomDelta > 0.04 || boundsChanged) {
-    return true;
-  }
-
-  return cache.buildingSignature !== signature;
-}
+export { shouldRefreshTerrainCache } from './terrainLayerRefreshPolicy.js';
 
 export class TerrainLayerRenderer {
   constructor(spriteFactory) {
