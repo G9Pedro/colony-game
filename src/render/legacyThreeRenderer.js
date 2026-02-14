@@ -26,14 +26,9 @@ import { beginLegacyPointerDrag, updateLegacyPointerDrag } from './legacyPointer
 import { bindLegacyRendererEvents, disposeMeshMap } from './legacyRendererLifecycle.js';
 import { createLegacyRendererEventSession } from './legacyRendererEvents.js';
 import { syncLegacyBuildingMeshes, syncLegacyColonistMeshes } from './legacyRenderSync.js';
-import { bootstrapLegacyScene } from './legacySceneBootstrap.js';
 import { beginLegacyPinch, endLegacyPinch, updateLegacyPinch } from './legacyTouchState.js';
 import { applyLegacyPreviewMarker } from './legacyRendererViewState.js';
-import {
-  createLegacyCameraRig,
-  createLegacyInteractionState,
-  createLegacyWebGLRenderer,
-} from './legacyRendererBootstrap.js';
+import { createLegacyRendererRuntime } from './legacyRendererRuntime.js';
 import { buildLegacyCameraState, buildLegacyDebugStats } from './legacyRendererSnapshots.js';
 import { centerLegacyCameraOnBuilding, resizeLegacyRendererViewport } from './legacyRendererViewport.js';
 import { pickLegacyEntityAtClient, pickLegacyGroundAtClient } from './legacyScreenPickers.js';
@@ -50,41 +45,29 @@ export class LegacyThreeRenderer {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x9ad6f7);
 
-    const cameraRig = createLegacyCameraRig(THREE);
-    this.camera = cameraRig.camera;
-    this.cameraTarget = cameraRig.cameraTarget;
-    this.cameraPolar = cameraRig.cameraPolar;
-    this.updateCamera();
-
-    this.renderer = createLegacyWebGLRenderer({
+    const runtime = createLegacyRendererRuntime({
       rootElement,
+      scene: this.scene,
       three: THREE,
       windowObject: window,
       maxPixelRatio: 2,
     });
+    this.camera = runtime.camera;
+    this.cameraTarget = runtime.cameraTarget;
+    this.cameraPolar = runtime.cameraPolar;
+    this.renderer = runtime.renderer;
+    this.raycaster = runtime.raycaster;
+    this.mouse = runtime.mouse;
+    this.groundPlane = runtime.groundPlane;
+    this.previewMarker = runtime.previewMarker;
+    this.dragState = runtime.dragState;
+    this.touchState = runtime.touchState;
+    this.buildingMeshes = runtime.buildingMeshes;
+    this.colonistMeshes = runtime.colonistMeshes;
 
-    const interactionState = createLegacyInteractionState(THREE);
-    this.raycaster = interactionState.raycaster;
-    this.mouse = interactionState.mouse;
-    this.groundPlane = interactionState.groundPlane;
-    this.previewMarker = interactionState.previewMarker;
-    this.dragState = interactionState.dragState;
-    this.touchState = interactionState.touchState;
-    this.buildingMeshes = interactionState.buildingMeshes;
-    this.colonistMeshes = interactionState.colonistMeshes;
-
-    this.initializeScene();
+    this.updateCamera();
     this.resize();
     this.bindEvents();
-  }
-
-  initializeScene() {
-    const setup = bootstrapLegacyScene({
-      scene: this.scene,
-      three: THREE,
-    });
-    this.groundPlane = setup.groundPlane;
-    this.previewMarker = setup.previewMarker;
   }
 
   bindEvents() {
