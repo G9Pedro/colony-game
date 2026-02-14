@@ -5,6 +5,7 @@ import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
 import { SpriteFactory } from './spriteFactory.js';
+import { collectBuildingEffectBursts } from './buildingEffects.js';
 import { updateColonistRenderState } from './colonistInterpolation.js';
 import { diffNewBuildingPlacements } from './buildingPlacementTracker.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
@@ -12,12 +13,6 @@ import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { InteractionController } from './interactionController.js';
 import { ResourceGainTracker } from './resourceGainTracker.js';
-import {
-  createIndustrialSmokeBurst,
-  createMysticSparkleBurst,
-  shouldEmitIndustrialSmoke,
-  shouldEmitMysticSparkle,
-} from './effectPolicies.js';
 import { pickBestInteractiveEntityHit } from './interactionHitTest.js';
 import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
 import { getDaylightFactor, getSeasonTint } from './stateVisuals.js';
@@ -272,15 +267,11 @@ export class IsometricRenderer {
       return;
     }
     const qualityMultiplier = this.qualityController.getParticleMultiplier();
-    const smokeRate = deltaSeconds * 0.75 * qualityMultiplier;
-    state.buildings.forEach((building) => {
-      if (shouldEmitIndustrialSmoke(building.type, Math.random(), smokeRate)) {
-        this.particles.emitBurst(createIndustrialSmokeBurst(building, qualityMultiplier));
-      }
-      if (shouldEmitMysticSparkle(building.type, Math.random(), smokeRate)) {
-        this.particles.emitBurst(createMysticSparkleBurst(building));
-      }
+    const bursts = collectBuildingEffectBursts(state.buildings, {
+      deltaSeconds,
+      qualityMultiplier,
     });
+    bursts.forEach((burst) => this.particles.emitBurst(burst));
   }
 
   drawEntities(state, now, daylight) {
