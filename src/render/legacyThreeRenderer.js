@@ -1,5 +1,5 @@
 import * as THREE from '../../node_modules/three/build/three.module.js';
-import { applyLegacyCameraPose, computeLegacyCameraPosition } from './legacyCameraPose.js';
+import { dispatchLegacyCameraUpdate, dispatchLegacyCenterOnBuilding } from './legacyCameraDispatch.js';
 import {
   dispatchLegacyPointerMove,
   dispatchLegacyPointerUp,
@@ -28,7 +28,7 @@ import {
   applyRendererGroundClickHandler,
   applyRendererPlacementPreviewHandler,
 } from './rendererCallbackState.js';
-import { centerLegacyCameraOnBuilding, resizeLegacyRendererViewport } from './legacyRendererViewport.js';
+import { resizeLegacyRendererViewport } from './legacyRendererViewport.js';
 
 export class LegacyThreeRenderer {
   constructor(rootElement) {
@@ -61,8 +61,7 @@ export class LegacyThreeRenderer {
   }
 
   updateCamera() {
-    const position = computeLegacyCameraPosition(this.cameraPolar, this.cameraTarget);
-    applyLegacyCameraPose(this.camera, this.cameraTarget, position);
+    dispatchLegacyCameraUpdate(this);
   }
 
   resize() {
@@ -130,7 +129,7 @@ export class LegacyThreeRenderer {
   }
 
   centerOnBuilding(building) {
-    centerLegacyCameraOnBuilding(building, this.cameraTarget, () => this.updateCamera());
+    dispatchLegacyCenterOnBuilding(this, building);
   }
 
   getCameraState() {
