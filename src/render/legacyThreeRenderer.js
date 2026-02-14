@@ -39,6 +39,11 @@ import {
   buildLegacyCameraStatePayload,
   buildLegacyDebugStatsPayload,
 } from './legacyRendererViewState.js';
+import {
+  createLegacyCameraRig,
+  createLegacyInteractionState,
+  createLegacyWebGLRenderer,
+} from './legacyRendererBootstrap.js';
 import { pickLegacyEntityAtClient, pickLegacyGroundAtClient } from './legacyScreenPickers.js';
 
 export class LegacyThreeRenderer {
@@ -53,39 +58,28 @@ export class LegacyThreeRenderer {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x9ad6f7);
 
-    this.camera = new THREE.PerspectiveCamera(65, 1, 0.1, 300);
-    this.cameraTarget = new THREE.Vector3(0, 0, 0);
-    this.cameraPolar = {
-      radius: 42,
-      yaw: Math.PI / 4,
-      pitch: 0.72,
-    };
+    const cameraRig = createLegacyCameraRig(THREE);
+    this.camera = cameraRig.camera;
+    this.cameraTarget = cameraRig.cameraTarget;
+    this.cameraPolar = cameraRig.cameraPolar;
     this.updateCamera();
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.shadowMap.enabled = false;
-    rootElement.appendChild(this.renderer.domElement);
+    this.renderer = createLegacyWebGLRenderer({
+      rootElement,
+      three: THREE,
+      windowObject: window,
+      maxPixelRatio: 2,
+    });
 
-    this.raycaster = new THREE.Raycaster();
-    this.mouse = new THREE.Vector2();
-    this.groundPlane = null;
-    this.previewMarker = null;
-
-    this.dragState = {
-      active: false,
-      moved: false,
-      lastX: 0,
-      lastY: 0,
-    };
-
-    this.touchState = {
-      isPinching: false,
-      pinchDistance: 0,
-    };
-
-    this.buildingMeshes = new Map();
-    this.colonistMeshes = new Map();
+    const interactionState = createLegacyInteractionState(THREE);
+    this.raycaster = interactionState.raycaster;
+    this.mouse = interactionState.mouse;
+    this.groundPlane = interactionState.groundPlane;
+    this.previewMarker = interactionState.previewMarker;
+    this.dragState = interactionState.dragState;
+    this.touchState = interactionState.touchState;
+    this.buildingMeshes = interactionState.buildingMeshes;
+    this.colonistMeshes = interactionState.colonistMeshes;
 
     this.initializeScene();
     this.resize();
