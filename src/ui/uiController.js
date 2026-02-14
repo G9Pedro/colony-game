@@ -1,10 +1,9 @@
-import { buildSelectOptionRows, renderSelectOptions } from './selectOptionsView.js';
 import { createUIControllerDefaultCallbacks, createUIControllerElements } from './uiControllerElements.js';
 import { buildUiControllerRenderInvocation } from './uiControllerRenderInvocation.js';
 import { bindUIGlobalActions } from './uiGlobalActionBindings.js';
 import { runUiControllerRender } from './uiControllerRenderFlow.js';
 import { createUIControllerRuntime } from './uiControllerRuntime.js';
-import { getRendererModeLabel } from './uiViewState.js';
+import { renderUIRendererModeOptions } from './uiRendererModeOptions.js';
 
 export class UIController {
   constructor({
@@ -62,12 +61,7 @@ export class UIController {
   }
 
   setRendererModeOptions(modes, activeMode) {
-    const rows = buildSelectOptionRows(modes, {
-      selectedId: activeMode,
-      getId: (mode) => mode,
-      getLabel: (mode) => getRendererModeLabel(mode),
-    });
-    renderSelectOptions(this.el.rendererModeSelect, rows);
+    renderUIRendererModeOptions(this, modes, activeMode);
   }
 
   setSelectedEntity(entity) {
