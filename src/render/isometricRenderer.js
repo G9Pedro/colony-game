@@ -1,6 +1,6 @@
 import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { AnimationManager } from './animations.js';
-import { computeFrameDeltaSeconds, updateSmoothedFps } from './frameTiming.js';
+import { runIsometricFrame } from './isometricFramePipeline.js';
 import { IsometricCamera } from './isometricCamera.js';
 import { ParticleSystem } from './particles.js';
 import { FrameQualityController } from './qualityController.js';
@@ -9,9 +9,6 @@ import { updateColonistRenderState } from './colonistInterpolation.js';
 import { buildEntityRenderPass } from './entityRenderPass.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
-import { buildIsometricFrameContext } from './isometricFrameContext.js';
-import { runIsometricFrameDraw } from './isometricFrameDraw.js';
-import { runIsometricFrameDynamics } from './isometricFrameDynamics.js';
 import { InteractionController } from './interactionController.js';
 import { handleIsometricClickSelection, updateIsometricHoverSelection } from './isometricInteractionHandlers.js';
 import { buildIsometricCameraStatePayload, buildIsometricDebugStatsPayload } from './isometricRendererViewState.js';
@@ -21,8 +18,7 @@ import {
   syncPlacementAnimationEffects,
 } from './isometricRuntimeEffects.js';
 import { ResourceGainTracker } from './resourceGainTracker.js';
-import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight, drawTimeAndSeasonOverlays } from './overlayPainter.js';
-import { getDaylightFactor, getSeasonTint } from './stateVisuals.js';
+import { drawBackgroundLayer, drawPlacementPreview, drawSelectionHighlight } from './overlayPainter.js';
 import { TerrainLayerRenderer } from './terrainLayer.js';
 
 export class IsometricRenderer {
@@ -278,25 +274,13 @@ export class IsometricRenderer {
 
   render(state) {
     this.lastState = state;
-    const frame = buildIsometricFrameContext({
+    const frame = runIsometricFrame({
+      state,
       now: performance.now(),
       lastFrameAt: this.lastFrameAt,
       smoothedFps: this.smoothedFps,
-      state,
       camera: this.camera,
-      computeFrameDeltaSeconds,
-      updateSmoothedFps,
-      getDaylightFactor,
-      maxDeltaSeconds: 0.12,
-      fpsSmoothing: 0.9,
-    });
-    this.lastFrameAt = frame.nextLastFrameAt;
-    this.smoothedFps = frame.nextSmoothedFps;
-    runIsometricFrameDynamics({
-      state,
-      frame,
       qualityController: this.qualityController,
-      camera: this.camera,
       particles: this.particles,
       sampleResourceGains: (nextState, deltaSeconds) => this.sampleResourceGains(nextState, deltaSeconds),
       syncBuildingAnimations: (nextState, now) => this.syncBuildingAnimations(nextState, now),
@@ -304,11 +288,6 @@ export class IsometricRenderer {
         this.updateColonistInterpolation(nextState, deltaSeconds),
       maybeEmitBuildingEffects: (nextState, deltaSeconds) =>
         this.maybeEmitBuildingEffects(nextState, deltaSeconds),
-    });
-
-    runIsometricFrameDraw({
-      state,
-      frame,
       drawBackground: (nextState, width, height, daylight) =>
         this.drawBackground(nextState, width, height, daylight),
       drawTerrain: (nextState) => this.drawTerrain(nextState),
@@ -318,10 +297,10 @@ export class IsometricRenderer {
       selectedEntity: this.selectedEntity,
       drawSelectionOverlay: (entity, alpha) => this.drawSelectionOverlay(entity, alpha),
       getSelectionPulse: (now) => this.animations.getSelectionPulse(now),
-      drawTimeAndSeasonOverlays,
       ctx: this.ctx,
-      getSeasonTint,
     });
+    this.lastFrameAt = frame.nextLastFrameAt;
+    this.smoothedFps = frame.nextSmoothedFps;
   }
 }
 
