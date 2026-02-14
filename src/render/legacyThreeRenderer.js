@@ -3,6 +3,11 @@ import { BUILDING_DEFINITIONS } from '../content/buildings.js';
 import { normalizeCameraState } from './cameraState.js';
 import { createDebugStats } from './debugStats.js';
 import { computeFrameDeltaSeconds, updateSmoothedFps } from './frameTiming.js';
+import {
+  updateOrbitYawAndPitch,
+  updateRadiusFromPinch,
+  updateRadiusFromWheel,
+} from './legacyThreeCameraControls.js';
 
 const BUILDING_Y_BASE = 0.01;
 
@@ -225,9 +230,9 @@ export class LegacyThreeRenderer {
     this.dragState.lastX = event.clientX;
     this.dragState.lastY = event.clientY;
 
-    const rotateFactor = 0.0055;
-    this.cameraPolar.yaw -= dx * rotateFactor;
-    this.cameraPolar.pitch = Math.min(1.25, Math.max(0.25, this.cameraPolar.pitch + dy * rotateFactor));
+    const nextPolar = updateOrbitYawAndPitch(this.cameraPolar, dx, dy, 0.0055);
+    this.cameraPolar.yaw = nextPolar.yaw;
+    this.cameraPolar.pitch = nextPolar.pitch;
     this.updateCamera();
   }
 
@@ -259,8 +264,7 @@ export class LegacyThreeRenderer {
 
   handleWheel(event) {
     event.preventDefault();
-    const nextRadius = this.cameraPolar.radius + event.deltaY * 0.03;
-    this.cameraPolar.radius = Math.max(16, Math.min(68, nextRadius));
+    this.cameraPolar.radius = updateRadiusFromWheel(this.cameraPolar.radius, event.deltaY, 0.03);
     this.updateCamera();
   }
 
@@ -286,9 +290,9 @@ export class LegacyThreeRenderer {
     if (event.touches.length === 2 && this.touchState.isPinching) {
       const [first, second] = event.touches;
       const distance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
-      const delta = this.touchState.pinchDistance - distance;
-      this.cameraPolar.radius = Math.max(16, Math.min(68, this.cameraPolar.radius + delta * 0.04));
-      this.touchState.pinchDistance = distance;
+      const next = updateRadiusFromPinch(this.cameraPolar.radius, this.touchState.pinchDistance, distance, 0.04);
+      this.cameraPolar.radius = next.radius;
+      this.touchState.pinchDistance = next.distance;
       this.updateCamera();
       return;
     }
