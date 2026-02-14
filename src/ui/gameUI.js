@@ -1,5 +1,6 @@
 import { AnimationManager } from '../render/animations.js';
 import { getBuildingCardState } from './buildingAvailability.js';
+import { buildBuildCardRows, buildCategoryPillRows } from './buildMenuViewState.js';
 import { buildColonistRows, buildConstructionQueueRows } from './colonyPanelsViewState.js';
 import { buildObjectiveHint, buildObjectiveRows } from './objectivesViewState.js';
 import { ResourceFlowTracker } from './resourceFlowTracker.js';
@@ -104,11 +105,12 @@ export class GameUI {
 
   renderBuildCategories(state, categories, onSelectCategory) {
     this.el.buildCategories.innerHTML = '';
-    categories.forEach((category) => {
+    const rows = buildCategoryPillRows(categories, state.selectedCategory);
+    rows.forEach((row) => {
       const button = document.createElement('button');
-      button.className = `category-pill ${category === state.selectedCategory ? 'active' : ''}`;
-      button.textContent = category;
-      button.addEventListener('click', () => onSelectCategory(category));
+      button.className = `category-pill ${row.active ? 'active' : ''}`;
+      button.textContent = row.label;
+      button.addEventListener('click', () => onSelectCategory(row.id));
       this.el.buildCategories.appendChild(button);
     });
   }
@@ -123,21 +125,23 @@ export class GameUI {
   }) {
     this.renderBuildCategories(state, categories, onSelectCategory);
     this.el.buildList.innerHTML = '';
+    const rows = buildBuildCardRows({
+      state,
+      selectedBuildType,
+      buildingDefinitions: this.buildingDefinitions,
+      isBuildingUnlocked,
+      formatCost,
+      getBuildingCardState,
+    });
 
-    const candidates = Object.values(this.buildingDefinitions).filter(
-      (definition) => definition.category === state.selectedCategory,
-    );
-
-    candidates.forEach((definition) => {
-      const cardState = getBuildingCardState(state, definition, isBuildingUnlocked, formatCost);
-
+    rows.forEach((row) => {
       const card = document.createElement('button');
-      card.className = `build-card ${selectedBuildType === definition.id ? 'active' : ''}`;
-      card.disabled = !cardState.unlocked;
+      card.className = `build-card ${row.active ? 'active' : ''}`;
+      card.disabled = !row.unlocked;
       card.type = 'button';
-      card.addEventListener('click', () => onToggleBuildType(definition.id));
+      card.addEventListener('click', () => onToggleBuildType(row.id));
 
-      const thumb = this.spriteFactory.getBuildingThumbnail(definition.id, 58);
+      const thumb = this.spriteFactory.getBuildingThumbnail(row.id, 58);
       const thumbNode = document.createElement('canvas');
       thumbNode.width = thumb.width;
       thumbNode.height = thumb.height;
@@ -145,10 +149,10 @@ export class GameUI {
       thumbNode.getContext('2d').drawImage(thumb, 0, 0);
 
       const title = document.createElement('strong');
-      title.textContent = definition.name;
+      title.textContent = row.name;
       const subtitle = document.createElement('small');
-      subtitle.textContent = cardState.subtitle;
-      if (cardState.warning) {
+      subtitle.textContent = row.subtitle;
+      if (row.warning) {
         subtitle.classList.add('warning');
       }
 
